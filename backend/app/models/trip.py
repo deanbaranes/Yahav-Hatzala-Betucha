@@ -15,6 +15,7 @@ class Trip(Base):
     capacity = Column(Integer, nullable=False)
     roles_requirements = Column(JSON, default=dict)
     is_billed = Column(Boolean, default=False, nullable=False, index=True)
+    color = Column(String, nullable=True)  # Custom color hex e.g. '#039BE5'
 
     client = relationship("Client", back_populates="trips")
     assignments = relationship("TripAssignment", back_populates="trip")

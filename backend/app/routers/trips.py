@@ -42,7 +42,8 @@ def create_trip(trip_data: TripCreate, db: Session = Depends(get_db), current_us
         start_date=trip_data.start_date,
         end_date=trip_data.end_date,
         capacity=trip_data.capacity,
-        roles_requirements=trip_data.roles_requirements
+        roles_requirements=trip_data.roles_requirements,
+        color=trip_data.color
     )
     db.add(new_trip)
     db.commit()
@@ -68,6 +69,7 @@ def update_trip(trip_id: str, trip_data: TripCreate, db: Session = Depends(get_d
     trip.end_date = trip_data.end_date
     trip.capacity = trip_data.capacity
     trip.roles_requirements = trip_data.roles_requirements
+    trip.color = trip_data.color
     
     db.commit()
     db.refresh(trip)
@@ -241,6 +243,7 @@ def get_trips(db: Session = Depends(get_db)):
             "capacity": t.capacity,
             "roles_requirements": t.roles_requirements or {},
             "is_billed": t.is_billed,
+            "color": t.color,
             "client": {
                 "id": str(t.client.id),
                 "name": t.client.name,

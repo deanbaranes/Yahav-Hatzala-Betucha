@@ -9,7 +9,7 @@ const AVAILABLE_ROLES = ["מע\"ר", "חובש", "פראמדיק", "שומר ל�
 export default function TripManagementBoard() {
   const queryClient = useQueryClient();
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {} as Record<string, number> });
+  const [formData, setFormData] = useState({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {} as Record<string, number>, color: '' as string });
 
   const totalCapacity = Object.values(formData.roles_requirements).reduce((a, b) => a + b, 0);
 
@@ -19,7 +19,7 @@ export default function TripManagementBoard() {
       queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
       alert('הטיול נוצר בהצלחה!');
-      setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {} });
+      setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '' });
     },
     onError: (error: any) => {
       alert('שגיאה ביצירת הטיול: ' + (error.response?.data?.detail || 'אנא ודא שכל השדות מלאים ותקינים.'));
@@ -33,7 +33,7 @@ export default function TripManagementBoard() {
       queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
       alert('הטיול עודכן בהצלחה!');
       setEditingTripId(null);
-      setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {} });
+      setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '' });
     },
     onError: (error: any) => {
       alert('שגיאה בעדכון הטיול: ' + (error.response?.data?.detail || 'אנא ודא שכל השדות מלאים ותקינים.'));
@@ -98,6 +98,38 @@ export default function TripManagementBoard() {
         </div>
           
         <div className="mb-4 md:col-span-2">
+          <label className="block text-gray-700 font-bold mb-2">צבע הטיול ביומן</label>
+          <div className="flex flex-wrap gap-2 items-center">
+            {[
+              { color: '', label: 'אוטומטי (לפי סטטוס)' },
+              { color: '#039BE5', label: 'ציאן (Peacock)' },
+              { color: '#D50000', label: 'אדום (Tomato)' },
+              { color: '#0B8043', label: 'ירוק (Basil)' },
+              { color: '#F4511E', label: 'כתום (Tangerine)' },
+              { color: '#8E24AA', label: 'סגול (Grape)' },
+              { color: '#F6BF26', label: 'צהוב (Banana)' },
+              { color: '#3F51B5', label: 'כחול (Blueberry)' },
+              { color: '#616161', label: 'אפור (Graphite)' },
+            ].map(({ color, label }) => (
+              <button
+                key={label}
+                type="button"
+                title={label}
+                onClick={() => setFormData({ ...formData, color })}
+                className={`w-8 h-8 rounded-full border-4 transition-all ${
+                  formData.color === color
+                    ? 'border-gray-800 scale-125'
+                    : 'border-gray-200 hover:scale-110'
+                }`}
+                style={{ backgroundColor: color || '#e5e7eb' }}
+              >
+                {color === '' && <span className="text-gray-400 text-xs font-bold flex items-center justify-center w-full h-full">א</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mb-4 md:col-span-2">
           <label className="block text-gray-700 font-bold mb-4 border-b pb-2">דרישות צוות (סה"כ: {totalCapacity})</label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {AVAILABLE_ROLES.map(role => (
@@ -161,7 +193,8 @@ export default function TripManagementBoard() {
                           location: trip.location || '',
                           start_date: trip.start_date ? trip.start_date.substring(0, 16) : '',
                           end_date: trip.end_date ? trip.end_date.substring(0, 16) : '',
-                          roles_requirements: trip.roles_requirements || {}
+                          roles_requirements: trip.roles_requirements || {},
+                          color: trip.color || ''
                         });
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}

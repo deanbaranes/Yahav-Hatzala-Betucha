@@ -40,15 +40,16 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
     }
   });
 
-  const getTripColor = (trip: any) => {
-    if (trip.is_billed) return 'bg-red-500 text-white hover:bg-red-600 border border-red-600';
-    
-    // Check if fully staffed
+  const getTripColor = (trip: any): { className: string; style?: React.CSSProperties } => {
+    // If trip has a custom color, use it directly
+    if (trip.color) {
+      return { className: 'text-white shadow-sm font-semibold cursor-pointer transition-all flex justify-between items-center text-xs px-1.5 py-1 rounded', style: { backgroundColor: trip.color, borderColor: trip.color } };
+    }
+    if (trip.is_billed) return { className: 'bg-red-500 text-white hover:bg-red-600 border border-red-600 text-xs px-1.5 py-1 rounded shadow-sm font-semibold cursor-pointer transition-all flex justify-between items-center' };
     const confirmedCount = trip.assignments?.filter((a: any) => a.is_confirmed && a.status === 'assigned').length || 0;
     const isFullyStaffed = trip.capacity > 0 && confirmedCount >= trip.capacity;
-
-    if (isFullyStaffed) return 'bg-blue-500 text-white hover:bg-blue-600 border border-blue-600';
-    return 'bg-green-500 text-white hover:bg-green-600 border border-green-600';
+    if (isFullyStaffed) return { className: 'bg-blue-500 text-white hover:bg-blue-600 border border-blue-600 text-xs px-1.5 py-1 rounded shadow-sm font-semibold cursor-pointer transition-all flex justify-between items-center' };
+    return { className: 'bg-green-500 text-white hover:bg-green-600 border border-green-600 text-xs px-1.5 py-1 rounded shadow-sm font-semibold cursor-pointer transition-all flex justify-between items-center' };
   };
 
   const getTripLabel = (trip: any) => {
@@ -137,12 +138,14 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
               }`}>
                 {day}
               </span>
-              
-              <div className="flex flex-col gap-1">
-                {dayTrips.map(trip => (
+                            <div className="flex flex-col gap-1">
+                {dayTrips.map(trip => {
+                    const tripStyle = getTripColor(trip);
+                    return (
                   <div 
                     key={trip.id} 
-                    className={`text-xs px-1.5 py-1 rounded shadow-sm font-semibold truncate cursor-pointer transition-all flex justify-between items-center ${getTripColor(trip)}`}
+                    className={tripStyle.className}
+                    style={tripStyle.style}
                     title={getFullTooltip(trip)}
                     onClick={() => setSelectedTrip(trip)}
                   >
@@ -160,7 +163,8 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                       <CheckCircle2 size={12} className={trip.is_billed ? 'text-red-200' : 'text-white/70'} />
                     </button>
                   </div>
-                ))}
+                    );
+                  })}
               </div>
             </div>
           );

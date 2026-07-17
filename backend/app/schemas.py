@@ -49,6 +49,7 @@ class TripCreate(BaseModel):
     end_date: datetime
     capacity: int
     roles_requirements: Optional[Dict[str, int]] = {}
+    color: Optional[str] = None
 
 class TripOut(BaseModel):
     id: uuid.UUID
@@ -58,6 +59,7 @@ class TripOut(BaseModel):
     end_date: datetime
     capacity: int
     roles_requirements: Optional[Dict[str, int]] = {}
+    color: Optional[str] = None
     client: ClientOut
 
     class Config:
