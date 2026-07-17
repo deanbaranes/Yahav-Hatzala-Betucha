@@ -14,6 +14,7 @@ class Trip(Base):
     end_date = Column(DateTime, nullable=False)
     capacity = Column(Integer, nullable=False)
     roles_requirements = Column(JSON, default=dict)
+    is_billed = Column(Boolean, default=False, nullable=False, index=True)
 
     client = relationship("Client", back_populates="trips")
     assignments = relationship("TripAssignment", back_populates="trip")

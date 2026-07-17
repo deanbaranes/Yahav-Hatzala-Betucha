@@ -2,9 +2,12 @@ import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import StaffApprovalsTable from '../../features/admin/StaffApprovalsTable';
-import { Calendar, CheckCircle2, Clock } from 'lucide-react';
+import TripCalendar from '../../features/admin/TripCalendar';
+import { Calendar as CalendarIcon, CheckCircle2, Clock, List } from 'lucide-react';
 
 export default function Dashboard() {
+  const [viewMode, setViewMode] = React.useState<'calendar' | 'list'>('calendar');
+
   const { data: trips, isLoading } = useQuery<any[]>({
     queryKey: ['dashboard-trips'],
     queryFn: async () => {
@@ -34,18 +37,37 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 animate-fade-in pb-10" dir="rtl">
-      <header className="mb-8">
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">סקירה כללית</h1>
-        <p className="text-gray-500 text-lg">מעקב יומי אחרי הטיולים והשיבוצים הקרובים.</p>
+      <header className="mb-8 flex justify-between items-end">
+        <div>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">סקירה כללית</h1>
+          <p className="text-gray-500 text-lg">מעקב יומי אחרי הטיולים והשיבוצים הקרובים.</p>
+        </div>
+        <div className="flex bg-gray-100 p-1 rounded-xl">
+          <button 
+            onClick={() => setViewMode('calendar')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold transition-colors ${viewMode === 'calendar' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            <CalendarIcon size={18} /> תצוגת יומן
+          </button>
+          <button 
+            onClick={() => setViewMode('list')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold transition-colors ${viewMode === 'list' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            <List size={18} /> רשימה יומיות
+          </button>
+        </div>
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        {/* Right side: Trips grouped by date */}
+        {/* Right side: Trips */}
         <div className="xl:col-span-2 space-y-8">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-              <Calendar className="text-blue-600" /> טיולים לפי תאריכים
-            </h2>
+          {viewMode === 'calendar' ? (
+            <TripCalendar trips={trips || []} />
+          ) : (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                <List className="text-blue-600" /> טיולים לפי תאריכים
+              </h2>
             
             {isLoading ? (
               <div className="text-center p-8 text-gray-500">טוען נתונים...</div>
@@ -134,6 +156,7 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+          )}
         </div>
         
         {/* Left side: Pending Approvals */}

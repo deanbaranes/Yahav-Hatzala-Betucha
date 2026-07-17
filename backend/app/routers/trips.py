@@ -237,6 +237,7 @@ def get_trips(db: Session = Depends(get_db)):
             "end_date": t.end_date.isoformat() if t.end_date else None,
             "capacity": t.capacity,
             "roles_requirements": t.roles_requirements or {},
+            "is_billed": t.is_billed,
             "client": {
                 "id": str(t.client.id),
                 "name": t.client.name,
@@ -315,3 +316,13 @@ def delete_trip(trip_id: str, db: Session = Depends(get_db), admin_user: User = 
     db.delete(trip)
     db.commit()
     return {"message": "Trip deleted successfully"}
+
+@router.put("/{trip_id}/mark-billed")
+def mark_trip_billed(trip_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
+    trip = db.query(Trip).filter(Trip.id == trip_id).first()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+        
+    trip.is_billed = not trip.is_billed
+    db.commit()
+    return {"message": "Trip billing status toggled", "is_billed": trip.is_billed}
