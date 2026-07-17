@@ -17,8 +17,8 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    role = Column(Enum(UserRole), nullable=False)
-    status = Column(Enum(UserStatus), nullable=False, default=UserStatus.pending)
+    role = Column(Enum(UserRole), nullable=False, index=True)
+    status = Column(Enum(UserStatus), nullable=False, default=UserStatus.pending, index=True)
     full_name = Column(String, nullable=False)
     phone = Column(String, unique=True, index=True, nullable=False)
     password_hash = Column(String, nullable=False)

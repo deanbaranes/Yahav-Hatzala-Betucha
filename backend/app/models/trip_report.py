@@ -18,13 +18,13 @@ class TripReport(Base):
     __tablename__ = "trip_reports"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    assignment_id = Column(UUID(as_uuid=True), ForeignKey("trip_assignments.id"), nullable=False, unique=True)
+    assignment_id = Column(UUID(as_uuid=True), ForeignKey("trip_assignments.id"), nullable=False, unique=True, index=True)
     start_time = Column(DateTime, nullable=False)
     end_time = Column(DateTime, nullable=False)
     overtime_decimal = Column(Numeric(10, 2), nullable=False)
     expenses = Column(Numeric(10, 2), default=0.0)
     receipt_url = Column(String, nullable=True)
-    manager_status = Column(Enum(ManagerStatus), nullable=False, default=ManagerStatus.pending)
-    billing_status = Column(Enum(BillingStatus), nullable=False, default=BillingStatus.unbilled)
+    manager_status = Column(Enum(ManagerStatus), nullable=False, default=ManagerStatus.pending, index=True)
+    billing_status = Column(Enum(BillingStatus), nullable=False, default=BillingStatus.unbilled, index=True)
 
     assignment = relationship("TripAssignment", back_populates="report")

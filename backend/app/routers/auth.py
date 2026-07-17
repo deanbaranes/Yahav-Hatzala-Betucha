@@ -37,8 +37,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
             detail="Incorrect phone or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    if user.status != UserStatus.active:
-         raise HTTPException(status_code=403, detail="Account is pending approval or inactive")
+    if user.status == UserStatus.inactive:
+         raise HTTPException(status_code=403, detail="Account is inactive")
          
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(

@@ -106,13 +106,16 @@ def get_available_trips(db: Session = Depends(get_db), current_user: User = Depe
 @router.post("/{trip_id}/join")
 def join_trip(trip_id: str, request: JoinTripRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     # Verify trip exists
-    trip = db.query(Trip).filter(Trip.id == trip_id).first()
+    trip = db.query(Trip).with_for_update().filter(Trip.id == trip_id).first()
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
         
     # Check if trip is in the past
     now = datetime.now()
-    if trip.start_date.replace(tzinfo=None) < now:
+    start_dt = trip.start_date
+    if isinstance(start_dt, str):
+        start_dt = datetime.fromisoformat(start_dt)
+    if start_dt.replace(tzinfo=None) < now:
         raise HTTPException(status_code=400, detail="Cannot join a trip that already started")
 
     # Check if user already registered

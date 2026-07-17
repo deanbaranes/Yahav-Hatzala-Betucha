@@ -46,6 +46,7 @@ def get_mock_db_with_trips(trips, assignments=None):
     mock_db.query.return_value = mock_query
     
     # Simple chain mocking for basic cases
+    mock_query.with_for_update.return_value = mock_query
     mock_query.filter.return_value = mock_query
     mock_query.order_by.return_value = mock_query
     mock_query.all.return_value = trips
@@ -57,15 +58,14 @@ def get_mock_db_with_trips(trips, assignments=None):
             from app.models.trip_assignment import TripAssignment
             from app.models.trip import Trip
             q = MagicMock()
+            q.with_for_update.return_value = q
             if model == Trip:
-                q.filter.return_value = q
-                q.order_by.return_value = q
-                q.all.return_value = trips
-                q.first.return_value = trips[0] if trips else None
+                q.filter.return_value.first.return_value = trips[0] if trips else None
             elif model == TripAssignment:
-                q.filter.return_value = q
-                q.first.return_value = assignments[0] if assignments else None
-                q.count.return_value = len([a for a in assignments if a.status == "assigned"])
+                filter_mock = MagicMock()
+                q.filter.return_value = filter_mock
+                filter_mock.first.return_value = None
+                filter_mock.count.return_value = len([a for a in assignments if a.status == "assigned"])
             return q
         mock_db.query.side_effect = query_side_effect
         
@@ -142,6 +142,7 @@ def test_join_trip_waitlist_if_full():
         db = MagicMock()
         def query(model):
             q = MagicMock()
+            q.with_for_update.return_value = q
             if model == Trip:
                 q.filter.return_value.first.return_value = trip
             elif model == TripAssignment:
@@ -170,6 +171,7 @@ def test_join_trip_past_fails():
         from app.models.trip import Trip
         db = MagicMock()
         q = MagicMock()
+        q.with_for_update.return_value = q
         q.filter.return_value.first.return_value = trip
         db.query.return_value = q
         return db

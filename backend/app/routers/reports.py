@@ -73,13 +73,21 @@ def get_upload_url(current_user: User = Depends(get_employee_user)):
         
     return response
 
+from decimal import Decimal, ROUND_HALF_UP
+
 def calculate_overtime_decimal(start_time, end_time) -> float:
     total_time = end_time.replace(tzinfo=None) - start_time.replace(tzinfo=None)
     total_minutes = total_time.total_seconds() / 60.0
     overtime_minutes = max(0, total_minutes - (9 * 60))
     overtime_hours = overtime_minutes / 60.0
-    # Strictly round to nearest 0.05
-    return round(overtime_hours * 20.0) / 20.0
+    
+    # Use Decimal for strict financial precision rounding to nearest 0.05
+    d_overtime = Decimal(str(overtime_hours))
+    d_scaled = d_overtime * Decimal('20')
+    d_rounded = d_scaled.quantize(Decimal('1'), rounding=ROUND_HALF_UP)
+    d_final = d_rounded / Decimal('20')
+    
+    return float(d_final)
 
 @router.post("/", response_model=TripReportOut)
 def submit_trip_report(report_data: TripReportCreate, db: Session = Depends(get_db), current_user: User = Depends(get_employee_user)):
