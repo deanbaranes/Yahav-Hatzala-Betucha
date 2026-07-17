@@ -1,21 +1,34 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from app.database import engine, Base
 from app.models import user, client, trip, trip_assignment, trip_report
+from app.models import refresh_token  # register RefreshToken table
 from app.routers import auth, trips, reports, webhooks, clients, admin
+from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+
+# ── Rate limiter (shared instance) ────────────────────────────────────────────
+limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
-from fastapi.middleware.cors import CORSMiddleware
-
 app = FastAPI(title="Yahav Hatzala Betucha API")
+
+# Attach the limiter to the app state so slowapi decorators work
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(auth.router)
