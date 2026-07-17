@@ -1,12 +1,19 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
-import { Search, Save, Edit2, Trash2 } from 'lucide-react';
+import { Search, Save, Edit2, Trash2, Copy, Check } from 'lucide-react';
 
 export default function Clients() {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ balance: '', notes: '' });
+  const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
+
+  const copyEmail = (email: string) => {
+    navigator.clipboard.writeText(email);
+    setCopiedEmail(email);
+    setTimeout(() => setCopiedEmail(null), 2000);
+  };
   
   const queryClient = useQueryClient();
 
@@ -116,7 +123,24 @@ export default function Clients() {
                   <td className="px-3 py-3 font-bold text-gray-800 truncate group-hover:text-blue-700 transition-colors" title={client.name}>{client.name}</td>
                   <td className="px-3 py-3 text-slate-600 truncate font-medium" title={client.contact_person || ''}>{client.contact_person || '-'}</td>
                   <td className="px-3 py-3 text-slate-500 truncate" title={client.email || ''}>
-                    {client.email ? <a href={`mailto:${client.email}`} className="hover:text-blue-600 hover:underline">{client.email}</a> : '-'}
+                    {client.email ? (
+                      <div className="flex items-center gap-1.5">
+                        <a href={`mailto:${client.email}`} className="hover:text-blue-600 hover:underline truncate">{client.email}</a>
+                        <button
+                          onClick={() => copyEmail(client.email)}
+                          className={`flex-shrink-0 p-1 rounded transition-all duration-200 ${
+                            copiedEmail === client.email
+                              ? 'text-green-600 bg-green-50'
+                              : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                          }`}
+                          title="העתק אימייל"
+                        >
+                          {copiedEmail === client.email
+                            ? <Check size={13} />
+                            : <Copy size={13} />}
+                        </button>
+                      </div>
+                    ) : '-'}
                   </td>
                   <td className="px-3 py-3 text-slate-600 truncate font-medium" dir="ltr" style={{textAlign: 'right'}}>
                     {client.phone ? <a href={`tel:${client.phone}`} className="hover:text-blue-600 hover:underline">{client.phone}</a> : '-'}
