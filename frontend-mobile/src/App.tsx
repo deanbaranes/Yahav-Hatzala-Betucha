@@ -3,7 +3,7 @@ import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-rou
 import AdminLayout from './features/admin/AdminLayout';
 import Dashboard from './pages/admin/Dashboard';
 import Trips from './pages/admin/Trips';
-import Billing from './pages/admin/Billing';
+import Reports from './pages/admin/Reports';
 import Clients from './pages/admin/Clients';
 import Home from './pages/employee/Home';
 import EmployeeTrips from './pages/employee/Trips';
@@ -51,7 +51,7 @@ const router = createBrowserRouter([
           { index: true, element: <Dashboard /> },
           { path: 'trips', element: <Trips /> },
           { path: 'clients', element: <Clients /> },
-          { path: 'billing', element: <Billing /> }
+          { path: 'reports', element: <Reports /> }
         ]
       }
     ]

@@ -16,7 +16,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { to: '/admin', icon: Home, label: 'לוח בקרה ראשי' },
     { to: '/admin/trips', icon: Map, label: 'ניהול טיולים' },
     { to: '/admin/clients', icon: Users, label: 'לקוחות ויתרות' },
-    { to: '/admin/billing', icon: FileText, label: 'הנהלת חשבונות' },
+    { to: '/admin/reports', icon: FileText, label: 'דוחות ושכר' },
   ];
 
   return (

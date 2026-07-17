@@ -112,3 +112,39 @@ def submit_trip_report(report_data: TripReportCreate, db: Session = Depends(get_
     db.refresh(new_report)
     return new_report
 
+from app.dependencies import get_admin_user
+
+@router.get("/")
+def get_all_reports(db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
+    reports = db.query(TripReport).join(TripAssignment).join(Trip).join(User).order_by(TripReport.created_at.desc()).all()
+    
+    result = []
+    for r in reports:
+        a = r.assignment
+        t = a.trip
+        u = a.user
+        
+        result.append({
+            "id": str(r.id),
+            "start_time": r.start_time.isoformat(),
+            "end_time": r.end_time.isoformat(),
+            "overtime_decimal": r.overtime_decimal,
+            "expenses": r.expenses,
+            "receipt_url": r.receipt_url,
+            "created_at": r.created_at.isoformat(),
+            "employee": {
+                "id": str(u.id),
+                "full_name": u.full_name,
+                "phone": u.phone,
+                "role": a.role
+            },
+            "trip": {
+                "id": str(t.id),
+                "location": t.location,
+                "start_date": t.start_date.isoformat(),
+                "client_name": t.client.name if t.client else None
+            }
+        })
+    return result
+
+
