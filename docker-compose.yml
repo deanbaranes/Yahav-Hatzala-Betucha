@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: yahav_user
+      POSTGRES_PASSWORD: yahav_password
+      POSTGRES_DB: yahav_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://yahav_user:yahav_password@db:5432/yahav_db
+    depends_on:
+      - db
+
+  frontend-mobile:
+    build: ./frontend-mobile
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend-mobile:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
