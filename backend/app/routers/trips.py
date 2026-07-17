@@ -8,6 +8,9 @@ from app.models.user import User
 from app.models.trip_assignment import TripAssignment
 from app.schemas import TripCreate, TripOut, JoinTripRequest
 from app.dependencies import get_admin_user, get_current_user
+from pydantic import BaseModel
+import requests as http_requests
+from icalendar import Calendar as ICalendar
 
 router = APIRouter(prefix="/trips", tags=["trips"])
 
@@ -326,3 +329,114 @@ def mark_trip_billed(trip_id: str, db: Session = Depends(get_db), admin_user: Us
     trip.is_billed = not trip.is_billed
     db.commit()
     return {"message": "Trip billing status toggled", "is_billed": trip.is_billed}
+
+
+class IcalImportRequest(BaseModel):
+    ical_url: str
+    default_client_name: str = "לקוח מיומן גוגל"
+
+@router.post("/import-ical")
+def import_from_ical(
+    body: IcalImportRequest,
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(get_admin_user)
+):
+    """
+    Imports trips from a Google Calendar secret ICS URL.
+    Parses each VEVENT and creates a Trip in the DB.
+    If client_name is found in the event summary/description, it links the trip to that client.
+    """
+    try:
+        resp = http_requests.get(body.ical_url, timeout=15)
+        resp.raise_for_status()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"לא ניתן לגשת ל-URL של היומן: {str(e)}")
+
+    try:
+        cal = ICalendar.from_ical(resp.content)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"שגיאה בפרסור קובץ ICS: {str(e)}")
+
+    created = 0
+    skipped = 0
+    errors = []
+
+    for component in cal.walk():
+        if component.name != "VEVENT":
+            continue
+
+        try:
+            summary = str(component.get("SUMMARY", "")).strip()
+            description = str(component.get("DESCRIPTION", "")).strip()
+            location = str(component.get("LOCATION", "")).strip() or summary or "לא צוין"
+
+            dtstart = component.get("DTSTART")
+            dtend = component.get("DTEND")
+
+            if not dtstart or not dtend:
+                skipped += 1
+                continue
+
+            # Normalize to naive datetime
+            start_dt = dtstart.dt
+            end_dt = dtend.dt
+
+            # Handle date-only events (all-day)
+            if not hasattr(start_dt, 'hour'):
+                from datetime import time
+                start_dt = datetime.combine(start_dt, time(9, 0))
+                end_dt = datetime.combine(end_dt, time(18, 0))
+            else:
+                # Convert timezone-aware to UTC naive
+                if hasattr(start_dt, 'tzinfo') and start_dt.tzinfo is not None:
+                    start_dt = start_dt.astimezone(timezone.utc).replace(tzinfo=None)
+                if hasattr(end_dt, 'tzinfo') and end_dt.tzinfo is not None:
+                    end_dt = end_dt.astimezone(timezone.utc).replace(tzinfo=None)
+
+            # Skip events in the far past (over 1 year ago)
+            if (datetime.utcnow() - start_dt).days > 365:
+                skipped += 1
+                continue
+
+            # Determine client name from summary (use the event title as client name)
+            client_name = summary if summary else body.default_client_name
+
+            # Find or create client
+            client = db.query(Client).filter(Client.name.ilike(client_name)).first()
+            if not client:
+                client = Client(name=client_name)
+                db.add(client)
+                db.flush()  # get ID without committing
+
+            # Skip if trip with same client + start_date already exists
+            existing = db.query(Trip).filter(
+                Trip.client_id == client.id,
+                Trip.start_date == start_dt
+            ).first()
+            if existing:
+                skipped += 1
+                continue
+
+            trip = Trip(
+                client_id=client.id,
+                location=location,
+                start_date=start_dt,
+                end_date=end_dt,
+                capacity=0,
+                roles_requirements={},
+                is_billed=False
+            )
+            db.add(trip)
+            created += 1
+
+        except Exception as e:
+            errors.append(str(e))
+            continue
+
+    db.commit()
+    return {
+        "message": f"ייבוא הושלם בהצלחה!",
+        "created": created,
+        "skipped": skipped,
+        "errors": errors[:5]  # return first 5 errors if any
+    }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import SmartClientInput from './SmartClientInput';
+import GoogleCalendarImport from './GoogleCalendarImport';
 
 const AVAILABLE_ROLES = ["מע\"ר", "חובש", "פראמדיק", "שומר לילה", "מע\"ר חמוש", "חובש חמוש", "מאבטח"];
 
@@ -70,7 +71,10 @@ export default function TripManagementBoard() {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md mb-8 text-right" dir="rtl">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">{editingTripId ? 'עריכת טיול' : 'יצירת טיול חדש'}</h2>
+      <div className="flex justify-between items-center mb-6 border-b pb-4">
+        <GoogleCalendarImport />
+        <h2 className="text-2xl font-bold text-gray-800">{editingTripId ? 'עריכת טיול' : 'יצירת טיול חדש'}</h2>
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <SmartClientInput value={formData.client_name} onChange={(v) => setFormData({...formData, client_name: v})} />
