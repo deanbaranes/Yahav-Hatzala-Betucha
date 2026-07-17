@@ -66,6 +66,25 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
   // Generate days
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
+  const [selectedTrip, setSelectedTrip] = useState<any>(null);
+
+  const getFullTooltip = (trip: any) => {
+    const start = new Date(trip.start_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'});
+    const end = trip.end_date ? new Date(trip.end_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'}) : 'לא צוין';
+    
+    let tooltip = `לקוח: ${trip.client?.name || 'לא ידוע'}\nמיקום: ${trip.location}\nשעות: ${start} - ${end}\nסה"כ אנשי צוות דרושים: ${trip.capacity}\n\nצוות ששובץ ומאושר:\n`;
+    
+    const confirmed = trip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned') || [];
+    if (confirmed.length === 0) {
+      tooltip += "אין עובדים ששובצו עדיין.\n";
+    } else {
+      confirmed.forEach((a:any) => {
+        tooltip += `- ${a.user?.full_name} (${a.role || 'כללי'})\n`;
+      });
+    }
+    return tooltip;
+  };
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden" dir="rtl">
       {/* Calendar Header */}
@@ -124,7 +143,8 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                   <div 
                     key={trip.id} 
                     className={`text-xs px-1.5 py-1 rounded shadow-sm font-semibold truncate cursor-pointer transition-all flex justify-between items-center ${getTripColor(trip)}`}
-                    title={getTripLabel(trip)}
+                    title={getFullTooltip(trip)}
+                    onClick={() => setSelectedTrip(trip)}
                   >
                     <span className="truncate">{getTripLabel(trip)}</span>
                     <button 
@@ -146,6 +166,60 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
           );
         })}
       </div>
+
+      {/* Trip Details Modal */}
+      {selectedTrip && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm" onClick={() => setSelectedTrip(null)}>
+          <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-md w-full animate-fade-in text-right" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-start mb-4">
+              <h3 className="text-2xl font-bold text-gray-800">{selectedTrip.client?.name || 'לקוח לא ידוע'}</h3>
+              <button onClick={() => setSelectedTrip(null)} className="text-gray-400 hover:text-gray-600 p-1">✕</button>
+            </div>
+            
+            <div className="space-y-4 mb-6">
+              <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
+                <div className="text-blue-600">📍</div>
+                <div>
+                  <div className="text-xs text-gray-500 font-bold">מיקום הטיול</div>
+                  <div className="text-gray-800 font-medium">{selectedTrip.location}</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
+                <div className="text-blue-600">⏰</div>
+                <div>
+                  <div className="text-xs text-gray-500 font-bold">שעות התחלה וסיום</div>
+                  <div className="text-gray-800 font-medium">
+                    {new Date(selectedTrip.start_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})} - {selectedTrip.end_date ? new Date(selectedTrip.end_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'}) : 'לא הוגדר'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-sm text-gray-500 font-bold mb-2">צוות מאושר בטיול ({selectedTrip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned').length || 0} / {selectedTrip.capacity})</div>
+                <div className="space-y-2">
+                  {selectedTrip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned').length === 0 ? (
+                    <div className="text-sm text-red-500 font-medium">עדיין לא שובצו עובדים!</div>
+                  ) : (
+                    selectedTrip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned').map((a:any) => (
+                      <div key={a.id} className="flex justify-between items-center text-sm bg-white p-2 border border-gray-100 rounded shadow-sm">
+                        <span className="font-bold text-gray-800">{a.user?.full_name}</span>
+                        <span className="text-gray-500 font-medium">{a.role || 'כללי'}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-gray-100">
+              <button onClick={() => setSelectedTrip(null)} className="px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-lg transition-colors">
+                סגור
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
