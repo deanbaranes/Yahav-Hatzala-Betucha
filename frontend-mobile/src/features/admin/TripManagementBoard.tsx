@@ -152,9 +152,9 @@ export default function TripManagementBoard() {
       <div className="flex gap-4 mt-6">
         <button 
           onClick={() => editingTripId ? updateTrip.mutate(formData) : createTrip.mutate(formData)} 
-          disabled={createTrip.isPending || updateTrip.isPending || !formData.client_name || !formData.start_date || !formData.location || totalCapacity === 0}
+          disabled={createTrip.isPending || updateTrip.isPending || !formData.client_name || !formData.start_date || !formData.location || (!editingTripId && totalCapacity === 0)}
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold shadow transition-colors disabled:bg-gray-400"
-          title={totalCapacity === 0 ? "חובה להגדיר לפחות תפקיד אחד לטיול" : ""}
+          title={(!editingTripId && totalCapacity === 0) ? "חובה להגדיר לפחות תפקיד אחד לטיול" : ""}
         >
           {createTrip.isPending || updateTrip.isPending ? 'שומר...' : editingTripId ? 'שמור שינויים' : 'צור טיול'}
         </button>
@@ -163,7 +163,7 @@ export default function TripManagementBoard() {
           <button 
             onClick={() => {
               setEditingTripId(null);
-              setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {} });
+              setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '' });
             }}
             className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-bold shadow transition-colors"
           >
