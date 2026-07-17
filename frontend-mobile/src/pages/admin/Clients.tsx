@@ -45,7 +45,7 @@ export default function Clients() {
         // Just notification
       }
     },
-    onError: (error: any) => {
+    onError: () => {
       alert('שגיאה במחיקת לקוח: יתכן שיש לו טיולים משויכים במערכת.');
     }
   });
