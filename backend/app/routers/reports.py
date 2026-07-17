@@ -122,6 +122,36 @@ def submit_trip_report(report_data: TripReportCreate, db: Session = Depends(get_
 
 from app.dependencies import get_admin_user
 
+@router.post("/admin-manual", response_model=TripReportOut)
+def submit_trip_report_admin(report_data: TripReportCreate, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
+    # Validate assignment exists (doesn't need to belong to admin)
+    assignment = db.query(TripAssignment).filter(
+        TripAssignment.id == report_data.assignment_id
+    ).first()
+    
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+        
+    # Check if report already exists
+    existing_report = db.query(TripReport).filter(TripReport.assignment_id == assignment.id).first()
+    if existing_report:
+         raise HTTPException(status_code=400, detail="Report already submitted for this assignment")
+
+    overtime_decimal = calculate_overtime_decimal(report_data.start_time, report_data.end_time)
+
+    new_report = TripReport(
+        assignment_id=assignment.id,
+        start_time=report_data.start_time,
+        end_time=report_data.end_time,
+        overtime_decimal=overtime_decimal,
+        expenses=report_data.expenses,
+        receipt_url=report_data.receipt_url
+    )
+    db.add(new_report)
+    db.commit()
+    db.refresh(new_report)
+    return new_report
+
 @router.get("/")
 def get_all_reports(db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
     reports = db.query(TripReport).join(TripAssignment).join(Trip).join(User).order_by(TripReport.created_at.desc()).all()

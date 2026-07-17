@@ -40,6 +40,23 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
     }
   });
 
+  const submitReportMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await axiosClient.post('/reports/admin-manual', data);
+    },
+    onSuccess: () => {
+      alert('הדיווח נוסף בהצלחה!');
+      setReportingAssignment(null);
+      setReportForm({ start_time: '', end_time: '' });
+      queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-reports'] });
+    },
+    onError: (err: any) => {
+      alert('שגיאה: ' + (err.response?.data?.detail || 'לא ניתן להוסיף דיווח.'));
+    }
+  });
+
   const getTripColor = (trip: any): { className: string; style?: React.CSSProperties } => {
     // If trip has a custom color, use it directly
     if (trip.color) {
@@ -177,7 +194,7 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
           <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-md w-full animate-fade-in text-right" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-2xl font-bold text-gray-800">{selectedTrip.client?.name || 'לקוח לא ידוע'}</h3>
-              <button onClick={() => setSelectedTrip(null)} className="text-gray-400 hover:text-gray-600 p-1">✕</button>
+              <button onClick={() => { setSelectedTrip(null); setReportingAssignment(null); }} className="text-gray-400 hover:text-gray-600 p-1">✕</button>
             </div>
             
             <div className="space-y-4 mb-6">
@@ -208,7 +225,21 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                     selectedTrip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned').map((a:any) => (
                       <div key={a.id} className="flex justify-between items-center text-sm bg-white p-2 border border-gray-100 rounded shadow-sm">
                         <span className="font-bold text-gray-800">{a.user?.full_name}</span>
-                        <span className="text-gray-500 font-medium">{a.role || 'כללי'}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-500 font-medium text-xs">{a.role || 'כללי'}</span>
+                          <button
+                            onClick={() => {
+                              setReportingAssignment(a);
+                              setReportForm({
+                                start_time: selectedTrip.start_date.substring(0, 16),
+                                end_time: selectedTrip.end_date ? selectedTrip.end_date.substring(0, 16) : ''
+                              });
+                            }}
+                            className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-1 rounded text-xs font-bold transition-colors"
+                          >
+                            + דיווח
+                          </button>
+                        </div>
                       </div>
                     ))
                   )}
@@ -216,8 +247,56 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
               </div>
             </div>
 
-            <div className="flex justify-end pt-2 border-t border-gray-100">
-              <button onClick={() => setSelectedTrip(null)} className="px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-lg transition-colors">
+            {reportingAssignment && (
+              <div className="mt-4 p-4 border border-blue-200 bg-blue-50/50 rounded-lg">
+                <h4 className="font-bold text-blue-800 mb-3">
+                  הוספת דיווח שעות ידני: {reportingAssignment.user?.full_name}
+                </h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">שעת התחלה</label>
+                    <input 
+                      type="datetime-local" 
+                      className="w-full p-2 text-sm border border-gray-300 rounded"
+                      value={reportForm.start_time}
+                      onChange={e => setReportForm({...reportForm, start_time: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">שעת סיום</label>
+                    <input 
+                      type="datetime-local" 
+                      className="w-full p-2 text-sm border border-gray-300 rounded"
+                      value={reportForm.end_time}
+                      onChange={e => setReportForm({...reportForm, end_time: e.target.value})}
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2 mt-2">
+                    <button 
+                      onClick={() => setReportingAssignment(null)}
+                      className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200 rounded"
+                    >
+                      ביטול
+                    </button>
+                    <button 
+                      disabled={!reportForm.start_time || !reportForm.end_time || submitReportMutation.isPending}
+                      onClick={() => submitReportMutation.mutate({
+                        assignment_id: reportingAssignment.id,
+                        start_time: reportForm.start_time,
+                        end_time: reportForm.end_time,
+                        expenses: 0
+                      })}
+                      className="px-3 py-1.5 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded font-bold disabled:opacity-50"
+                    >
+                      {submitReportMutation.isPending ? 'שומר...' : 'שמור דיווח'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end pt-4 mt-4 border-t border-gray-100">
+              <button onClick={() => { setSelectedTrip(null); setReportingAssignment(null); }} className="px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-lg transition-colors">
                 סגור
               </button>
             </div>
