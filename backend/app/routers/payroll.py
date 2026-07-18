@@ -146,18 +146,15 @@ def export_payroll(employee_id: str, month: int, year: int, db: Session = Depend
 
     days_worked = len(set(r.start_time.date() for r in reports if r.start_time))
     
-    total_hours = Decimal(0)
     ot_hours = Decimal(0)
 
     for r in reports:
-        if r.start_time and r.end_time:
-            diff = r.end_time - r.start_time
-            hours = Decimal(diff.total_seconds()) / Decimal(3600)
-            total_hours += hours
         ot_hours += Decimal(str(r.overtime_decimal or 0))
 
     hourly_rate = Decimal(str(user.hourly_rate or 0))
     base_daily = Decimal(str(user.base_daily_hours or 8.6))
+    
+    total_hours = Decimal(days_worked) * base_daily
 
     adjustments = db.query(PayrollAdjustment).filter(
         PayrollAdjustment.user_id == employee_id,
