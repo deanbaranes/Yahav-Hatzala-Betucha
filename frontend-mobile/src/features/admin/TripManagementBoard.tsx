@@ -10,6 +10,7 @@ export default function TripManagementBoard() {
   const queryClient = useQueryClient();
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {} as Record<string, number>, color: '' as string });
+  const [searchTerm, setSearchTerm] = useState('');
 
   const totalCapacity = Object.values(formData.roles_requirements).reduce((a, b) => a + b, 0);
 
@@ -174,14 +175,27 @@ export default function TripManagementBoard() {
 
       {/* Trips List */}
       <div className="mt-12 border-t pt-8">
-        <h3 className="text-xl font-bold mb-4 text-gray-800">טיולים קיימים במערכת</h3>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <h3 className="text-xl font-bold text-gray-800">טיולים קיימים במערכת</h3>
+          <div className="relative w-full sm:w-64">
+            <input 
+              type="text" 
+              placeholder="חיפוש חברה או מיקום..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full p-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
+            />
+            <span className="absolute right-2.5 top-2.5 text-gray-400">🔍</span>
+          </div>
+        </div>
+
         {isLoadingTrips ? (
           <div className="text-gray-500">טוען טיולים...</div>
-        ) : trips?.length === 0 ? (
+        ) : !trips || trips.length === 0 ? (
           <div className="text-gray-500">אין עדיין טיולים פעילים.</div>
         ) : (
           <div className="space-y-4">
-            {trips?.map((trip: any) => (
+            {trips.filter(t => (t.client?.name || '').includes(searchTerm) || (t.location || '').includes(searchTerm)).map((trip: any) => (
               <div key={trip.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-start gap-3">
@@ -215,9 +229,9 @@ export default function TripManagementBoard() {
                       ✕
                     </button>
                     <div>
-                      <span className="font-bold text-lg text-blue-700">{trip.client?.name}</span>
+                      <span className="font-bold text-lg text-blue-700">{trip.client?.name === 'לקוח כללי' ? trip.location : trip.client?.name}</span>
                       <span className="mx-2 text-gray-400">|</span>
-                      <span className="text-gray-700">{trip.location}</span>
+                      <span className="text-gray-700">{trip.client?.name === 'לקוח כללי' ? 'מיובא מיומן גוגל' : trip.location}</span>
                     </div>
                   </div>
                   <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-bold">

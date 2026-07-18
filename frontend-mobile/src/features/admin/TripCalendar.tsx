@@ -1,11 +1,19 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, Calendar as CalendarIcon, CheckCircle2 } from 'lucide-react';
 import axiosClient from '../../api/axiosClient';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 export default function TripCalendar({ trips }: { trips: any[] }) {
   const queryClient = useQueryClient();
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  const { data: employees } = useQuery<any[]>({
+    queryKey: ['employees'],
+    queryFn: async () => {
+      const res = await axiosClient.get('/payroll/employees');
+      return res.data;
+    }
+  });
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -13,22 +21,41 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0 is Sunday
 
+  const [searchTerm, setSearchTerm] = useState('');
+
   // Group trips by date
   const tripsByDate = useMemo(() => {
     const map = new Map<number, any[]>();
     trips.forEach(trip => {
       const d = new Date(trip.start_date);
       if (d.getFullYear() === year && d.getMonth() === month) {
+        if (searchTerm) {
+          const nameMatch = (trip.client?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+          const locMatch = (trip.location || '').toLowerCase().includes(searchTerm.toLowerCase());
+          if (!nameMatch && !locMatch) return;
+        }
+        
         const day = d.getDate();
         if (!map.has(day)) map.set(day, []);
         map.get(day)!.push(trip);
       }
     });
     return map;
-  }, [trips, year, month]);
+  }, [trips, year, month, searchTerm]);
 
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+
+  const deleteTripMutation = useMutation({
+    mutationFn: async (tripId: string) => {
+      await axiosClient.delete(`/trips/${tripId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
+      setSelectedTrip(null);
+    }
+  });
 
   const toggleBillingMutation = useMutation({
     mutationFn: async (tripId: string) => {
@@ -72,7 +99,7 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
   const getTripLabel = (trip: any) => {
     const confirmedCount = trip.assignments?.filter((a: any) => a.is_confirmed && a.status === 'assigned').length || 0;
     const missing = trip.capacity - confirmedCount;
-    const name = trip.client?.name || trip.location;
+    const name = trip.client?.name === 'לקוח כללי' ? trip.location : (trip.client?.name || trip.location);
     
     if (trip.is_billed) return `${name} (חויב)`;
     if (missing <= 0) return `${name} (מלא)`;
@@ -85,12 +112,118 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
   const [selectedTrip, setSelectedTrip] = useState<any>(null);
+  const [reportingAssignment, setReportingAssignment] = useState<any>(null);
+  const [reportForm, setReportForm] = useState({ start_time: '', end_time: '' });
+
+  const [quickEditMode, setQuickEditMode] = useState(false);
+  const [quickEditForm, setQuickEditForm] = useState({ client_name: '', location: '', start_date: '', end_date: '', capacity: 0, roles_requirements: {}, color: '' });
+
+  // Add Employee Assignment State
+  const [assignEmployeeName, setAssignEmployeeName] = useState('');
+  const [assignEmployeeRole, setAssignEmployeeRole] = useState('כללי');
+  const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
+  const [filteredEmployees, setFilteredEmployees] = useState<any[]>([]);
+
+  // Create Manual Trip State
+  const [creatingTripDate, setCreatingTripDate] = useState<Date | null>(null);
+  const [newTripForm, setNewTripForm] = useState({ client_name: '', location: '', start_time: '08:00', end_time: '16:00', capacity: 1 });
+
+  useEffect(() => {
+    if (assignEmployeeName && employees) {
+      setFilteredEmployees(employees.filter(e => e.full_name.includes(assignEmployeeName)));
+    } else {
+      setFilteredEmployees([]);
+    }
+  }, [assignEmployeeName, employees]);
+
+  const assignEmployeeMutation = useMutation({
+    mutationFn: async (payload: { trip_id: string, user_id?: string, new_user_name?: string, role: string }) => {
+      // 1. If user_id is missing but new_user_name is provided, we need an endpoint to assign by name or create user.
+      // Since our assign logic might not support creating user on the fly, we will do it here.
+      let finalUserId = payload.user_id;
+      if (!finalUserId && payload.new_user_name) {
+         // Create the new employee
+         const res = await axiosClient.post('/payroll/employees', {
+           full_name: payload.new_user_name,
+           phone: `050${Math.floor(1000000 + Math.random() * 9000000)}`, // dummy
+           password: '123',
+           notes: 'יש לעדכן לעובד שכר שעתי'
+         });
+         finalUserId = res.data.id;
+         alert(`שים לב: הלקוח/עובד ${payload.new_user_name} לא היה קיים, לכן נוצר עובד חדש. יש לעדכן לו שכר שעתי!`);
+      }
+
+      await axiosClient.post(`/trips/${payload.trip_id}/assign`, {
+        user_id: finalUserId,
+        role: payload.role,
+        status: 'assigned',
+        is_confirmed: true
+      });
+    },
+    onSuccess: () => {
+      alert('עובד שובץ בהצלחה!');
+      setAssignEmployeeName('');
+      queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      // update selected trip state manually or close
+      setSelectedTrip(null);
+    },
+    onError: (err: any) => {
+      alert('שגיאה בשיבוץ העובד: ' + (err.response?.data?.detail || ''));
+    }
+  });
+
+  const removeAssignmentMutation = useMutation({
+    mutationFn: async (payload: { trip_id: string, user_id: string }) => {
+      await axiosClient.delete(`/trips/${payload.trip_id}/assign/${payload.user_id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
+      setSelectedTrip(null);
+    },
+    onError: (err: any) => {
+      alert('שגיאה בהסרת עובד: ' + (err.response?.data?.detail || ''));
+    }
+  });
+
+  const createManualTripMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await axiosClient.post('/trips/', data);
+    },
+    onSuccess: () => {
+      alert('הטיול נוסף בהצלחה!');
+      queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
+      setCreatingTripDate(null);
+    },
+    onError: (err: any) => {
+      alert('שגיאה בהוספת טיול: ' + (err.response?.data?.detail || ''));
+    }
+  });
+
+  const updateTripMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await axiosClient.put(`/trips/${selectedTrip.id}`, data);
+    },
+    onSuccess: () => {
+      alert('הטיול עודכן בהצלחה!');
+      queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
+      setQuickEditMode(false);
+      setSelectedTrip(null);
+    },
+    onError: (err: any) => {
+      alert('שגיאה בעדכון הטיול: ' + (err.response?.data?.detail || 'בדוק את הנתונים ונסה שוב.'));
+    }
+  });
 
   const getFullTooltip = (trip: any) => {
     const start = new Date(trip.start_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'});
     const end = trip.end_date ? new Date(trip.end_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'}) : 'לא צוין';
     
-    let tooltip = `לקוח: ${trip.client?.name || 'לא ידוע'}\nמיקום: ${trip.location}\nשעות: ${start} - ${end}\nסה"כ אנשי צוות דרושים: ${trip.capacity}\n\nצוות ששובץ ומאושר:\n`;
+    let tooltip = `לקוח: ${trip.client?.name === 'לקוח כללי' ? 'מיובא מיומן גוגל' : (trip.client?.name || 'לא ידוע')}\nמיקום/שם הטיול: ${trip.location}\nשעות: ${start} - ${end}\nסה"כ אנשי צוות דרושים: ${trip.capacity}\n\nצוות ששובץ ומאושר:\n`;
     
     const confirmed = trip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned') || [];
     if (confirmed.length === 0) {
@@ -106,25 +239,39 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden" dir="rtl">
       {/* Calendar Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-100">
+      <div className="flex flex-col md:flex-row items-center justify-between p-4 border-b border-gray-100 gap-4">
         <div className="flex items-center gap-2">
           <CalendarIcon className="text-blue-600" />
           <h2 className="text-xl font-bold text-gray-800">
             {currentDate.toLocaleString('he-IL', { month: 'long', year: 'numeric' })}
           </h2>
         </div>
-        <div className="flex gap-2">
-          <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+        
+        <div className="flex-1 w-full max-w-sm mx-auto md:mx-4">
+          <div className="relative">
+            <input 
+              type="text" 
+              placeholder="חיפוש חברה או מיקום..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full p-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm shadow-sm"
+            />
+            <span className="absolute right-2.5 top-2 text-gray-400">🔍</span>
+          </div>
+        </div>
+
+        <div className="flex gap-2 w-full md:w-auto justify-between md:justify-end">
+          <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-full transition-colors bg-gray-50 border border-gray-200">
             <ChevronRight size={20} />
           </button>
-          <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+          <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-full transition-colors bg-gray-50 border border-gray-200">
             <ChevronLeft size={20} />
           </button>
         </div>
       </div>
 
       {/* Legend */}
-      <div className="flex gap-4 p-3 bg-gray-50 border-b border-gray-100 text-sm font-semibold justify-center">
+      <div className="flex flex-wrap gap-2 md:gap-4 p-3 bg-gray-50 border-b border-gray-100 text-xs md:text-sm font-semibold justify-center text-center">
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-blue-500"></span> שובץ במלואו</span>
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-green-500"></span> חסרים עובדים</span>
         <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-500"></span> חויב (נשלחה חשבונית)</span>
@@ -133,7 +280,7 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
       {/* Calendar Grid */}
       <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-100">
         {['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'].map(day => (
-          <div key={day} className="p-2 text-center text-sm font-bold text-gray-600 border-l last:border-l-0 border-gray-200">
+          <div key={day} className="p-1 md:p-2 text-center text-xs md:text-sm font-bold text-gray-600 border-l last:border-l-0 border-gray-200 truncate">
             {day}
           </div>
         ))}
@@ -141,21 +288,28 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
 
       <div className="grid grid-cols-7 auto-rows-fr">
         {blanks.map(b => (
-          <div key={`blank-${b}`} className="min-h-[120px] bg-gray-50/50 border-l border-b border-gray-100"></div>
+          <div key={`blank-${b}`} className="min-h-[80px] md:min-h-[120px] bg-gray-50/50 border-l border-b border-gray-100"></div>
         ))}
 
         {days.map(day => {
           const dayTrips = tripsByDate.get(day) || [];
           return (
-            <div key={day} className="min-h-[120px] p-1 border-l border-b border-gray-100 relative group hover:bg-gray-50 transition-colors">
-              <span className={`inline-block font-bold text-sm w-7 h-7 text-center leading-7 rounded-full mb-1 ${
+            <div 
+              key={day} 
+              className="min-h-[80px] md:min-h-[120px] p-0.5 md:p-1 border-l border-b border-gray-100 relative group hover:bg-blue-50/50 transition-colors cursor-pointer"
+              onClick={() => {
+                setCreatingTripDate(new Date(year, month, day));
+                setNewTripForm({ client_name: 'לקוח כללי', location: '', start_time: '08:00', end_time: '16:00', capacity: 1 });
+              }}
+            >
+              <span className={`inline-block font-bold text-[10px] md:text-sm w-5 h-5 md:w-7 md:h-7 text-center leading-5 md:leading-7 rounded-full mb-1 ${
                 new Date().getDate() === day && new Date().getMonth() === month && new Date().getFullYear() === year 
                   ? 'bg-blue-600 text-white' 
                   : 'text-gray-500'
               }`}>
                 {day}
               </span>
-                            <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-0.5 md:gap-1">
                 {dayTrips.map(trip => {
                     const tripStyle = getTripColor(trip);
                     return (
@@ -164,7 +318,10 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                     className={tripStyle.className}
                     style={tripStyle.style}
                     title={getFullTooltip(trip)}
-                    onClick={() => setSelectedTrip(trip)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedTrip(trip);
+                    }}
                   >
                     <span className="truncate">{getTripLabel(trip)}</span>
                     <button 
@@ -193,28 +350,144 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm" onClick={() => setSelectedTrip(null)}>
           <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-md w-full animate-fade-in text-right" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-4">
-              <h3 className="text-2xl font-bold text-gray-800">{selectedTrip.client?.name || 'לקוח לא ידוע'}</h3>
-              <button onClick={() => { setSelectedTrip(null); setReportingAssignment(null); }} className="text-gray-400 hover:text-gray-600 p-1">✕</button>
+              <h3 className="text-2xl font-bold text-gray-800">{selectedTrip.client?.name === 'לקוח כללי' ? selectedTrip.location : (selectedTrip.client?.name || 'לקוח לא ידוע')}</h3>
+              <div className="flex items-center gap-2">
+                {!quickEditMode && (
+                  <button onClick={() => {
+                    setQuickEditForm({
+                      client_name: selectedTrip.client?.name || '',
+                      location: selectedTrip.location || '',
+                      start_date: selectedTrip.start_date.substring(0, 16),
+                      end_date: selectedTrip.end_date ? selectedTrip.end_date.substring(0, 16) : '',
+                      capacity: selectedTrip.capacity || 0,
+                      roles_requirements: selectedTrip.roles_requirements || {},
+                      color: selectedTrip.color || ''
+                    });
+                    setQuickEditMode(true);
+                    setReportingAssignment(null);
+                  }} className="text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded text-xs font-bold transition-colors">
+                    ✏️ עריכה מהירה
+                  </button>
+                )}
+                <button onClick={() => { setSelectedTrip(null); setReportingAssignment(null); setQuickEditMode(false); }} className="text-gray-400 hover:text-gray-600 p-1">✕</button>
+              </div>
             </div>
             
-            <div className="space-y-4 mb-6">
-              <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
-                <div className="text-blue-600">📍</div>
+            {quickEditMode ? (
+              <div className="space-y-4 mb-6 p-4 bg-blue-50/30 rounded-lg border border-blue-100">
                 <div>
-                  <div className="text-xs text-gray-500 font-bold">מיקום הטיול</div>
-                  <div className="text-gray-800 font-medium">{selectedTrip.location}</div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">מיקום</label>
+                  <input type="text" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.location} onChange={e => setQuickEditForm({...quickEditForm, location: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">שעת התחלה</label>
+                  <input type="datetime-local" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.start_date} onChange={e => setQuickEditForm({...quickEditForm, start_date: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">שעת סיום</label>
+                  <input type="datetime-local" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.end_date} onChange={e => setQuickEditForm({...quickEditForm, end_date: e.target.value})} />
+                </div>
+                <div className="flex justify-end gap-2 mt-4 pt-2 border-t border-blue-100">
+                  <button onClick={() => setQuickEditMode(false)} className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200 rounded">ביטול</button>
+                  <button 
+                    disabled={updateTripMutation.isPending}
+                    onClick={() => updateTripMutation.mutate(quickEditForm)}
+                    className="px-3 py-1.5 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded font-bold"
+                  >
+                    {updateTripMutation.isPending ? 'שומר...' : 'שמור שינויים'}
+                  </button>
+                </div>
+                
+                {/* Employee Assignment inside Quick Edit */}
+                <div className="mt-6 pt-4 border-t border-blue-200">
+                  <h4 className="text-sm font-bold text-blue-900 mb-2">➕ הוסף עובד לטיול זה</h4>
+                  <div className="relative mb-2">
+                    <input 
+                      type="text" 
+                      placeholder="התחל להקליד שם עובד..."
+                      className="w-full p-2 text-sm border border-gray-300 rounded"
+                      value={assignEmployeeName}
+                      onChange={(e) => {
+                        setAssignEmployeeName(e.target.value);
+                        setShowEmployeeDropdown(true);
+                      }}
+                      onFocus={() => setShowEmployeeDropdown(true)}
+                    />
+                    {showEmployeeDropdown && assignEmployeeName && (
+                      <div className="absolute z-10 w-full bg-white border border-gray-200 mt-1 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                        {filteredEmployees.map(emp => (
+                          <div 
+                            key={emp.id} 
+                            className="p-2 text-sm hover:bg-blue-50 cursor-pointer"
+                            onClick={() => {
+                              setAssignEmployeeName(emp.full_name);
+                              setShowEmployeeDropdown(false);
+                            }}
+                          >
+                            {emp.full_name}
+                          </div>
+                        ))}
+                        {filteredEmployees.length === 0 && (
+                          <div className="p-2 text-sm text-gray-500 italic">
+                            לא נמצא עובד כזה. לחיצה על "שבץ עובד" תיצור עובד חדש.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <select
+                    className="w-full p-2 text-sm border border-gray-300 rounded mb-2 bg-white"
+                    value={assignEmployeeRole}
+                    onChange={e => setAssignEmployeeRole(e.target.value)}
+                  >
+                    <option value="כללי">כללי</option>
+                    <option value="חובש">חובש</option>
+                    <option value="מע״ר">מע״ר</option>
+                    <option value="מע״ר חמוש">מע״ר חמוש</option>
+                    <option value="פראמדיק">פראמדיק</option>
+                    <option value="רופא">רופא</option>
+                    <option value="מלווה נשק">מלווה נשק</option>
+                    <option value="שומר לילה">שומר לילה</option>
+                    <option value="נהג">נהג</option>
+                  </select>
+                  <button 
+                    disabled={!assignEmployeeName || assignEmployeeMutation.isPending}
+                    onClick={() => {
+                      const existing = employees?.find(e => e.full_name === assignEmployeeName);
+                      assignEmployeeMutation.mutate({
+                        trip_id: selectedTrip.id,
+                        user_id: existing?.id,
+                        new_user_name: !existing ? assignEmployeeName : undefined,
+                        role: assignEmployeeRole
+                      });
+                    }}
+                    className="mt-2 w-full px-3 py-2 text-sm bg-indigo-600 text-white hover:bg-indigo-700 rounded font-bold disabled:opacity-50"
+                  >
+                    {assignEmployeeMutation.isPending ? 'משבץ...' : 'שבץ עובד'}
+                  </button>
                 </div>
               </div>
-              
-              <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
-                <div className="text-blue-600">⏰</div>
-                <div>
-                  <div className="text-xs text-gray-500 font-bold">שעות התחלה וסיום</div>
-                  <div className="text-gray-800 font-medium">
-                    {new Date(selectedTrip.start_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})} - {selectedTrip.end_date ? new Date(selectedTrip.end_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'}) : 'לא הוגדר'}
+            ) : (
+              <div className="space-y-4 mb-6">
+                <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
+                  <div className="text-blue-600">📍</div>
+                  <div>
+                    <div className="text-xs text-gray-500 font-bold">מיקום / פרטים</div>
+                    <div className="text-gray-800 font-medium">{selectedTrip.client?.name === 'לקוח כללי' ? 'מיובא מיומן גוגל' : selectedTrip.location}</div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
+                  <div className="text-blue-600">⏰</div>
+                  <div>
+                    <div className="text-xs text-gray-500 font-bold">שעות התחלה וסיום</div>
+                    <div className="text-gray-800 font-medium">
+                      {new Date(selectedTrip.start_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})} - {selectedTrip.end_date ? new Date(selectedTrip.end_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'}) : 'לא הוגדר'}
+                    </div>
                   </div>
                 </div>
               </div>
+            )}
 
               <div className="bg-gray-50 p-4 rounded-lg">
                 <div className="text-sm text-gray-500 font-bold mb-2">צוות מאושר בטיול ({selectedTrip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned').length || 0} / {selectedTrip.capacity})</div>
@@ -226,7 +499,7 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                       <div key={a.id} className="flex justify-between items-center text-sm bg-white p-2 border border-gray-100 rounded shadow-sm">
                         <span className="font-bold text-gray-800">{a.user?.full_name}</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-500 font-medium text-xs">{a.role || 'כללי'}</span>
+                          <span className="text-gray-500 font-medium text-xs bg-gray-100 px-2 py-0.5 rounded">{a.role || 'כללי'}</span>
                           <button
                             onClick={() => {
                               setReportingAssignment(a);
@@ -237,7 +510,18 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                             }}
                             className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-1 rounded text-xs font-bold transition-colors"
                           >
-                            + דיווח
+                            דו״ח
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm(`האם אתה בטוח שברצונך למחוק את ${a.user?.full_name} מהטיול?`)) {
+                                removeAssignmentMutation.mutate({ trip_id: selectedTrip.id, user_id: a.user_id });
+                              }
+                            }}
+                            className="text-red-400 hover:text-red-600 p-1 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                            title="הסר עובד מהטיול"
+                          >
+                            ✕
                           </button>
                         </div>
                       </div>
@@ -245,7 +529,6 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                   )}
                 </div>
               </div>
-            </div>
 
             {reportingAssignment && (
               <div className="mt-4 p-4 border border-blue-200 bg-blue-50/50 rounded-lg">
@@ -295,9 +578,113 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
               </div>
             )}
 
-            <div className="flex justify-end pt-4 mt-4 border-t border-gray-100">
-              <button onClick={() => { setSelectedTrip(null); setReportingAssignment(null); }} className="px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-lg transition-colors">
+            <div className="flex justify-between pt-4 mt-4 border-t border-gray-100">
+              <button 
+                onClick={() => {
+                  if (window.confirm('האם אתה בטוח שברצונך למחוק טיול זה לצמיתות?')) {
+                    deleteTripMutation.mutate(selectedTrip.id);
+                  }
+                }} 
+                className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 font-bold rounded-lg transition-colors flex items-center gap-2"
+                disabled={deleteTripMutation.isPending}
+              >
+                {deleteTripMutation.isPending ? 'מוחק...' : 'מחק טיול'}
+              </button>
+              <button onClick={() => { setSelectedTrip(null); setReportingAssignment(null); setQuickEditMode(false); }} className="px-5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-lg transition-colors">
                 סגור
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Manual Trip Modal */}
+      {creatingTripDate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm" onClick={() => setCreatingTripDate(null)}>
+          <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-sm w-full animate-fade-in text-right" onClick={e => e.stopPropagation()}>
+            <h3 className="text-xl font-bold text-gray-800 mb-4">
+              הוספת טיול חדש: {creatingTripDate.toLocaleDateString('he-IL')}
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">כותרת הטיול (מיקום)</label>
+                <input 
+                  type="text" 
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                  value={newTripForm.location}
+                  onChange={e => setNewTripForm({...newTripForm, location: e.target.value})}
+                  placeholder="למשל: טיול חרמון 2 חובשים"
+                />
+              </div>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="block text-sm font-bold text-gray-700 mb-1">משעה</label>
+                  <input 
+                    type="time" 
+                    className="w-full p-2 border border-gray-300 rounded"
+                    value={newTripForm.start_time}
+                    onChange={e => setNewTripForm({...newTripForm, start_time: e.target.value})}
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-bold text-gray-700 mb-1">עד שעה</label>
+                  <input 
+                    type="time" 
+                    className="w-full p-2 border border-gray-300 rounded"
+                    value={newTripForm.end_time}
+                    onChange={e => setNewTripForm({...newTripForm, end_time: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">כמות עובדים דרושה</label>
+                <input 
+                  type="number" 
+                  min="1"
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                  value={newTripForm.capacity}
+                  onChange={e => setNewTripForm({...newTripForm, capacity: parseInt(e.target.value) || 1})}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <button 
+                onClick={() => setCreatingTripDate(null)} 
+                className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                ביטול
+              </button>
+              <button 
+                disabled={!newTripForm.location || createManualTripMutation.isPending}
+                onClick={() => {
+                  const s = new Date(creatingTripDate);
+                  const [sh, sm] = newTripForm.start_time.split(':');
+                  s.setHours(parseInt(sh), parseInt(sm));
+                  
+                  const e = new Date(creatingTripDate);
+                  const [eh, em] = newTripForm.end_time.split(':');
+                  e.setHours(parseInt(eh), parseInt(em));
+
+                  // Convert to ISO strings avoiding timezone shift issues locally if possible, but standard new Date().toISOString() works.
+                  // Since we just want local time strings formatted properly:
+                  const formatLocal = (d: Date) => {
+                     const pad = (n: number) => n.toString().padStart(2, '0');
+                     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                  };
+
+                  createManualTripMutation.mutate({
+                    client_name: newTripForm.client_name,
+                    location: newTripForm.location,
+                    start_date: formatLocal(s),
+                    end_date: formatLocal(e),
+                    capacity: newTripForm.capacity,
+                    roles_requirements: {},
+                    color: ""
+                  });
+                }}
+                className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                {createManualTripMutation.isPending ? 'יוצר...' : 'שמור אירוע'}
               </button>
             </div>
           </div>

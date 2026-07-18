@@ -1,9 +1,9 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from app.database import engine, Base
-from app.models import user, client, trip, trip_assignment, trip_report
+from app.models import user, client, trip, trip_assignment, trip_report, payroll_adjustment
 from app.models import refresh_token  # register RefreshToken table
-from app.routers import auth, trips, reports, webhooks, clients, admin
+from app.routers import auth, trips, reports, webhooks, clients, admin, payroll
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -37,6 +37,7 @@ app.include_router(clients.router)
 app.include_router(reports.router)
 app.include_router(webhooks.router, prefix="/api")
 app.include_router(admin.router)
+app.include_router(payroll.router)
 
 @app.get("/")
 def read_root():

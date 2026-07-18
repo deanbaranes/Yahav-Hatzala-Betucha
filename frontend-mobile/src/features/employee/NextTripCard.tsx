@@ -16,6 +16,15 @@ export default function NextTripCard() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['nextTrip'] })
   });
 
+  const cancelMutation = useMutation({
+    mutationFn: () => axiosClient.post(`/trips/${trip.id}/cancel`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['nextTrip'] });
+      queryClient.invalidateQueries({ queryKey: ['available-trips'] });
+      if (confirm('ביטול הרישום בוצע בהצלחה והודעה נשלחה למנהל.')) {}
+    }
+  });
+
   if (isLoading) return <div className="animate-pulse bg-gray-200 h-32 rounded-xl mb-4"></div>;
   if (!trip) return <div className="p-4 bg-white rounded-xl shadow mb-4 text-right" dir="rtl">אין טיולים קרובים</div>;
 
@@ -32,15 +41,28 @@ export default function NextTripCard() {
       <h3 className="text-xl font-bold mb-2">{trip.location}</h3>
       <p className="text-gray-600 mb-4">{new Date(trip.start_date).toLocaleString('he-IL')}</p>
       
-      {isUrgent && (
+      <div className="flex flex-col gap-3 mt-4">
+        {isUrgent && (
+          <button 
+            onClick={() => confirmMutation.mutate(trip.assignment_id)}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-lg transition-colors"
+            disabled={confirmMutation.isPending}
+          >
+            {confirmMutation.isPending ? 'מאשר...' : 'אשר הגעה'}
+          </button>
+        )}
         <button 
-          onClick={() => confirmMutation.mutate(trip.assignment_id)}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-lg transition-colors"
-          disabled={confirmMutation.isPending}
+          onClick={() => {
+            if (window.confirm('האם אתה בטוח שברצונך לבטל את השתתפותך בטיול זה? מנהל המערכת יעודכן.')) {
+              cancelMutation.mutate();
+            }
+          }}
+          className="w-full py-3 rounded-lg font-bold text-sm text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors"
+          disabled={cancelMutation.isPending}
         >
-          {confirmMutation.isPending ? 'מאשר...' : 'אשר הגעה'}
+          {cancelMutation.isPending ? 'מבטל...' : 'בטל רישום לטיול'}
         </button>
-      )}
+      </div>
     </div>
   );
 }

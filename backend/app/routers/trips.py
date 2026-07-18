@@ -104,6 +104,7 @@ def get_available_trips(db: Session = Depends(get_db), current_user: User = Depe
             "role_counts": role_counts,
             "assigned_count": assigned_count,
             "user_status": user_assignment.status if user_assignment else None,
+            "user_is_confirmed": user_assignment.is_confirmed if user_assignment else False,
             "client": {"id": str(t.client.id), "name": t.client.name} if t.client else None
         })
     return result
@@ -170,6 +171,11 @@ def join_trip(trip_id: str, request: JoinTripRequest, db: Session = Depends(get_
     db.commit()
     db.refresh(new_assignment)
     
+    # Mock sending SMS to Admin Yahav
+    admin_phone = "0501234567" # Yahav's phone
+    sms_msg = f"הודעת מערכת: העובד {current_user.full_name} נרשם לטיול ב-{trip.location}. נא להיכנס לאפליקציה כדי לאשר את השיבוץ."
+    print(f"*** SENDING SMS TO {admin_phone}: {sms_msg} ***")
+    
     return {"message": f"Successfully joined. Status: {status}", "status": status}
 
 @router.post("/{trip_id}/cancel")
@@ -184,8 +190,14 @@ def cancel_trip(trip_id: str, db: Session = Depends(get_db), current_user: User 
         raise HTTPException(status_code=404, detail="Assignment not found")
         
     was_assigned = assignment.status == "assigned"
+    trip = db.query(Trip).filter(Trip.id == trip_id).first()
     assignment.status = "cancelled"
     db.commit()
+    
+    # Mock sending SMS to Admin Yahav
+    admin_phone = "0501234567" # Yahav's phone
+    sms_msg = f"הודעת מערכת: העובד {current_user.full_name} ביטל את הרישום שלו לטיול ב-{trip.location} ב-{trip.start_date.strftime('%d/%m/%Y')}."
+    print(f"*** SENDING SMS TO {admin_phone}: {sms_msg} ***")
     
     # If the user was assigned, we might have a waitlisted user to promote
     promoted_user = None
@@ -228,6 +240,79 @@ def get_next_trip(db: Session = Depends(get_db), current_user: User = Depends(ge
         "is_confirmed": assignment.is_confirmed,
         "client": {"name": t.client.name} if t.client else None
     }
+
+class AdminAssignRequest(BaseModel):
+    user_id: str
+    role: str = "כללי"
+    status: str = "assigned"
+    is_confirmed: bool = True
+
+@router.post("/{trip_id}/assign")
+def admin_assign_trip(trip_id: str, request: AdminAssignRequest, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
+    trip = db.query(Trip).filter(Trip.id == trip_id).first()
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+        
+    existing = db.query(TripAssignment).filter(
+        TripAssignment.trip_id == trip_id,
+        TripAssignment.user_id == request.user_id
+    ).first()
+    
+    if existing:
+        existing.status = request.status
+        existing.is_confirmed = request.is_confirmed
+        existing.role = request.role
+        
+        # Ensure report exists
+        from app.models.trip_report import TripReport
+        report = db.query(TripReport).filter(TripReport.assignment_id == existing.id).first()
+        if not report:
+            new_report = TripReport(
+                assignment_id=existing.id,
+                start_time=trip.start_date,
+                end_time=trip.end_date,
+                overtime_decimal=0,
+                expenses=0
+            )
+            db.add(new_report)
+    else:
+        new_assignment = TripAssignment(
+            trip_id=trip_id,
+            user_id=request.user_id,
+            status=request.status,
+            role=request.role,
+            is_confirmed=request.is_confirmed
+        )
+        db.add(new_assignment)
+        db.flush() # flush to get new_assignment.id
+        
+        # Auto-create TripReport for payroll calculation
+        from app.models.trip_report import TripReport
+        new_report = TripReport(
+            assignment_id=new_assignment.id,
+            start_time=trip.start_date,
+            end_time=trip.end_date,
+            overtime_decimal=0,
+            expenses=0
+        )
+        db.add(new_report)
+
+    db.commit()
+    return {"message": "Assigned and reported successfully"}
+
+@router.delete("/{trip_id}/assign/{user_id}")
+def admin_remove_trip_assignment(trip_id: str, user_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
+    assignment = db.query(TripAssignment).filter(
+        TripAssignment.trip_id == trip_id,
+        TripAssignment.user_id == user_id
+    ).first()
+    
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Assignment not found")
+        
+    db.delete(assignment)
+    db.commit()
+    return {"message": "Assignment deleted successfully"}
 
 @router.get("/")
 def get_trips(db: Session = Depends(get_db)):
@@ -396,25 +481,31 @@ def import_from_ical(
                 if hasattr(end_dt, 'tzinfo') and end_dt.tzinfo is not None:
                     end_dt = end_dt.astimezone(timezone.utc).replace(tzinfo=None)
 
-            # Skip events in the far past (over 1 year ago)
-            if (datetime.utcnow() - start_dt).days > 365:
+            # Skip events before July 1st, 2026 (prevent importing old history)
+            if start_dt < datetime(2026, 7, 1):
                 skipped += 1
                 continue
 
-            # Determine client name from summary (use the event title as client name)
-            client_name = summary if summary else body.default_client_name
+            # Instead of creating a new client for each event, we assign them to a generic 'לקוח כללי'
+            client_name = "לקוח כללי"
 
-            # Find or create client
-            client = db.query(Client).filter(Client.name.ilike(client_name)).first()
+            # Find or create "לקוח כללי"
+            client = db.query(Client).filter(Client.name == client_name).first()
             if not client:
                 client = Client(name=client_name)
                 db.add(client)
                 db.flush()  # get ID without committing
 
-            # Skip if trip with same client + start_date already exists
+            # Combine summary and location so no data is lost
+            trip_location = location
+            if summary and summary != location:
+                trip_location = f"{summary} - {location}" if location != "לא צוין" else summary
+
+            # Skip if trip with same client + start_date + location already exists
             existing = db.query(Trip).filter(
                 Trip.client_id == client.id,
-                Trip.start_date == start_dt
+                Trip.start_date == start_dt,
+                Trip.location == trip_location
             ).first()
             if existing:
                 skipped += 1
@@ -422,7 +513,7 @@ def import_from_ical(
 
             trip = Trip(
                 client_id=client.id,
-                location=location,
+                location=trip_location,
                 start_date=start_dt,
                 end_date=end_dt,
                 capacity=0,

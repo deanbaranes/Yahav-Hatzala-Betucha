@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Map, FileText, Settings, LogOut, Menu, X, Users } from 'lucide-react';
+import { Home, Map, FileText, Settings, LogOut, Menu, X, Users, ChevronRight, ChevronLeft, Calculator, CalendarDays } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -16,40 +17,61 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { to: '/admin', icon: Home, label: 'לוח בקרה ראשי' },
     { to: '/admin/trips', icon: Map, label: 'ניהול טיולים' },
     { to: '/admin/clients', icon: Users, label: 'לקוחות ויתרות' },
-    { to: '/admin/reports', icon: FileText, label: 'דוחות ושכר' },
+    { to: '/admin/reports', icon: FileText, label: 'דוחות שטח' },
+    { to: '/admin/matrix', icon: CalendarDays, label: 'מטריצת משמרות' },
+    { to: '/admin/payroll', icon: Calculator, label: 'ניהול שכר ממוכן' },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50 flex" dir="rtl">
       {/* Sidebar - Desktop */}
-      <aside className="hidden md:flex w-72 flex-col bg-white border-l border-gray-200 shadow-sm z-10">
-        <div className="p-6 border-b border-gray-100 flex items-center justify-center">
-          <h1 className="text-2xl font-black text-blue-700 tracking-tight">יהב הצלה<span className="text-gray-400 font-light"> בטוחה</span></h1>
+      <aside className={`hidden md:flex flex-col bg-slate-900 text-white shadow-xl z-10 transition-all duration-300 relative ${isMinimized ? 'w-20' : 'w-72'}`}>
+        {/* Toggle Button */}
+        <button 
+          onClick={() => setIsMinimized(!isMinimized)}
+          className="absolute -left-3 top-8 bg-blue-600 text-white p-1 rounded-full shadow-lg hover:bg-blue-500 transition-colors z-50"
+        >
+          {isMinimized ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+        </button>
+
+        <div className={`p-6 border-b border-slate-800 flex items-center ${isMinimized ? 'justify-center px-0' : 'justify-start'} h-20 transition-all`}>
+          {isMinimized ? (
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg">י</div>
+          ) : (
+            <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center text-white text-sm">יהב</div>
+              הצלה<span className="text-blue-300 font-light"> בטוחה</span>
+            </h1>
+          )}
         </div>
-        <nav className="flex-1 p-4 space-y-2">
+        
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {navItems.map((item) => (
             <NavLink 
               key={item.to} 
               to={item.to}
               end={item.to === '/admin'}
+              title={isMinimized ? item.label : undefined}
               className={({ isActive }) => 
-                `flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${
-                  isActive ? 'bg-blue-50 text-blue-700 shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                `flex items-center gap-3 py-3 rounded-xl font-bold transition-all ${isMinimized ? 'justify-center px-0' : 'px-4'} ${
+                  isActive ? 'bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-md' : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                 }`
               }
             >
-              <item.icon size={22} className="stroke-[2.5px]" />
-              {item.label}
+              <item.icon size={22} className={isMinimized ? '' : 'stroke-[2.5px]'} />
+              {!isMinimized && <span>{item.label}</span>}
             </NavLink>
           ))}
         </nav>
-        <div className="p-4 border-t border-gray-100">
+        
+        <div className="p-4 border-t border-slate-800">
           <button 
             onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-4 py-3 text-red-500 hover:bg-red-50 rounded-xl font-bold transition-colors"
+            title={isMinimized ? 'התנתק' : undefined}
+            className={`flex items-center gap-3 w-full py-3 text-red-400 hover:bg-red-500/10 rounded-xl font-bold transition-colors ${isMinimized ? 'justify-center px-0' : 'px-4'}`}
           >
-            <LogOut size={22} className="stroke-[2.5px]" />
-            התנתק מהמערכת
+            <LogOut size={22} className={isMinimized ? '' : 'stroke-[2.5px]'} />
+            {!isMinimized && <span>התנתק מהמערכת</span>}
           </button>
         </div>
       </aside>

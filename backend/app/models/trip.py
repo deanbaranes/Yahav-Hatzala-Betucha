@@ -18,4 +18,4 @@ class Trip(Base):
     color = Column(String, nullable=True)  # Custom color hex e.g. '#039BE5'
 
     client = relationship("Client", back_populates="trips")
-    assignments = relationship("TripAssignment", back_populates="trip")
+    assignments = relationship("TripAssignment", back_populates="trip", cascade="all, delete-orphan")

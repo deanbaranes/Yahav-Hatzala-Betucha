@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import StaffApprovalsTable from '../../features/admin/StaffApprovalsTable';
 import TripCalendar from '../../features/admin/TripCalendar';
-import { Calendar as CalendarIcon, CheckCircle2, Clock, List } from 'lucide-react';
+import { Calendar as CalendarIcon, CheckCircle2, Clock, List, Map } from 'lucide-react';
 
 export default function Dashboard() {
   const [viewMode, setViewMode] = React.useState<'calendar' | 'list'>('calendar');
@@ -16,8 +16,15 @@ export default function Dashboard() {
     }
   });
 
-  // Group trips by date
-  const tripsByDate = trips?.reduce((acc: any, trip: any) => {
+  // Group trips by date, sorting closest first and filtering out past days
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  
+  const sortedTrips = trips ? [...trips]
+    .filter(t => new Date(t.start_date) >= todayStart)
+    .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime()) : [];
+    
+  const tripsByDate = sortedTrips.reduce((acc: any, trip: any) => {
     const dateStr = new Date(trip.start_date).toLocaleDateString('he-IL');
     if (!acc[dateStr]) acc[dateStr] = [];
     acc[dateStr].push(trip);
@@ -37,23 +44,28 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 animate-fade-in pb-10" dir="rtl">
-      <header className="mb-8 flex justify-between items-end">
+      <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-gradient-to-l from-slate-900 to-slate-800 p-6 md:p-8 rounded-3xl shadow-lg text-white">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">סקירה כללית</h1>
-          <p className="text-gray-500 text-lg">מעקב יומי אחרי הטיולים והשיבוצים הקרובים.</p>
+          <h1 className="text-2xl md:text-4xl font-black tracking-tight mb-2 flex items-center gap-3 md:gap-4">
+            <span className="bg-white/10 p-2 md:p-3 rounded-xl backdrop-blur-md">
+              <Map className="text-blue-400 w-6 h-6 md:w-8 md:h-8" />
+            </span>
+            סקירה כללית
+          </h1>
+          <p className="text-slate-400 text-sm md:text-lg font-medium max-w-xl">מעקב יומי אחרי הטיולים, שיבוצים קרובים, וסטטוס אישורי צוות.</p>
         </div>
-        <div className="flex bg-gray-100 p-1 rounded-xl">
+        <div className="flex flex-wrap bg-white/10 p-1.5 rounded-2xl backdrop-blur-md shadow-inner w-full md:w-auto">
           <button 
             onClick={() => setViewMode('calendar')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold transition-colors ${viewMode === 'calendar' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`flex-1 md:flex-none justify-center flex items-center gap-2 px-3 md:px-5 py-2 md:py-2.5 rounded-xl font-bold text-sm md:text-base transition-all ${viewMode === 'calendar' ? 'bg-blue-500 text-white shadow-md' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}
           >
             <CalendarIcon size={18} /> תצוגת יומן
           </button>
           <button 
             onClick={() => setViewMode('list')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold transition-colors ${viewMode === 'list' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`flex-1 md:flex-none justify-center flex items-center gap-2 px-3 md:px-5 py-2 md:py-2.5 rounded-xl font-bold text-sm md:text-base transition-all ${viewMode === 'list' ? 'bg-blue-500 text-white shadow-md' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}
           >
-            <List size={18} /> רשימה יומיות
+            <List size={18} /> רשימה יומית
           </button>
         </div>
       </header>
@@ -64,9 +76,10 @@ export default function Dashboard() {
           {viewMode === 'calendar' ? (
             <TripCalendar trips={trips || []} />
           ) : (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                <List className="text-blue-600" /> טיולים לפי תאריכים
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+              <h2 className="text-2xl font-black text-slate-800 mb-8 flex items-center gap-3">
+                <span className="bg-blue-50 text-blue-600 p-2 rounded-lg"><List size={24} /></span>
+                טיולים לפי תאריכים
               </h2>
             
             {isLoading ? (
@@ -98,9 +111,11 @@ export default function Dashboard() {
                             <div className="flex justify-between items-start">
                               <div>
                                 <h4 className={`font-bold text-lg ${isFullyStaffed ? 'text-blue-900' : 'text-green-900'}`}>
-                                  {trip.client?.name || 'לקוח לא ידוע'}
+                                  {trip.client?.name === 'לקוח כללי' ? trip.location : (trip.client?.name || 'לקוח לא ידוע')}
                                 </h4>
-                                <p className="text-gray-600 font-medium">{trip.location}</p>
+                                <p className="text-gray-600 font-medium">
+                                  {trip.client?.name === 'לקוח כללי' ? 'מיובא מיומן גוגל' : trip.location}
+                                </p>
                               </div>
                               
                               <div className="flex flex-col items-end gap-2">

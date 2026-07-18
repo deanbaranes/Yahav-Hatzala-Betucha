@@ -10,6 +10,9 @@ export default function TripCard({ trip }: { trip: any }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['available-trips'] });
       queryClient.invalidateQueries({ queryKey: ['nextTrip'] });
+    },
+    onError: (err: any) => {
+      alert('שגיאה: ' + (err.response?.data?.detail || 'לא ניתן להשתבץ לטיול זה.'));
     }
   });
 
@@ -34,8 +37,12 @@ export default function TripCard({ trip }: { trip: any }) {
       
       {trip.user_status ? (
         <div className="flex flex-col gap-2">
-          <div className={`w-full py-4 rounded-xl font-bold text-lg text-center ${trip.user_status === 'assigned' ? 'bg-blue-100 text-blue-800 border-2 border-blue-200' : 'bg-yellow-100 text-yellow-800 border-2 border-yellow-200'}`}>
-            {trip.user_status === 'assigned' ? 'הינך משובץ לטיול זה ✓' : 'הינך ברשימת המתנה לטיול זה ⏳'}
+          <div className={`w-full py-4 rounded-xl font-bold text-lg text-center ${trip.user_status === 'waitlisted' ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-200' : trip.user_is_confirmed ? 'bg-blue-100 text-blue-800 border-2 border-blue-200' : 'bg-purple-100 text-purple-800 border-2 border-purple-200'}`}>
+            {trip.user_status === 'waitlisted' 
+              ? 'הינך ברשימת המתנה לטיול זה ⏳' 
+              : trip.user_is_confirmed 
+                ? 'שיבוצך לטיול זה אושר ✓' 
+                : 'נשלחה בקשה לשיבוץ, ממתין לאישור מנהל ⏳'}
           </div>
           <button 
             onClick={() => {
@@ -72,6 +79,10 @@ export default function TripCard({ trip }: { trip: any }) {
               </div>
             );
           })}
+        </div>
+      ) : trip.capacity === 0 ? (
+        <div className="w-full py-4 rounded-xl font-bold text-lg text-center bg-gray-100 text-gray-500 border border-gray-200">
+          טיול זה טרם הוגדר עם תפקידים
         </div>
       ) : (
         <button 

@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -13,6 +13,7 @@ class Client(Base):
     email = Column(String, nullable=True)
     phone = Column(String, nullable=True)
     balance = Column(String, nullable=True)
+    debt_start_date = Column(DateTime, nullable=True)
     notes = Column(String, nullable=True)
 
     trips = relationship("Trip", back_populates="client")

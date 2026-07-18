@@ -48,8 +48,12 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
                 }`
               }
             >
-              <item.icon size={24} className={({ isActive }: any) => isActive ? 'stroke-[2.5px]' : ''} />
-              <span className="text-xs">{item.label}</span>
+              {({ isActive }) => (
+                <>
+                  <item.icon size={24} className={isActive ? 'stroke-[2.5px]' : ''} />
+                  <span className="text-xs">{item.label}</span>
+                </>
+              )}
             </NavLink>
           ))}
         </div>

@@ -4,7 +4,9 @@ import AdminLayout from './features/admin/AdminLayout';
 import Dashboard from './pages/admin/Dashboard';
 import Trips from './pages/admin/Trips';
 import Reports from './pages/admin/Reports';
+import EmployeeMatrix from './pages/admin/EmployeeMatrix';
 import Clients from './pages/admin/Clients';
+import PayrollManagement from './pages/admin/PayrollManagement';
 import Home from './pages/employee/Home';
 import EmployeeTrips from './pages/employee/Trips';
 import Report from './pages/employee/Report';
@@ -51,6 +53,8 @@ const router = createBrowserRouter([
           { index: true, element: <Dashboard /> },
           { path: 'trips', element: <Trips /> },
           { path: 'clients', element: <Clients /> },
+          { path: 'matrix', element: <EmployeeMatrix /> },
+          { path: 'payroll', element: <PayrollManagement /> },
           { path: 'reports', element: <Reports /> }
         ]
       }

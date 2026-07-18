@@ -11,9 +11,13 @@ from app.models.trip_assignment import TripAssignment
 from app.models.trip import Trip
 from app.models.user import User
 from app.schemas import TripReportCreate, TripReportOut
-from app.dependencies import get_employee_user
+from app.dependencies import get_employee_user, get_admin_user
+from pydantic import BaseModel
+from decimal import Decimal
+from datetime import datetime
+from sqlalchemy import extract
 
-router = APIRouter(prefix="/api/reports", tags=["reports"])
+router = APIRouter(prefix="/reports", tags=["reports"])
 
 @router.get("/my-pending-reports")
 def get_my_pending_reports(db: Session = Depends(get_db), current_user: User = Depends(get_employee_user)):
@@ -154,7 +158,7 @@ def submit_trip_report_admin(report_data: TripReportCreate, db: Session = Depend
 
 @router.get("/")
 def get_all_reports(db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
-    reports = db.query(TripReport).join(TripAssignment).join(Trip).join(User).order_by(TripReport.created_at.desc()).all()
+    reports = db.query(TripReport).join(TripAssignment).join(Trip).join(User).order_by(TripReport.start_time.desc()).all()
     
     result = []
     for r in reports:
@@ -169,7 +173,7 @@ def get_all_reports(db: Session = Depends(get_db), current_user: User = Depends(
             "overtime_decimal": r.overtime_decimal,
             "expenses": r.expenses,
             "receipt_url": r.receipt_url,
-            "created_at": r.created_at.isoformat(),
+            "created_at": r.start_time.isoformat(),
             "employee": {
                 "id": str(u.id),
                 "full_name": u.full_name,
@@ -185,4 +189,57 @@ def get_all_reports(db: Session = Depends(get_db), current_user: User = Depends(
         })
     return result
 
+class ReportUpdate(BaseModel):
+    start_time: datetime
+    end_time: datetime
+    overtime_decimal: float
+    expenses: float
 
+@router.put("/{report_id}")
+def update_report(report_id: str, data: ReportUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
+    report = db.query(TripReport).filter(TripReport.id == report_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+        
+    report.start_time = data.start_time
+    report.end_time = data.end_time
+    
+    # Auto-recalculate overtime based on the new times, unless they specifically inputted a massive override
+    # but for safety, we just recalculate it here to ensure it's accurate to the times.
+    new_overtime = calculate_overtime_decimal(data.start_time, data.end_time)
+    
+    # If the user explicitly provided a different overtime (e.g. manual override in UI), keep it, otherwise use calculated.
+    # We will just force recalculation because the times changed.
+    report.overtime_decimal = Decimal(str(new_overtime))
+    
+    report.expenses = Decimal(str(data.expenses))
+    db.commit()
+    return {"message": "Report updated"}
+
+@router.get("/matrix/{year}/{month}")
+def get_reports_matrix(year: int, month: int, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
+    # Fetch all assignments in this month that are "assigned"
+    assignments = db.query(TripAssignment).join(Trip).filter(
+        TripAssignment.status == "assigned",
+        extract('year', Trip.start_date) == year,
+        extract('month', Trip.start_date) == month
+    ).all()
+    
+    users_dict = {}
+    for a in assignments:
+        u = a.user
+        date_str = a.trip.start_date.date().isoformat()
+        
+        if str(u.id) not in users_dict:
+            users_dict[str(u.id)] = {"id": str(u.id), "name": u.full_name, "shifts": {}}
+            
+        # See if there is a report for this assignment
+        report = db.query(TripReport).filter(TripReport.assignment_id == a.id).first()
+        
+        users_dict[str(u.id)]["shifts"][date_str] = {
+            "role": a.role,
+            "overtime": float(report.overtime_decimal) if report else 0.0,
+            "report_id": str(report.id) if report else None
+        }
+        
+    return {"matrix": list(users_dict.values())}

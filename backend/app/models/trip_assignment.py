@@ -24,4 +24,4 @@ class TripAssignment(Base):
 
     trip = relationship("Trip", back_populates="assignments")
     user = relationship("User")
-    report = relationship("TripReport", back_populates="assignment", uselist=False)
+    report = relationship("TripReport", back_populates="assignment", uselist=False, cascade="all, delete-orphan")
