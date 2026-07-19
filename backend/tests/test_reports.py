@@ -18,7 +18,7 @@ def test_get_upload_url():
             "fields": {"key": "receipts/uuid-1234.jpg", "AWSAccessKeyId": "test"}
         }
         
-        response = client.get("/api/reports/upload-url")
+        response = client.get("/reports/upload-url")
         
         assert response.status_code == 200
         data = response.json()

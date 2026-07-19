@@ -138,85 +138,8 @@ def export_payroll(employee_id: str, month: int, year: int, db: Session = Depend
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    reports = db.query(TripReport).join(TripAssignment).filter(
-        TripAssignment.user_id == employee_id,
-        extract('month', TripReport.start_time) == month,
-        extract('year', TripReport.start_time) == year
-    ).all()
-
-    days_worked = len(set(r.start_time.date() for r in reports if r.start_time))
-    
-    ot_hours = Decimal(0)
-
-    for r in reports:
-        ot_hours += Decimal(str(r.overtime_decimal or 0))
-
-    hourly_rate = Decimal(str(user.hourly_rate or 0))
-    base_daily = Decimal(str(user.base_daily_hours or 8.6))
-    
-    total_hours = Decimal(days_worked) * base_daily
-
-    adjustments = db.query(PayrollAdjustment).filter(
-        PayrollAdjustment.user_id == employee_id,
-        PayrollAdjustment.month == month,
-        PayrollAdjustment.year == year
-    ).all()
-
-    recovery_pay = Decimal(days_worked) * Decimal('12.00')
-    travel_pay = Decimal(days_worked) * Decimal('22.60')
-    
-    accom_nights = Decimal(0)
-    accom_pay = Decimal(0)
-    other_adjs = Decimal(0)
-    
-    dean_days = 0
-    dean_money = Decimal(0)
-
-    for a in adjustments:
-        amt = Decimal(str(a.amount))
-        if a.type == "הבראה":
-            recovery_pay += amt
-        elif a.type == "נסיעות":
-            travel_pay += amt
-        elif a.type == "לינה":
-            accom_nights += amt
-            accom_pay += amt * Decimal('80.00')
-        elif a.type == "שעות נוספות":
-            ot_hours += amt
-        elif a.type == "שכר יומי" and user.full_name == "דין ברנס":
-            dean_days += 1
-            dean_money += amt
-        else:
-            other_adjs += amt
-
-    if user.full_name == "דין ברנס":
-        days_worked += dean_days
-        total_hours += dean_money / Decimal('60')
-        base_salary = dean_money
-    else:
-        base_salary = Decimal(days_worked) * base_daily * hourly_rate
-        
-    ot_total = ot_hours * hourly_rate * Decimal('1.5')
-
-    gross_total = base_salary + ot_total + recovery_pay + travel_pay + accom_pay + other_adjs
-
-    # Exact format required
-    report_text = f"""שם עובד: {user.full_name}
-ימי עבודה: {days_worked}
-שעות עבודה בחודש: {total_hours.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)}
-שכר בסיס: {base_salary.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)} ₪
-שעות נוספות: {ot_hours.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)} × {hourly_rate} × 1.5 = {ot_total.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)} ₪
-הבראה: {recovery_pay.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)} ₪
-נסיעות: {travel_pay.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)} ₪"""
-
-    if accom_pay > 0:
-        report_text += f"\nלינה ({accom_nights.quantize(Decimal('0'), rounding=ROUND_HALF_UP)} לילות): {accom_pay.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)} ₪"
-
-    if other_adjs > 0:
-        report_text += f"\nתוספות שונות: {other_adjs.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)} ₪"
-
-    report_text += f"""
------------------------------
-סה"כ ברוטו: {gross_total.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)} ₪"""
+    from app.services.payroll_service import PayrollService
+    payroll_service = PayrollService(db)
+    report_text = payroll_service.generate_employee_report(user, month, year)
 
     return {"report": report_text}

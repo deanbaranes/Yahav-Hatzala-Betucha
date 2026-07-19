@@ -8,6 +8,7 @@ from app.models.user import User
 from app.models.trip_assignment import TripAssignment
 from app.schemas import TripCreate, TripOut, JoinTripRequest
 from app.dependencies import get_admin_user, get_current_user
+from app.services.sms_service import SMSService
 from pydantic import BaseModel
 import requests as http_requests
 from icalendar import Calendar as ICalendar
@@ -171,10 +172,10 @@ def join_trip(trip_id: str, request: JoinTripRequest, db: Session = Depends(get_
     db.commit()
     db.refresh(new_assignment)
     
-    # Mock sending SMS to Admin Yahav
+    # Send SMS to Admin Yahav
     admin_phone = "0501234567" # Yahav's phone
     sms_msg = f"הודעת מערכת: העובד {current_user.full_name} נרשם לטיול ב-{trip.location}. נא להיכנס לאפליקציה כדי לאשר את השיבוץ."
-    print(f"*** SENDING SMS TO {admin_phone}: {sms_msg} ***")
+    SMSService.send_sms(admin_phone, sms_msg)
     
     return {"message": f"Successfully joined. Status: {status}", "status": status}
 
@@ -194,15 +195,14 @@ def cancel_trip(trip_id: str, db: Session = Depends(get_db), current_user: User 
     assignment.status = "cancelled"
     db.commit()
     
-    # Mock sending SMS to Admin Yahav
+    # Send SMS to Admin Yahav
     admin_phone = "0501234567" # Yahav's phone
     sms_msg = f"הודעת מערכת: העובד {current_user.full_name} ביטל את הרישום שלו לטיול ב-{trip.location} ב-{trip.start_date.strftime('%d/%m/%Y')}."
-    print(f"*** SENDING SMS TO {admin_phone}: {sms_msg} ***")
+    SMSService.send_sms(admin_phone, sms_msg)
     
     # If the user was assigned, we might have a waitlisted user to promote
     promoted_user = None
     if was_assigned:
-        trip = db.query(Trip).filter(Trip.id == trip_id).first()
         # Find oldest waitlisted
         next_in_line = db.query(TripAssignment).filter(
             TripAssignment.trip_id == trip_id,
@@ -213,8 +213,11 @@ def cancel_trip(trip_id: str, db: Session = Depends(get_db), current_user: User 
             next_in_line.status = "assigned"
             db.commit()
             promoted_user = next_in_line.user_id
-            # TODO: Trigger Twilio SMS notification here (mocked in tests)
-            pass
+            
+            # Send SMS to the newly promoted user
+            if next_in_line.user and next_in_line.user.phone:
+                promoted_msg = f"הודעת מערכת: קודמת לרשימת המשובצים לטיול ב-{trip.location}. נא לוודא שאתה מגיע!"
+                SMSService.send_sms(next_in_line.user.phone, promoted_msg)
             
     return {"message": "Cancelled successfully", "promoted_user": str(promoted_user) if promoted_user else None}
 

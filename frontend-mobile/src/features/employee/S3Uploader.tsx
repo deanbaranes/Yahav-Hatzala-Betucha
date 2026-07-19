@@ -18,7 +18,7 @@ export default function S3Uploader({ onUploadComplete }: { onUploadComplete: (ur
 
     try {
       // Step 1: Get pre-signed URL from our backend
-      const { data } = await axiosClient.get('/reports/upload-url');
+      const { data } = await axiosClient.get(`/reports/upload-url?file_type=${file.type}`);
 
       // Step 2: POST directly to S3 with the pre-signed data
       const formData = new FormData();
@@ -58,10 +58,10 @@ export default function S3Uploader({ onUploadComplete }: { onUploadComplete: (ur
 
   return (
     <div className="mb-5 text-right" dir="rtl">
-      <label className="block text-gray-700 font-bold mb-2 text-lg">קבלת הוצאות (תמונה)</label>
+      <label className="block text-gray-700 font-bold mb-2 text-lg">קבלת הוצאות (תמונה / PDF)</label>
       <input
         type="file"
-        accept="image/*"
+        accept="image/*,application/pdf"
         onChange={handleFileChange}
         disabled={uploadState === 'uploading'}
         className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-700 disabled:opacity-50"

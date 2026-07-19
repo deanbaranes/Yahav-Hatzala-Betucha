@@ -15,6 +15,8 @@ class MockUser:
         self.id = user_id
         self.role = role
         self.status = UserStatus.active
+        self.full_name = "Test User"
+        self.phone = "0500000000"
 
 class MockTrip:
     def __init__(self, start_delta_hours, capacity, is_full=False):

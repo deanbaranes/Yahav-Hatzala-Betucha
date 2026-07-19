@@ -58,16 +58,17 @@ s3_client = boto3.client(
 )
 
 @router.get("/upload-url")
-def get_upload_url(current_user: User = Depends(get_employee_user)):
-    file_name = f"receipts/{uuid.uuid4()}.jpg"
+def get_upload_url(file_type: str = "image/jpeg", current_user: User = Depends(get_employee_user)):
+    ext = ".pdf" if file_type == "application/pdf" else ".jpg"
+    file_name = f"receipts/{uuid.uuid4()}{ext}"
     try:
         response = s3_client.generate_presigned_post(
             Bucket=S3_BUCKET,
             Key=file_name,
-            Fields={"acl": "public-read", "Content-Type": "image/jpeg"},
+            Fields={"acl": "public-read", "Content-Type": file_type},
             Conditions=[
                 {"acl": "public-read"},
-                {"Content-Type": "image/jpeg"},
+                {"Content-Type": file_type},
                 ["content-length-range", 0, 10485760] # 10MB limit
             ],
             ExpiresIn=3600
@@ -120,6 +121,25 @@ def submit_trip_report(report_data: TripReportCreate, db: Session = Depends(get_
         receipt_url=report_data.receipt_url
     )
     db.add(new_report)
+    
+    # Auto-charge client for accommodation
+    trip = assignment.trip
+    if trip.start_date and trip.end_date:
+        nights = (trip.end_date.date() - trip.start_date.date()).days
+        if nights > 0:
+            client = trip.client
+            if client:
+                try:
+                    current_bal = float(str(client.balance or '0').replace(',', ''))
+                except ValueError:
+                    current_bal = 0.0
+                
+                charge = nights * 180
+                client.balance = str(current_bal - charge)
+                note_addition = f"חיוב אוטומטי {charge} ₪ על לינת עובד בטיול {trip.location} ({trip.start_date.strftime('%d/%m/%Y')})"
+                client.notes = f"{client.notes or ''}\n{note_addition}".strip()
+                db.add(client)
+
     db.commit()
     db.refresh(new_report)
     return new_report
@@ -152,6 +172,25 @@ def submit_trip_report_admin(report_data: TripReportCreate, db: Session = Depend
         receipt_url=report_data.receipt_url
     )
     db.add(new_report)
+    
+    # Auto-charge client for accommodation
+    trip = assignment.trip
+    if trip.start_date and trip.end_date:
+        nights = (trip.end_date.date() - trip.start_date.date()).days
+        if nights > 0:
+            client = trip.client
+            if client:
+                try:
+                    current_bal = float(str(client.balance or '0').replace(',', ''))
+                except ValueError:
+                    current_bal = 0.0
+                
+                charge = nights * 180
+                client.balance = str(current_bal - charge)
+                note_addition = f"חיוב אוטומטי {charge} ₪ על לינת עובד בטיול {trip.location} ({trip.start_date.strftime('%d/%m/%Y')})"
+                client.notes = f"{client.notes or ''}\n{note_addition}".strip()
+                db.add(client)
+
     db.commit()
     db.refresh(new_report)
     return new_report
@@ -225,6 +264,11 @@ def get_reports_matrix(year: int, month: int, db: Session = Depends(get_db), cur
         extract('month', Trip.start_date) == month
     ).all()
     
+    assignment_ids = [a.id for a in assignments]
+    # N+1 FIX: Fetch all relevant reports at once
+    reports = db.query(TripReport).filter(TripReport.assignment_id.in_(assignment_ids)).all() if assignment_ids else []
+    reports_map = {r.assignment_id: r for r in reports}
+    
     users_dict = {}
     for a in assignments:
         u = a.user
@@ -233,8 +277,7 @@ def get_reports_matrix(year: int, month: int, db: Session = Depends(get_db), cur
         if str(u.id) not in users_dict:
             users_dict[str(u.id)] = {"id": str(u.id), "name": u.full_name, "shifts": {}}
             
-        # See if there is a report for this assignment
-        report = db.query(TripReport).filter(TripReport.assignment_id == a.id).first()
+        report = reports_map.get(a.id)
         
         users_dict[str(u.id)]["shifts"][date_str] = {
             "role": a.role,

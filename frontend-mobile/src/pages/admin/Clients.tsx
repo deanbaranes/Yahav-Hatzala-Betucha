@@ -105,7 +105,8 @@ export default function Clients() {
   };
 
   const getRowStyle = (client: any, idx: number) => {
-    if (client.debt_start_date) {
+    const balanceNum = parseBalance(client.balance);
+    if (client.debt_start_date && balanceNum < 0) {
       const months = getDebtAgeMonths(client.debt_start_date);
       if (months >= 3) return 'bg-red-100/80 hover:bg-red-200/80 border-b border-red-200';
       if (months >= 2) return 'bg-amber-100/80 hover:bg-amber-200/80 border-b border-amber-200';
@@ -163,27 +164,27 @@ export default function Clients() {
         </div>
         
         {/* Desktop View: Table */}
-        <div className={`${mobileViewMode === 'table' ? 'block' : 'hidden md:block'} overflow-x-auto border-t-0 rounded-b-2xl`}>
-          <table className="w-full text-right text-sm whitespace-nowrap">
+        <div className={`${mobileViewMode === 'table' ? 'block' : 'hidden md:block'} border-t-0 rounded-b-2xl`}>
+          <table className="w-full text-right text-sm table-fixed">
             <thead>
               <tr className="bg-gradient-to-l from-blue-700 to-cyan-500 text-white shadow-md">
-                <th className="px-3 py-4 font-extrabold rounded-tr-lg max-w-[140px] truncate">שם לקוח</th>
-                <th className="px-3 py-4 font-bold max-w-[120px] truncate">איש קשר</th>
-                <th className="px-3 py-4 font-bold max-w-[150px] truncate">אימייל</th>
-                <th className="px-3 py-4 font-bold max-w-[120px] truncate">טלפון</th>
-                <th className="px-3 py-4 font-bold cursor-pointer hover:bg-white/20 transition-colors" onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')} title="לחץ לשינוי סדר המיון">
+                <th className="px-2 py-4 font-extrabold rounded-tr-lg w-[18%] truncate">שם לקוח</th>
+                <th className="px-2 py-4 font-bold w-[12%] truncate">איש קשר</th>
+                <th className="px-2 py-4 font-bold w-[18%] truncate">אימייל</th>
+                <th className="px-2 py-4 font-bold w-[12%] truncate">טלפון</th>
+                <th className="px-2 py-4 font-bold w-[12%] cursor-pointer hover:bg-white/20 transition-colors truncate" onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')} title="לחץ לשינוי סדר המיון">
                   <div className="flex items-center gap-1">יתרה/חוב {sortOrder === 'asc' ? '↓' : sortOrder === 'desc' ? '↑' : ''}</div>
                 </th>
-                <th className="px-3 py-4 font-bold max-w-[150px] truncate whitespace-normal">הערות</th>
-                <th className="px-3 py-4 font-bold text-center rounded-tl-lg">פעולות</th>
+                <th className="px-2 py-4 font-bold w-[18%] truncate">הערות</th>
+                <th className="px-2 py-4 font-bold w-[10%] text-center rounded-tl-lg">פעולות</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
               {filteredClients.map((client, idx) => (
                 <tr key={client.id} className={`${getRowStyle(client, idx)} transition-all duration-200 group`}>
-                  <td className="px-3 py-3 font-bold text-gray-800 truncate group-hover:text-blue-700 transition-colors" title={client.name}>{client.name}</td>
-                  <td className="px-3 py-3 text-slate-600 truncate font-medium" title={client.contact_person || ''}>{client.contact_person || '-'}</td>
-                  <td className="px-3 py-3 text-slate-500 truncate" title={client.email || ''}>
+                  <td className="px-2 py-3 font-bold text-gray-800 truncate group-hover:text-blue-700 transition-colors" title={client.name}>{client.name}</td>
+                  <td className="px-2 py-3 text-slate-600 truncate font-medium" title={client.contact_person || ''}>{client.contact_person || '-'}</td>
+                  <td className="px-2 py-3 text-slate-500 truncate" title={client.email || ''}>
                     {client.email ? (
                       <div className="flex items-center gap-1.5">
                         <a href={`mailto:${client.email}`} className="hover:text-blue-600 hover:underline truncate">{client.email}</a>
@@ -203,11 +204,11 @@ export default function Clients() {
                       </div>
                     ) : '-'}
                   </td>
-                  <td className="px-3 py-3 text-slate-600 truncate font-medium" dir="ltr" style={{textAlign: 'right'}}>
+                  <td className="px-2 py-3 text-slate-600 truncate font-medium" dir="ltr" style={{textAlign: 'right'}}>
                     {client.phone ? <a href={`tel:${client.phone}`} className="hover:text-blue-600 hover:underline">{client.phone}</a> : '-'}
                   </td>
                   
-                  <td className="px-3 py-3">
+                  <td className="px-2 py-3 truncate">
                     {editingId === client.id ? (
                       <div className="space-y-2">
                         <input 
@@ -240,7 +241,7 @@ export default function Clients() {
                     )}
                   </td>
                   
-                  <td className="px-3 py-3">
+                  <td className="px-2 py-3 truncate">
                     {editingId === client.id ? (
                       <textarea 
                         value={editForm.notes}
@@ -255,7 +256,7 @@ export default function Clients() {
                     )}
                   </td>
                   
-                  <td className="px-3 py-3 text-center">
+                  <td className="px-2 py-3 text-center">
                     {editingId === client.id ? (
                       <button 
                         onClick={() => handleSaveClick(client.id)}
