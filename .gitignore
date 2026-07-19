@@ -13,3 +13,6 @@ coverage/
 *.xlsx
 *.xls
 *.csv
+*.html
+logo.png
+setup_frontend.py

@@ -300,7 +300,7 @@ export default function Clients() {
 
         {/* Mobile View: Cards */}
         <div className={`${mobileViewMode === 'cards' ? 'flex md:hidden' : 'hidden'} flex-col divide-y divide-gray-100 border-t-0 rounded-b-2xl bg-white shadow-inner`}>
-          {filteredClients.map((client, idx) => (
+          {filteredClients.map((client) => (
             <div key={client.id} className={`p-5 flex flex-col gap-4 ${editingId === client.id ? 'bg-blue-50/30' : ''}`}>
               <div className="flex justify-between items-start gap-4">
                 <div className="flex-1">
