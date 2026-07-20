@@ -29,16 +29,29 @@ class PayrollService:
             extract('year', TripReport.start_time) == year
         ).all()
 
-        days_worked = len(set(r.start_time.date() for r in reports if r.start_time))
+        days_worked_set = set()
+        for r in reports:
+            if r.daily_shifts and len(r.daily_shifts) > 0:
+                for shift in r.daily_shifts:
+                    if "start_time" in shift:
+                        shift_date = datetime.fromisoformat(shift["start_time"]).date()
+                        days_worked_set.add(shift_date)
+            elif r.start_time:
+                days_worked_set.add(r.start_time.date())
+        days_worked = len(days_worked_set)
         
         ot_hours = Decimal(0)
         auto_accom_nights = Decimal(0)
         for r in reports:
             ot_hours += Decimal(str(r.overtime_decimal or 0))
-            if r.assignment.trip.start_date and r.assignment.trip.end_date:
-                trip_nights = (r.assignment.trip.end_date.date() - r.assignment.trip.start_date.date()).days
-                if trip_nights > 0:
-                    auto_accom_nights += Decimal(trip_nights)
+            if hasattr(r, 'sleeps') and r.sleeps is not None and r.sleeps > 0:
+                auto_accom_nights += Decimal(str(r.sleeps))
+            else:
+                # Fallback to trip duration for backward compatibility
+                if r.assignment.trip.start_date and r.assignment.trip.end_date:
+                    trip_nights = (r.assignment.trip.end_date.date() - r.assignment.trip.start_date.date()).days
+                    if trip_nights > 0:
+                        auto_accom_nights += Decimal(trip_nights)
 
         hourly_rate = Decimal(str(user.hourly_rate or 0))
         base_daily = Decimal(str(user.base_daily_hours or 8.6))

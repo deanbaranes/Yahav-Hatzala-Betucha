@@ -1,6 +1,7 @@
 import os
 import uuid
 import boto3
+from typing import Optional, List
 from botocore.exceptions import ClientError
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -57,6 +58,37 @@ s3_client = boto3.client(
     aws_secret_access_key=AWS_SECRET_ACCESS_KEY
 )
 
+from fastapi import UploadFile, File
+import shutil
+
+@router.post("/upload")
+async def upload_file(file: UploadFile = File(...), current_user: User = Depends(get_employee_user)):
+    ext = ".pdf" if file.content_type == "application/pdf" else ".jpg"
+    file_id = str(uuid.uuid4())
+    
+    if AWS_ACCESS_KEY_ID in ["dummy", "your_aws_access_key"] or not AWS_ACCESS_KEY_ID:
+        file_name = f"{file_id}{ext}"
+        file_path = f"uploads/{file_name}"
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        return {"url": f"http://localhost:8000/uploads/{file_name}"}
+    
+    # S3 Upload
+    file_name = f"receipts/{file_id}{ext}"
+    try:
+        s3_client.upload_fileobj(
+            file.file,
+            S3_BUCKET,
+            file_name,
+            ExtraArgs={"ACL": "public-read", "ContentType": file.content_type}
+        )
+    except ClientError as e:
+        print(f"S3 Upload Error: {e}")
+        raise HTTPException(status_code=500, detail="Could not upload file to S3. Check AWS permissions.")
+        
+    s3_url = f"https://{S3_BUCKET}.s3.amazonaws.com/{file_name}"
+    return {"url": s3_url}
+
 @router.get("/upload-url")
 def get_upload_url(file_type: str = "image/jpeg", current_user: User = Depends(get_employee_user)):
     ext = ".pdf" if file_type == "application/pdf" else ".jpg"
@@ -110,14 +142,33 @@ def submit_trip_report(report_data: TripReportCreate, db: Session = Depends(get_
     if existing_report:
          raise HTTPException(status_code=400, detail="Report already submitted for this assignment")
 
-    overtime_decimal = calculate_overtime_decimal(report_data.start_time, report_data.end_time)
+    # Calculate overtime and total span
+    total_overtime = 0.0
+    final_start = report_data.start_time
+    final_end = report_data.end_time
+    shifts_json = None
+    
+    print("DEBUG: Received daily_shifts from client:", report_data.daily_shifts)
+    if report_data.daily_shifts and len(report_data.daily_shifts) > 0:
+        shifts_json = [{"start_time": s.start_time.isoformat(), "end_time": s.end_time.isoformat()} for s in report_data.daily_shifts]
+        final_start = min([s.start_time for s in report_data.daily_shifts])
+        final_end = max([s.end_time for s in report_data.daily_shifts])
+        for shift in report_data.daily_shifts:
+            total_overtime += calculate_overtime_decimal(shift.start_time, shift.end_time)
+    else:
+        if not report_data.start_time or not report_data.end_time:
+            raise HTTPException(status_code=400, detail="Must provide start_time and end_time if no daily_shifts")
+        total_overtime = calculate_overtime_decimal(report_data.start_time, report_data.end_time)
 
     new_report = TripReport(
         assignment_id=assignment.id,
-        start_time=report_data.start_time,
-        end_time=report_data.end_time,
-        overtime_decimal=overtime_decimal,
+        start_time=final_start,
+        end_time=final_end,
+        daily_shifts=shifts_json,
+        overtime_decimal=Decimal(str(total_overtime)),
         expenses=report_data.expenses,
+        expenses_notes=report_data.expenses_notes,
+        sleeps=report_data.sleeps,
         receipt_url=report_data.receipt_url
     )
     db.add(new_report)
@@ -161,14 +212,32 @@ def submit_trip_report_admin(report_data: TripReportCreate, db: Session = Depend
     if existing_report:
          raise HTTPException(status_code=400, detail="Report already submitted for this assignment")
 
-    overtime_decimal = calculate_overtime_decimal(report_data.start_time, report_data.end_time)
+    # Calculate overtime and total span
+    total_overtime = 0.0
+    final_start = report_data.start_time
+    final_end = report_data.end_time
+    shifts_json = None
+    
+    if report_data.daily_shifts and len(report_data.daily_shifts) > 0:
+        shifts_json = [{"start_time": s.start_time.isoformat(), "end_time": s.end_time.isoformat()} for s in report_data.daily_shifts]
+        final_start = min([s.start_time for s in report_data.daily_shifts])
+        final_end = max([s.end_time for s in report_data.daily_shifts])
+        for shift in report_data.daily_shifts:
+            total_overtime += calculate_overtime_decimal(shift.start_time, shift.end_time)
+    else:
+        if not report_data.start_time or not report_data.end_time:
+            raise HTTPException(status_code=400, detail="Must provide start_time and end_time if no daily_shifts")
+        total_overtime = calculate_overtime_decimal(report_data.start_time, report_data.end_time)
 
     new_report = TripReport(
         assignment_id=assignment.id,
-        start_time=report_data.start_time,
-        end_time=report_data.end_time,
-        overtime_decimal=overtime_decimal,
+        start_time=final_start,
+        end_time=final_end,
+        daily_shifts=shifts_json,
+        overtime_decimal=Decimal(str(total_overtime)),
         expenses=report_data.expenses,
+        expenses_notes=report_data.expenses_notes,
+        sleeps=report_data.sleeps,
         receipt_url=report_data.receipt_url
     )
     db.add(new_report)
@@ -209,8 +278,11 @@ def get_all_reports(db: Session = Depends(get_db), current_user: User = Depends(
             "id": str(r.id),
             "start_time": r.start_time.isoformat(),
             "end_time": r.end_time.isoformat(),
+            "daily_shifts": r.daily_shifts,
             "overtime_decimal": r.overtime_decimal,
             "expenses": r.expenses,
+            "expenses_notes": r.expenses_notes,
+            "sleeps": r.sleeps,
             "receipt_url": r.receipt_url,
             "created_at": r.start_time.isoformat(),
             "employee": {
@@ -233,6 +305,8 @@ class ReportUpdate(BaseModel):
     end_time: datetime
     overtime_decimal: float
     expenses: float
+    sleeps: int = 0
+    daily_shifts: Optional[List[dict]] = None
 
 @router.put("/{report_id}")
 def update_report(report_id: str, data: ReportUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
@@ -243,17 +317,39 @@ def update_report(report_id: str, data: ReportUpdate, db: Session = Depends(get_
     report.start_time = data.start_time
     report.end_time = data.end_time
     
-    # Auto-recalculate overtime based on the new times, unless they specifically inputted a massive override
-    # but for safety, we just recalculate it here to ensure it's accurate to the times.
-    new_overtime = calculate_overtime_decimal(data.start_time, data.end_time)
+    new_overtime = 0.0
+    if data.daily_shifts and len(data.daily_shifts) > 0:
+        report.daily_shifts = data.daily_shifts
+        report.start_time = min([datetime.fromisoformat(s['start_time'].replace('Z', '+00:00')) for s in data.daily_shifts])
+        report.end_time = max([datetime.fromisoformat(s['end_time'].replace('Z', '+00:00')) for s in data.daily_shifts])
+        for s in data.daily_shifts:
+            st = datetime.fromisoformat(s['start_time'].replace('Z', '+00:00'))
+            et = datetime.fromisoformat(s['end_time'].replace('Z', '+00:00'))
+            new_overtime += calculate_overtime_decimal(st, et)
+    else:
+        report.daily_shifts = None
+        new_overtime = calculate_overtime_decimal(data.start_time, data.end_time)
     
-    # If the user explicitly provided a different overtime (e.g. manual override in UI), keep it, otherwise use calculated.
-    # We will just force recalculation because the times changed.
-    report.overtime_decimal = Decimal(str(new_overtime))
+    # Allow manual override if they changed it specifically
+    if abs(float(report.overtime_decimal) - float(data.overtime_decimal)) > 0.01:
+        report.overtime_decimal = Decimal(str(data.overtime_decimal))
+    else:
+        report.overtime_decimal = Decimal(str(new_overtime))
     
     report.expenses = Decimal(str(data.expenses))
+    report.sleeps = data.sleeps
     db.commit()
     return {"message": "Report updated"}
+
+@router.delete("/{report_id}")
+def delete_report(report_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
+    report = db.query(TripReport).filter(TripReport.id == report_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    
+    db.delete(report)
+    db.commit()
+    return {"message": "Report deleted successfully"}
 
 @router.get("/matrix/{year}/{month}")
 def get_reports_matrix(year: int, month: int, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):

@@ -68,11 +68,20 @@ class TripOut(BaseModel):
 class JoinTripRequest(BaseModel):
     role: str
 
-class TripReportCreate(BaseModel):
-    assignment_id: uuid.UUID
+from typing import Optional, Dict, List
+
+class DailyShift(BaseModel):
     start_time: datetime
     end_time: datetime
+
+class TripReportCreate(BaseModel):
+    assignment_id: uuid.UUID
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    daily_shifts: Optional[List[DailyShift]] = None
     expenses: Optional[float] = 0.0
+    expenses_notes: Optional[str] = None
+    sleeps: Optional[int] = 0
     receipt_url: Optional[str] = None
 
 class TripReportOut(BaseModel):
@@ -80,8 +89,11 @@ class TripReportOut(BaseModel):
     assignment_id: uuid.UUID
     start_time: datetime
     end_time: datetime
+    daily_shifts: Optional[List[DailyShift]] = None
     overtime_decimal: float
     expenses: float
+    expenses_notes: Optional[str] = None
+    sleeps: int = 0
     receipt_url: Optional[str]
     manager_status: ManagerStatus
     billing_status: BillingStatus

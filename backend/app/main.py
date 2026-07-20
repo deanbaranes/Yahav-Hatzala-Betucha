@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+import os
 from app.database import engine, Base
 from app.models import user, client, trip, trip_assignment, trip_report, payroll_adjustment
 from app.models import refresh_token  # register RefreshToken table
@@ -42,3 +44,6 @@ app.include_router(payroll.router)
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Yahav Hatzala Betucha API"}
+
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")

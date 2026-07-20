@@ -5,7 +5,7 @@ import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 
 type UploadState = 'idle' | 'uploading' | 'success' | 'error';
 
-export default function S3Uploader({ onUploadComplete }: { onUploadComplete: (url: string) => void }) {
+export default function S3Uploader({ onUploadComplete, onRemove }: { onUploadComplete: (url: string) => void, onRemove?: () => void }) {
   const [uploadState, setUploadState] = useState<UploadState>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -17,41 +17,19 @@ export default function S3Uploader({ onUploadComplete }: { onUploadComplete: (ur
     setErrorMessage('');
 
     try {
-      // Step 1: Get pre-signed URL from our backend
-      const { data } = await axiosClient.get(`/reports/upload-url?file_type=${file.type}`);
-
-      // Step 2: POST directly to S3 with the pre-signed data
       const formData = new FormData();
-      Object.entries(data.fields).forEach(([key, value]) => {
-        formData.append(key, value as string);
-      });
       formData.append('file', file);
 
-      await axios.post(data.url, formData, {
+      const { data } = await axiosClient.post('/reports/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      // Step 3: Construct the final S3 URL and notify parent
-      const s3Url = `${data.url}/${data.fields.key}`;
-      onUploadComplete(s3Url);
+      onUploadComplete(data.url);
       setUploadState('success');
 
     } catch (err: any) {
-      // Structured error logging for production debugging
-      const isS3Error = err?.config?.url?.includes('amazonaws.com');
-      const errMsg = isS3Error
-        ? 'שגיאה בהעלאה ל-S3. ייתכן שהתמונה גדולה מדי או שיש בעיית חיבור.'
-        : (err?.response?.data?.detail || 'שגיאה בהעלאת הקובץ. אנא נסה שנית.');
-
-      console.error('[S3Uploader] Upload failed:', {
-        stage: isS3Error ? 's3_post' : 'presign_request',
-        status: err?.response?.status,
-        detail: err?.response?.data?.detail || err?.message,
-        file_name: file.name,
-        file_size: file.size,
-      });
-
-      setErrorMessage(errMsg);
+      console.error('[S3Uploader] Upload failed:', err);
+      setErrorMessage(err?.response?.data?.detail || 'שגיאה בהעלאת הקובץ. אנא נסה שנית.');
       setUploadState('error');
     }
   };
@@ -74,9 +52,21 @@ export default function S3Uploader({ onUploadComplete }: { onUploadComplete: (ur
       )}
 
       {uploadState === 'success' && (
-        <p className="flex items-center gap-2 text-green-600 mt-2 font-semibold">
-          <CheckCircle2 size={16} /> הקבלה הועלתה בהצלחה!
-        </p>
+        <div className="flex items-center justify-between mt-2 p-2 bg-green-50 rounded border border-green-200">
+          <p className="flex items-center gap-2 text-green-700 font-bold text-sm">
+            <CheckCircle2 size={16} /> הקבלה הועלתה בהצלחה!
+          </p>
+          <button 
+            onClick={() => {
+              setUploadState('idle');
+              setErrorMessage('');
+              if (onRemove) onRemove();
+            }} 
+            className="text-red-500 text-sm font-bold hover:text-red-700 transition-colors bg-white px-2 py-1 rounded shadow-sm border border-red-100"
+          >
+            הסר קובץ
+          </button>
+        </div>
       )}
 
       {uploadState === 'error' && (

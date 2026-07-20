@@ -293,19 +293,6 @@ def admin_assign_trip(trip_id: str, request: AdminAssignRequest, db: Session = D
         existing.status = request.status
         existing.is_confirmed = request.is_confirmed
         existing.role = request.role
-        
-        # Ensure report exists
-        from app.models.trip_report import TripReport
-        report = db.query(TripReport).filter(TripReport.assignment_id == existing.id).first()
-        if not report:
-            new_report = TripReport(
-                assignment_id=existing.id,
-                start_time=trip.start_date,
-                end_time=trip.end_date,
-                overtime_decimal=0,
-                expenses=0
-            )
-            db.add(new_report)
     else:
         new_assignment = TripAssignment(
             trip_id=trip_id,
@@ -316,17 +303,6 @@ def admin_assign_trip(trip_id: str, request: AdminAssignRequest, db: Session = D
         )
         db.add(new_assignment)
         db.flush() # flush to get new_assignment.id
-        
-        # Auto-create TripReport for payroll calculation
-        from app.models.trip_report import TripReport
-        new_report = TripReport(
-            assignment_id=new_assignment.id,
-            start_time=trip.start_date,
-            end_time=trip.end_date,
-            overtime_decimal=0,
-            expenses=0
-        )
-        db.add(new_report)
 
     db.commit()
     return {"message": "Assigned and reported successfully"}

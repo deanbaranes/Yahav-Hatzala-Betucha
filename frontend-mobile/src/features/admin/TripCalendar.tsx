@@ -119,7 +119,8 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
 
   const [selectedTrip, setSelectedTrip] = useState<any>(null);
   const [reportingAssignment, setReportingAssignment] = useState<any>(null);
-  const [reportForm, setReportForm] = useState({ start_time: '', end_time: '' });
+  const [reportDaysCount, setReportDaysCount] = useState(1);
+  const [reportDailyShifts, setReportDailyShifts] = useState([{ start_time: '', end_time: '' }]);
 
   const [quickEditMode, setQuickEditMode] = useState(false);
   const [quickEditForm, setQuickEditForm] = useState({ client_name: '', location: '', start_date: '', end_date: '', capacity: 0, roles_requirements: {}, color: '' });
@@ -355,7 +356,7 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
       {/* Trip Details Modal */}
       {selectedTrip && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm" onClick={() => setSelectedTrip(null)}>
-          <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-md w-full animate-fade-in text-right" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-md w-full animate-fade-in text-right max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-2xl font-bold text-gray-800">{selectedTrip.client?.name === 'לקוח כללי' ? selectedTrip.location : (selectedTrip.client?.name || 'לקוח לא ידוע')}</h3>
               <div className="flex items-center gap-2">
@@ -406,6 +407,16 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                 <div>
                   <label className="block text-xs font-bold text-gray-600 mb-1">שעת סיום</label>
                   <input type="datetime-local" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.end_date} onChange={e => setQuickEditForm({...quickEditForm, end_date: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">סה״כ עובדים דרושים</label>
+                  <input 
+                    type="number" 
+                    min="0"
+                    className="w-full p-2 text-sm border border-gray-300 rounded" 
+                    value={quickEditForm.capacity} 
+                    onChange={e => setQuickEditForm({...quickEditForm, capacity: parseInt(e.target.value) || 0})} 
+                  />
                 </div>
                 <div className="flex justify-end gap-2 mt-4 pt-2 border-t border-blue-100">
                   <button onClick={() => setQuickEditMode(false)} className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200 rounded">ביטול</button>
@@ -510,7 +521,7 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
             )}
 
               <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="text-sm text-gray-500 font-bold mb-2">צוות מאושר בטיול ({selectedTrip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned').length || 0} / {selectedTrip.capacity})</div>
+                <div className="text-sm text-gray-500 font-bold mb-2">צוות מאושר בטיול ({selectedTrip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned').length || 0} מתוך {selectedTrip.capacity})</div>
                 <div className="space-y-2">
                   {selectedTrip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned').length === 0 ? (
                     <div className="text-sm text-red-500 font-medium">עדיין לא שובצו עובדים!</div>
@@ -523,10 +534,11 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                           <button
                             onClick={() => {
                               setReportingAssignment(a);
-                              setReportForm({
+                              setReportDaysCount(1);
+                              setReportDailyShifts([{
                                 start_time: selectedTrip.start_date.substring(0, 16),
                                 end_time: selectedTrip.end_date ? selectedTrip.end_date.substring(0, 16) : ''
-                              });
+                              }]);
                             }}
                             className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-1 rounded text-xs font-bold transition-colors"
                           >
@@ -557,24 +569,65 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                 </h4>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">שעת התחלה</label>
-                    <input 
-                      type="datetime-local" 
-                      className="w-full p-2 text-sm border border-gray-300 rounded"
-                      value={reportForm.start_time}
-                      onChange={e => setReportForm({...reportForm, start_time: e.target.value})}
-                    />
+                    <label className="block text-xs font-bold text-gray-600 mb-1">מספר ימי עבודה (לטיול ארוך)</label>
+                    <select 
+                      className="w-full p-2 text-sm border border-gray-300 rounded font-bold"
+                      value={reportDaysCount}
+                      onChange={e => {
+                        const count = parseInt(e.target.value) || 1;
+                        setReportDaysCount(count);
+                        const newShifts = [...reportDailyShifts];
+                        if (count > newShifts.length) {
+                          for (let i = newShifts.length; i < count; i++) {
+                            newShifts.push({ start_time: '', end_time: '' });
+                          }
+                        } else {
+                          newShifts.splice(count);
+                        }
+                        setReportDailyShifts(newShifts);
+                      }}
+                    >
+                      {[1, 2, 3, 4, 5, 6, 7].map(num => (
+                        <option key={num} value={num}>{num} ימים</option>
+                      ))}
+                    </select>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">שעת סיום</label>
-                    <input 
-                      type="datetime-local" 
-                      className="w-full p-2 text-sm border border-gray-300 rounded"
-                      value={reportForm.end_time}
-                      onChange={e => setReportForm({...reportForm, end_time: e.target.value})}
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2 mt-2">
+
+                  {reportDailyShifts.map((shift, idx) => (
+                    <div key={idx} className="bg-white p-2 border border-blue-100 rounded shadow-sm">
+                      <h5 className="text-[10px] font-bold text-blue-800 mb-1">יום עבודה {idx + 1}</h5>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-600 mb-1">התחלה</label>
+                          <input 
+                            type="datetime-local" 
+                            className="w-full p-1 text-xs border border-gray-300 rounded"
+                            value={shift.start_time}
+                            onChange={e => {
+                              const newS = [...reportDailyShifts];
+                              newS[idx].start_time = e.target.value;
+                              setReportDailyShifts(newS);
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-600 mb-1">סיום</label>
+                          <input 
+                            type="datetime-local" 
+                            className="w-full p-1 text-xs border border-gray-300 rounded"
+                            value={shift.end_time}
+                            onChange={e => {
+                              const newS = [...reportDailyShifts];
+                              newS[idx].end_time = e.target.value;
+                              setReportDailyShifts(newS);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="flex justify-end gap-2 mt-3 pt-2 border-t border-blue-100">
                     <button 
                       onClick={() => setReportingAssignment(null)}
                       className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200 rounded"
@@ -582,11 +635,13 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                       ביטול
                     </button>
                     <button 
-                      disabled={!reportForm.start_time || !reportForm.end_time || submitReportMutation.isPending}
+                      disabled={reportDailyShifts.some(s => !s.start_time || !s.end_time) || submitReportMutation.isPending}
                       onClick={() => submitReportMutation.mutate({
                         assignment_id: reportingAssignment.id,
-                        start_time: reportForm.start_time,
-                        end_time: reportForm.end_time,
+                        daily_shifts: reportDailyShifts.map(s => ({
+                          start_time: new Date(s.start_time).toISOString(),
+                          end_time: new Date(s.end_time).toISOString()
+                        })),
                         expenses: 0
                       })}
                       className="px-3 py-1.5 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded font-bold disabled:opacity-50"
