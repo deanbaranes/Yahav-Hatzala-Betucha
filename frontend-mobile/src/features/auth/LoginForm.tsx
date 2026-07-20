@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import logo from '../../assets/logo.png';
 
 export default function LoginForm() {
@@ -95,6 +95,15 @@ export default function LoginForm() {
               </span>
             ) : 'היכנס למערכת'}
           </button>
+        </div>
+
+        <div className="mt-6 text-center">
+          <p className="text-gray-500 text-sm font-medium">
+            עדיין לא עובד אצלנו?{' '}
+            <Link to="/register" className="text-blue-600 font-bold hover:underline">
+              הירשם כעובד חדש
+            </Link>
+          </p>
         </div>
       </div>
     </div>

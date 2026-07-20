@@ -12,8 +12,10 @@ from app.services.sms_service import SMSService
 from pydantic import BaseModel
 import requests as http_requests
 from icalendar import Calendar as ICalendar
+from sqlalchemy import extract
 
 router = APIRouter(prefix="/trips", tags=["trips"])
+
 
 @router.post("/", response_model=TripOut)
 def create_trip(trip_data: TripCreate, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
@@ -244,6 +246,29 @@ def get_next_trip(db: Session = Depends(get_db), current_user: User = Depends(ge
         "client": {"name": t.client.name} if t.client else None
     }
 
+@router.get("/my")
+def get_my_trips(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    assignments = db.query(TripAssignment).join(Trip).filter(
+        TripAssignment.user_id == current_user.id,
+        TripAssignment.status.in_(["assigned", "waitlisted"])
+    ).order_by(Trip.start_date.desc()).all()
+    
+    result = []
+    for a in assignments:
+        t = a.trip
+        result.append({
+            "id": str(t.id),
+            "assignment_id": str(a.id),
+            "location": t.location,
+            "start_date": t.start_date.isoformat(),
+            "end_date": t.end_date.isoformat() if t.end_date else None,
+            "status": a.status,
+            "role": a.role,
+            "is_confirmed": a.is_confirmed,
+            "client": {"name": t.client.name} if t.client else None
+        })
+    return result
+
 class AdminAssignRequest(BaseModel):
     user_id: str
     role: str = "כללי"
@@ -349,6 +374,53 @@ def get_trips(db: Session = Depends(get_db)):
             ] if hasattr(t, 'assignments') and t.assignments else []
         })
     return result
+
+@router.get("/billing-status/{year}/{month}")
+def get_billing_status(year: int, month: int, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
+    trips = db.query(Trip).filter(
+        extract('year', Trip.start_date) == year,
+        extract('month', Trip.start_date) == month
+    ).all()
+    
+    client_stats = {}
+    now = datetime.now()
+    
+    for t in trips:
+        c_id = str(t.client_id)
+        if c_id not in client_stats:
+            client_stats[c_id] = {
+                "client_id": c_id,
+                "client_name": t.client.name if t.client else "לקוח כללי",
+                "total_trips": 0,
+                "completed_trips": 0,
+                "invoiced_trips": 0,
+            }
+            
+        stats = client_stats[c_id]
+        stats["total_trips"] += 1
+        
+        trip_end = t.end_date or t.start_date
+        if trip_end.replace(tzinfo=None) < now:
+            stats["completed_trips"] += 1
+            
+        if t.is_billed:
+            stats["invoiced_trips"] += 1
+            
+    result = []
+    for stats in client_stats.values():
+        status = "פעיל" # Active (still has trips)
+        if stats["invoiced_trips"] == stats["total_trips"]:
+            status = "חויב במלואו"
+        elif stats["completed_trips"] == stats["total_trips"]:
+            status = "מוכן לחיוב"
+            
+        stats["status"] = status
+        result.append(stats)
+        
+    # Sort so "מוכן לחיוב" comes first
+    result.sort(key=lambda x: 0 if x["status"] == "מוכן לחיוב" else (1 if x["status"] == "פעיל" else 2))
+    return result
+
 @router.get("/assignments/unconfirmed")
 def get_unconfirmed_assignments(db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     assignments = db.query(TripAssignment).join(Trip).join(User).filter(

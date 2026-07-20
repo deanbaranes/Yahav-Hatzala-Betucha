@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Map, FileText, Settings, LogOut, Menu, X, Users, ChevronRight, ChevronLeft, Calculator, CalendarDays } from 'lucide-react';
+import { Home, Map, FileText, LogOut, Menu, X, Users, ChevronRight, ChevronLeft, Calculator, CalendarDays, Receipt } from 'lucide-react';
+
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -19,7 +20,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { to: '/admin/clients', icon: Users, label: 'לקוחות ויתרות' },
     { to: '/admin/reports', icon: FileText, label: 'דוחות שטח' },
     { to: '/admin/matrix', icon: CalendarDays, label: 'מטריצת משמרות' },
-    { to: '/admin/payroll', icon: Calculator, label: 'ניהול שכר ממוכן' },
+    { to: '/admin/payroll', icon: Calculator, label: 'ניהול שכר' },
+    { to: '/admin/billing', icon: Receipt, label: 'דוח חיובים' },
   ];
 
   return (
@@ -82,7 +84,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       )}
       
       {/* Mobile Sidebar */}
-      <aside className={`fixed inset-y-0 right-0 w-72 bg-white shadow-2xl z-50 transform transition-transform duration-300 md:hidden ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 right-0 w-72 bg-white shadow-2xl z-50 flex flex-col transform transition-transform duration-300 md:hidden ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="p-6 border-b flex items-center justify-between">
           <h1 className="text-xl font-black text-blue-700">יהב הצלה</h1>
           <button onClick={() => setSidebarOpen(false)} className="text-gray-500 bg-gray-100 p-2 rounded-full"><X size={20}/></button>
@@ -105,6 +107,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </NavLink>
           ))}
         </nav>
+        <div className="p-4 border-t mt-auto">
+          <button 
+            onClick={handleLogout}
+            className="flex items-center gap-3 w-full py-3 px-4 text-red-500 hover:bg-red-50 rounded-xl font-bold transition-colors"
+          >
+            <LogOut size={22} />
+            <span>התנתק מהמערכת</span>
+          </button>
+        </div>
       </aside>
 
       {/* Main Content */}

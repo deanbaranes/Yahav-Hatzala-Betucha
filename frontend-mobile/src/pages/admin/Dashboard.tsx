@@ -8,6 +8,21 @@ import { Calendar as CalendarIcon, CheckCircle2, Clock, List, Map } from 'lucide
 export default function Dashboard() {
   const [viewMode, setViewMode] = React.useState<'calendar' | 'list'>('calendar');
 
+  const currentDate = new Date();
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth() + 1;
+
+  const { data: billingStatus } = useQuery<any[]>({
+    queryKey: ['billing-status', year, month],
+    queryFn: async () => {
+      const res = await axiosClient.get(`/trips/billing-status/${year}/${month}`);
+      return res.data;
+    }
+  });
+
+  const readyToBill = billingStatus?.filter(c => c.status === 'מוכן לחיוב') || [];
+
+
   const { data: trips, isLoading } = useQuery<any[]>({
     queryKey: ['dashboard-trips'],
     queryFn: async () => {
@@ -70,6 +85,25 @@ export default function Dashboard() {
         </div>
       </header>
 
+      {readyToBill.length > 0 && (
+        <div className="bg-green-50 border-2 border-green-400 text-green-900 px-6 py-4 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm animate-fade-in">
+          <div className="flex items-center gap-4">
+            <div className="bg-green-100 p-3 rounded-full shadow-inner">
+              <span className="text-2xl">💰</span>
+            </div>
+            <div>
+              <h3 className="font-bold text-lg">ישנם לקוחות שמוכנים להוצאת חשבונית לחודש זה!</h3>
+              <p className="text-sm font-medium opacity-90 mt-1">
+                {readyToBill.map(c => c.client_name).join(', ')} סיימו את כל הטיולים שלהם לחודש זה.
+              </p>
+            </div>
+          </div>
+          <a href="/admin/billing" className="bg-green-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-700 transition-colors shadow-sm whitespace-nowrap">
+            למעבר לדוח חיובים
+          </a>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Right side: Trips */}
         <div className="xl:col-span-2 space-y-8">
@@ -120,11 +154,11 @@ export default function Dashboard() {
                               
                               <div className="flex flex-col items-end gap-2">
                                 {trip.capacity === 0 ? (
-                                  <span className="flex items-center gap-1 text-sm font-bold px-3 py-1 rounded-full bg-red-100 text-red-800 border border-red-300">
-                                    ⚠️ חסרה הגדרת תפקידים (ערוך טיול)
+                                  <span className="flex items-center text-center gap-1 text-xs md:text-sm font-bold px-3 py-1.5 rounded-xl bg-red-100 text-red-800 border border-red-300">
+                                    ⚠️ חסרה הגדרת תפקידים
                                   </span>
                                 ) : (
-                                  <span className={`flex items-center gap-1 text-sm font-bold px-3 py-1 rounded-full ${
+                                  <span className={`flex items-center text-center gap-1 text-xs md:text-sm font-bold px-3 py-1.5 rounded-xl ${
                                     isFullyStaffed 
                                       ? 'bg-blue-200 text-blue-800' 
                                       : 'bg-green-200 text-green-800'

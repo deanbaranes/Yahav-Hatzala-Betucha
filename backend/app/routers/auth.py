@@ -72,7 +72,11 @@ def _build_tokens_and_set_cookie(user: User, db: Session, response: Response) ->
 def register(request: Request, user: UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.phone == user.phone).first()
     if db_user:
-        raise HTTPException(status_code=400, detail="Phone already registered")
+        raise HTTPException(status_code=400, detail="מספר טלפון זה כבר קיים במערכת.")
+
+    db_user_name = db.query(User).filter(User.full_name == user.full_name).first()
+    if db_user_name:
+        raise HTTPException(status_code=400, detail="שם עובד זה כבר קיים במערכת. אנא השתמש בשם אחר או הוסף שם משפחה מפורט יותר.")
 
     hashed_password = get_password_hash(user.password)
     new_user = User(

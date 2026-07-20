@@ -7,10 +7,14 @@ import Reports from './pages/admin/Reports';
 import EmployeeMatrix from './pages/admin/EmployeeMatrix';
 import Clients from './pages/admin/Clients';
 import PayrollManagement from './pages/admin/PayrollManagement';
+import Billing from './pages/admin/Billing';
 import Home from './pages/employee/Home';
 import EmployeeTrips from './pages/employee/Trips';
 import Report from './pages/employee/Report';
+import MySchedule from './pages/employee/MySchedule';
+import MyPayroll from './pages/employee/MyPayroll';
 import LoginForm from './features/auth/LoginForm';
+import RegisterForm from './features/auth/RegisterForm';
 import PendingApprovalScreen from './pages/PendingApprovalScreen';
 import EmployeeLayout from './features/employee/EmployeeLayout';
 import { useAuth } from './hooks/useAuth';
@@ -42,6 +46,8 @@ const RootRedirect = () => {
 const router = createBrowserRouter([
   { path: '/', element: <RootRedirect /> },
   { path: '/login', element: <LoginForm /> },
+  { path: '/register', element: <RegisterForm /> },
+  { path: '/pending', element: <PendingApprovalScreen /> },
   {
     path: '/admin',
     element: <ProtectedRoute allowedRole="admin" />,
@@ -55,6 +61,7 @@ const router = createBrowserRouter([
           { path: 'clients', element: <Clients /> },
           { path: 'matrix', element: <EmployeeMatrix /> },
           { path: 'payroll', element: <PayrollManagement /> },
+          { path: 'billing', element: <Billing /> },
           { path: 'reports', element: <Reports /> }
         ]
       }
@@ -70,6 +77,8 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <Home /> },
           { path: 'trips', element: <EmployeeTrips /> },
+          { path: 'schedule', element: <MySchedule /> },
+          { path: 'payroll', element: <MyPayroll /> },
           { path: 'report', element: <Report /> }
         ]
       }

@@ -64,6 +64,7 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
+      setSelectedTrip(null);
     }
   });
 
@@ -86,17 +87,22 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
 
   const getTripColor = (trip: any): { className: string; style?: React.CSSProperties } => {
     // If trip has a custom color, use it directly
+    const baseClasses = "text-[9px] md:text-xs px-0.5 py-0.5 md:px-1.5 md:py-1 rounded-sm shadow-sm font-semibold cursor-pointer transition-all flex justify-between items-center leading-tight overflow-hidden";
     if (trip.color) {
-      return { className: 'text-white shadow-sm font-semibold cursor-pointer transition-all flex justify-between items-center text-xs px-1.5 py-1 rounded', style: { backgroundColor: trip.color, borderColor: trip.color } };
+      return { className: `text-white ${baseClasses}`, style: { backgroundColor: trip.color, borderColor: trip.color } };
     }
-    if (trip.is_billed) return { className: 'bg-red-500 text-white hover:bg-red-600 border border-red-600 text-xs px-1.5 py-1 rounded shadow-sm font-semibold cursor-pointer transition-all flex justify-between items-center' };
+    if (trip.is_billed) return { className: `bg-red-500 text-white hover:bg-red-600 border border-red-600 ${baseClasses}` };
     const confirmedCount = trip.assignments?.filter((a: any) => a.is_confirmed && a.status === 'assigned').length || 0;
     const isFullyStaffed = trip.capacity > 0 && confirmedCount >= trip.capacity;
-    if (isFullyStaffed) return { className: 'bg-blue-500 text-white hover:bg-blue-600 border border-blue-600 text-xs px-1.5 py-1 rounded shadow-sm font-semibold cursor-pointer transition-all flex justify-between items-center' };
-    return { className: 'bg-green-500 text-white hover:bg-green-600 border border-green-600 text-xs px-1.5 py-1 rounded shadow-sm font-semibold cursor-pointer transition-all flex justify-between items-center' };
+    if (isFullyStaffed) return { className: `bg-blue-500 text-white hover:bg-blue-600 border border-blue-600 ${baseClasses}` };
+    return { className: `bg-green-500 text-white hover:bg-green-600 border border-green-600 ${baseClasses}` };
   };
 
-  const getTripLabel = (trip: any) => {
+  const getTripLabelMobile = (trip: any) => {
+    return trip.client?.name === 'לקוח כללי' ? trip.location : (trip.client?.name || trip.location);
+  };
+
+  const getTripLabelDesktop = (trip: any) => {
     const confirmedCount = trip.assignments?.filter((a: any) => a.is_confirmed && a.status === 'assigned').length || 0;
     const missing = trip.capacity - confirmedCount;
     const name = trip.client?.name === 'לקוח כללי' ? trip.location : (trip.client?.name || trip.location);
@@ -323,7 +329,8 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                       setSelectedTrip(trip);
                     }}
                   >
-                    <span className="truncate">{getTripLabel(trip)}</span>
+                    <span className="truncate block md:hidden">{getTripLabelMobile(trip)}</span>
+                    <span className="truncate hidden md:block">{getTripLabelDesktop(trip)}</span>
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
@@ -331,7 +338,7 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                           toggleBillingMutation.mutate(trip.id);
                         }
                       }}
-                      className="mr-1 hover:scale-125 transition-transform"
+                      className="mr-1 hover:scale-125 transition-transform hidden md:block"
                       title="סמן הפקת חשבונית"
                     >
                       <CheckCircle2 size={12} className={trip.is_billed ? 'text-red-200' : 'text-white/70'} />
@@ -353,21 +360,34 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
               <h3 className="text-2xl font-bold text-gray-800">{selectedTrip.client?.name === 'לקוח כללי' ? selectedTrip.location : (selectedTrip.client?.name || 'לקוח לא ידוע')}</h3>
               <div className="flex items-center gap-2">
                 {!quickEditMode && (
-                  <button onClick={() => {
-                    setQuickEditForm({
-                      client_name: selectedTrip.client?.name || '',
-                      location: selectedTrip.location || '',
-                      start_date: selectedTrip.start_date.substring(0, 16),
-                      end_date: selectedTrip.end_date ? selectedTrip.end_date.substring(0, 16) : '',
-                      capacity: selectedTrip.capacity || 0,
-                      roles_requirements: selectedTrip.roles_requirements || {},
-                      color: selectedTrip.color || ''
-                    });
-                    setQuickEditMode(true);
-                    setReportingAssignment(null);
-                  }} className="text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded text-xs font-bold transition-colors">
-                    ✏️ עריכה מהירה
-                  </button>
+                  <>
+                    <button 
+                      onClick={() => {
+                        if (confirm(`האם לסמן את הטיול ב-${selectedTrip.location} כ${selectedTrip.is_billed ? 'לא חויב' : 'חויב (חשבונית הופקה)'}?`)) {
+                          toggleBillingMutation.mutate(selectedTrip.id);
+                        }
+                      }}
+                      className={`px-2 py-1 rounded text-xs font-bold transition-colors ${selectedTrip.is_billed ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-green-50 text-green-600 hover:bg-green-100'}`}
+                      title="סמן הפקת חשבונית"
+                    >
+                      {selectedTrip.is_billed ? 'בטל חיוב' : '✔️ חשבונית'}
+                    </button>
+                    <button onClick={() => {
+                      setQuickEditForm({
+                        client_name: selectedTrip.client?.name || '',
+                        location: selectedTrip.location || '',
+                        start_date: selectedTrip.start_date.substring(0, 16),
+                        end_date: selectedTrip.end_date ? selectedTrip.end_date.substring(0, 16) : '',
+                        capacity: selectedTrip.capacity || 0,
+                        roles_requirements: selectedTrip.roles_requirements || {},
+                        color: selectedTrip.color || ''
+                      });
+                      setQuickEditMode(true);
+                      setReportingAssignment(null);
+                    }} className="text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded text-xs font-bold transition-colors">
+                      ✏️ עריכה
+                    </button>
+                  </>
                 )}
                 <button onClick={() => { setSelectedTrip(null); setReportingAssignment(null); setQuickEditMode(false); }} className="text-gray-400 hover:text-gray-600 p-1">✕</button>
               </div>

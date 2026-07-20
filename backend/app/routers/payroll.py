@@ -10,11 +10,11 @@ from app.models.payroll_adjustment import PayrollAdjustment
 from app.models.trip_report import TripReport
 from app.models.trip_assignment import TripAssignment
 from app.models.trip import Trip
-from app.dependencies import get_admin_user
+from app.dependencies import get_admin_user, get_current_user
 from pydantic import BaseModel
 from app.auth import get_password_hash
 
-router = APIRouter(prefix="/payroll", tags=["payroll"], dependencies=[Depends(get_admin_user)])
+router = APIRouter(prefix="/payroll", tags=["payroll"])
 
 class EmployeeRatesUpdate(BaseModel):
     hourly_rate: float
@@ -35,7 +35,7 @@ class EmployeeCreate(BaseModel):
     notes: Optional[str] = None
 
 @router.post("/employees")
-def create_employee(data: EmployeeCreate, db: Session = Depends(get_db)):
+def create_employee(data: EmployeeCreate, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     # Check if phone exists (use dummy if needed)
     db_user = db.query(User).filter(User.phone == data.phone).first()
     if db_user:
@@ -54,8 +54,8 @@ def create_employee(data: EmployeeCreate, db: Session = Depends(get_db)):
     return new_user
 
 @router.get("/employees")
-def get_employees(month: Optional[int] = None, year: Optional[int] = None, db: Session = Depends(get_db)):
-    query = db.query(User).filter(User.role == UserRole.employee)
+def get_employees(month: Optional[int] = None, year: Optional[int] = None, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
+    query = db.query(User).filter(User.role == UserRole.employee, User.status != "inactive")
     
     if month and year:
         # Include employees who were ASSIGNED to a shift in this month (even if no report submitted yet)
@@ -83,8 +83,39 @@ def get_employees(month: Optional[int] = None, year: Optional[int] = None, db: S
         } for e in employees
     ]
 
+@router.get("/employees/pending")
+def get_pending_employees(db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
+    pending = db.query(User).filter(User.role == UserRole.employee, User.status == "pending").order_by(User.full_name.asc()).all()
+    return [
+        {
+            "id": str(e.id),
+            "full_name": e.full_name,
+            "phone": e.phone
+        } for e in pending
+    ]
+
+@router.patch("/employees/{user_id}/approve")
+def approve_employee(user_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.status = "active"
+    db.commit()
+    return {"message": "User approved successfully"}
+
+@router.delete("/employees/{user_id}/reject")
+def reject_employee(user_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
+    user = db.query(User).filter(User.id == user_id, User.status == "pending").first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Pending user not found")
+    
+    db.delete(user)
+    db.commit()
+    return {"message": "User rejected and deleted"}
+
 @router.put("/employees/{user_id}")
-def update_rates(user_id: str, data: EmployeeRatesUpdate, db: Session = Depends(get_db)):
+def update_rates(user_id: str, data: EmployeeRatesUpdate, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -93,8 +124,18 @@ def update_rates(user_id: str, data: EmployeeRatesUpdate, db: Session = Depends(
     db.commit()
     return {"message": "Rates updated successfully"}
 
+@router.delete("/employees/{user_id}")
+def deactivate_employee(user_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.status = "inactive"
+    db.commit()
+    return {"message": "User deactivated successfully"}
+
 @router.get("/adjustments/{user_id}/{month}/{year}")
-def get_adjustments(user_id: str, month: int, year: int, db: Session = Depends(get_db)):
+def get_adjustments(user_id: str, month: int, year: int, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     adjs = db.query(PayrollAdjustment).filter(
         PayrollAdjustment.user_id == user_id,
         PayrollAdjustment.month == month,
@@ -110,7 +151,7 @@ def get_adjustments(user_id: str, month: int, year: int, db: Session = Depends(g
     ]
 
 @router.post("/adjustments")
-def create_adjustment(data: AdjustmentCreate, db: Session = Depends(get_db)):
+def create_adjustment(data: AdjustmentCreate, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     adj = PayrollAdjustment(
         user_id=data.user_id,
         month=data.month,
@@ -124,7 +165,7 @@ def create_adjustment(data: AdjustmentCreate, db: Session = Depends(get_db)):
     return {"message": "Adjustment added"}
 
 @router.delete("/adjustments/{adj_id}")
-def delete_adjustment(adj_id: str, db: Session = Depends(get_db)):
+def delete_adjustment(adj_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     adj = db.query(PayrollAdjustment).filter(PayrollAdjustment.id == adj_id).first()
     if not adj:
         raise HTTPException(status_code=404, detail="Adjustment not found")
@@ -133,7 +174,7 @@ def delete_adjustment(adj_id: str, db: Session = Depends(get_db)):
     return {"message": "Adjustment deleted"}
 
 @router.get("/export/{employee_id}/{month}/{year}")
-def export_payroll(employee_id: str, month: int, year: int, db: Session = Depends(get_db)):
+def export_payroll(employee_id: str, month: int, year: int, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     user = db.query(User).filter(User.id == employee_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -142,4 +183,11 @@ def export_payroll(employee_id: str, month: int, year: int, db: Session = Depend
     payroll_service = PayrollService(db)
     report_text = payroll_service.generate_employee_report(user, month, year)
 
+    return {"report": report_text}
+
+@router.get("/my_payroll/{month}/{year}")
+def get_my_payroll(month: int, year: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from app.services.payroll_service import PayrollService
+    payroll_service = PayrollService(db)
+    report_text = payroll_service.generate_employee_report(current_user, month, year)
     return {"report": report_text}

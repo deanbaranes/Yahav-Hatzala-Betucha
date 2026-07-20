@@ -25,6 +25,35 @@ export default function PayrollManagement() {
     }
   });
 
+  const { data: pendingEmployees } = useQuery<any[]>({
+    queryKey: ['payroll-pending'],
+    queryFn: async () => {
+      const res = await axiosClient.get('/payroll/employees/pending');
+      return res.data;
+    }
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await axiosClient.patch(`/payroll/employees/${id}/approve`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payroll-pending'] });
+      queryClient.invalidateQueries({ queryKey: ['payroll-employees'] });
+      alert('העובד אושר בהצלחה!');
+    }
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await axiosClient.delete(`/payroll/employees/${id}/reject`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payroll-pending'] });
+      alert('העובד נמחק מהמערכת.');
+    }
+  });
+
   const { data: adjustments } = useQuery<any[]>({
     queryKey: ['payroll-adjustments', selectedUser?.id, selectedMonth, selectedYear],
     queryFn: async () => {
@@ -51,6 +80,17 @@ export default function PayrollManagement() {
       queryClient.invalidateQueries({ queryKey: ['payroll-employees'] });
       setEditingRates(false);
       refetchReport();
+    }
+  });
+
+  const deactivateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await axiosClient.delete(`/payroll/employees/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payroll-employees'] });
+      setSelectedUser(null);
+      alert('העובד הוסר בהצלחה מהמערכת.');
     }
   });
 
@@ -102,6 +142,46 @@ export default function PayrollManagement() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Employee List & Month selection */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          {pendingEmployees && pendingEmployees.length > 0 && (
+            <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+              <h3 className="text-yellow-800 font-bold mb-3 flex items-center gap-2">
+                עובדים ממתינים לאישור ({pendingEmployees.length})
+              </h3>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {pendingEmployees.map(emp => (
+                  <div key={emp.id} className="flex justify-between items-center bg-white p-2 rounded-lg border border-yellow-100 shadow-sm">
+                    <div>
+                      <div className="font-bold text-sm">{emp.full_name}</div>
+                      <div className="text-xs text-gray-500">{emp.phone}</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => {
+                          if(confirm(`האם לדחות ולמחוק את בקשת ההרשמה של ${emp.full_name}?`)) {
+                            rejectMutation.mutate(emp.id);
+                          }
+                        }}
+                        disabled={rejectMutation.isPending}
+                        title="דחה ומחק משתמש"
+                        className="bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-lg text-xs font-bold transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                      <button 
+                        onClick={() => approveMutation.mutate(emp.id)}
+                        disabled={approveMutation.isPending}
+                        title="אשר עובד"
+                        className="bg-green-500 hover:bg-green-600 text-white p-1.5 rounded-lg text-xs font-bold transition-colors"
+                      >
+                        <Check size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <h2 className="text-xl font-bold mb-4">בחר עובד ותקופה</h2>
           
           <div className="flex gap-2 mb-6">
@@ -169,10 +249,23 @@ export default function PayrollManagement() {
               </div>
               <div>
                 {!editingRates ? (
-                  <button onClick={() => {
-                    setRatesForm({hourly_rate: selectedUser.hourly_rate, base_daily_hours: selectedUser.base_daily_hours});
-                    setEditingRates(true);
-                  }} className="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-lg font-bold">ערוך תעריף</button>
+                  <div className="flex flex-col gap-2">
+                    <button onClick={() => {
+                      setRatesForm({hourly_rate: selectedUser.hourly_rate, base_daily_hours: selectedUser.base_daily_hours});
+                      setEditingRates(true);
+                    }} className="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-lg font-bold transition-colors text-sm w-full">ערוך תעריף</button>
+                    
+                    <button 
+                      onClick={() => {
+                        if (confirm(`האם אתה בטוח שברצונך למחוק את ${selectedUser.full_name} מהמערכת? פעולה זו אינה הפיכה.`)) {
+                          deactivateMutation.mutate(selectedUser.id);
+                        }
+                      }}
+                      className="text-red-500 hover:bg-red-50 px-3 py-1 rounded-lg font-bold transition-colors text-sm w-full flex items-center justify-center gap-1"
+                    >
+                      <Trash2 size={14} /> הסר עובד
+                    </button>
+                  </div>
                 ) : (
                   <button onClick={() => updateRatesMutation.mutate(ratesForm)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2">
                     <Save size={16} /> שמור תעריף

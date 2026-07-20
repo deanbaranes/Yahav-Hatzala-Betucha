@@ -257,9 +257,10 @@ def update_report(report_id: str, data: ReportUpdate, db: Session = Depends(get_
 
 @router.get("/matrix/{year}/{month}")
 def get_reports_matrix(year: int, month: int, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
-    # Fetch all assignments in this month that are "assigned"
-    assignments = db.query(TripAssignment).join(Trip).filter(
+    # Fetch all assignments in this month that are "assigned" for active/pending users
+    assignments = db.query(TripAssignment).join(Trip).join(User, TripAssignment.user_id == User.id).filter(
         TripAssignment.status == "assigned",
+        User.status != "inactive",
         extract('year', Trip.start_date) == year,
         extract('month', Trip.start_date) == month
     ).all()
