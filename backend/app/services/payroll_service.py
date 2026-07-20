@@ -44,7 +44,7 @@ class PayrollService:
         auto_accom_nights = Decimal(0)
         for r in reports:
             ot_hours += Decimal(str(r.overtime_decimal or 0))
-            if hasattr(r, 'sleeps') and r.sleeps is not None and r.sleeps > 0:
+            if hasattr(r, 'sleeps') and r.sleeps is not None:
                 auto_accom_nights += Decimal(str(r.sleeps))
             else:
                 # Fallback to trip duration for backward compatibility
