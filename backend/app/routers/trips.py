@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from datetime import datetime, timezone
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.models.trip import Trip
 from app.models.client import Client
@@ -81,8 +81,11 @@ def update_trip(trip_id: str, trip_data: TripCreate, db: Session = Depends(get_d
 @router.get("/available")
 def get_available_trips(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     now = datetime.now()
-    # Fetch trips that haven't ended yet
-    trips = db.query(Trip).filter(Trip.start_date >= now).order_by(Trip.start_date.asc()).all()
+    # Fetch trips that haven't ended yet, eager load assignments and client to prevent N+1 queries
+    trips = db.query(Trip).options(
+        joinedload(Trip.client),
+        joinedload(Trip.assignments)
+    ).filter(Trip.start_date >= now).order_by(Trip.start_date.asc()).all()
     result = []
     for t in trips:
         # Count assignments
@@ -344,7 +347,11 @@ def admin_remove_trip_assignment(trip_id: str, user_id: str, db: Session = Depen
 
 @router.get("/")
 def get_trips(db: Session = Depends(get_db)):
-    trips = db.query(Trip).order_by(Trip.start_date.desc()).all()
+    # Eager load client and assignments (with their users) to avoid severe N+1 bottlenecks
+    trips = db.query(Trip).options(
+        joinedload(Trip.client),
+        joinedload(Trip.assignments).joinedload(TripAssignment.user)
+    ).order_by(Trip.start_date.desc()).all()
     # Serialize trips and their client + assignments
     result = []
     for t in trips:

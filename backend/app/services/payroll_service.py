@@ -1,6 +1,6 @@
 from decimal import Decimal, ROUND_HALF_UP
 from typing import List
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import extract
 
 from app.models.user import User
@@ -13,7 +13,9 @@ class PayrollService:
         self.db = db
 
     def generate_employee_report(self, user: User, month: int, year: int) -> str:
-        reports = self.db.query(TripReport).join(TripAssignment).filter(
+        reports = self.db.query(TripReport).options(
+            joinedload(TripReport.assignment).joinedload(TripAssignment.trip)
+        ).join(TripAssignment).filter(
             TripAssignment.user_id == user.id,
             extract('month', TripReport.start_time) == month,
             extract('year', TripReport.start_time) == year
