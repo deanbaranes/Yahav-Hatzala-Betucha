@@ -2,6 +2,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from typing import List
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import extract
+from datetime import datetime
 
 from app.models.user import User
 from app.models.trip_report import TripReport
@@ -13,6 +14,13 @@ class PayrollService:
         self.db = db
 
     def generate_employee_report(self, user: User, month: int, year: int) -> str:
+        if user.status == "inactive":
+            raise ValueError(f"Cannot generate payroll for inactive user {user.full_name}")
+            
+        now = datetime.now()
+        if year > now.year or (year == now.year and month > now.month):
+            raise ValueError(f"Cannot generate payroll for future date {month}/{year}")
+
         reports = self.db.query(TripReport).options(
             joinedload(TripReport.assignment).joinedload(TripAssignment.trip)
         ).join(TripAssignment).filter(

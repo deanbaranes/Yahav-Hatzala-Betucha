@@ -137,6 +137,21 @@ export default function PayrollManagement() {
           </h1>
           <p className="text-gray-500 text-base mt-2 font-medium">חישוב שכר ממוכן, שעות נוספות ותוספות שכר לעובדים.</p>
         </div>
+        
+        <button 
+          onClick={async () => {
+            try {
+              const res = await axiosClient.get(`/payroll/export-all/${selectedMonth}/${selectedYear}`);
+              navigator.clipboard.writeText(res.data.report);
+              alert('הדוח המרוכז של כל העובדים הועתק ללוח!');
+            } catch (err) {
+              alert('שגיאה בייצוא דוח מרוכז');
+            }
+          }}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm transition-colors"
+        >
+          <Copy size={18} /> העתק דוח מרוכז ({selectedMonth}/{selectedYear})
+        </button>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -185,6 +185,42 @@ def export_payroll(employee_id: str, month: int, year: int, db: Session = Depend
 
     return {"report": report_text}
 
+@router.get("/export-all/{month}/{year}")
+def export_all_payroll(month: int, year: int, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
+    from app.services.payroll_service import PayrollService
+    payroll_service = PayrollService(db)
+    
+    # Get all active employees who have any activity this month
+    assigned_users = db.query(TripAssignment.user_id).join(Trip).filter(
+        extract('month', Trip.start_date) == month,
+        extract('year', Trip.start_date) == year,
+        TripAssignment.status == "assigned"
+    ).subquery()
+    
+    adjusted_users = db.query(PayrollAdjustment.user_id).filter(
+        PayrollAdjustment.month == month,
+        PayrollAdjustment.year == year
+    ).subquery()
+    
+    employees = db.query(User).filter(
+        User.role == UserRole.employee, 
+        User.status != "inactive",
+        ((User.id.in_(assigned_users)) | (User.id.in_(adjusted_users)))
+    ).order_by(User.full_name.asc()).all()
+    
+    full_report = f"--- דוח שכר מרוכז: {month}/{year} ---\n\n"
+    for emp in employees:
+        try:
+            report_text = payroll_service.generate_employee_report(emp, month, year)
+            full_report += report_text + "\n\n=============================\n\n"
+        except ValueError:
+            pass 
+            
+    if not employees:
+        full_report += "לא נמצאו נתוני שכר לאף עובד בחודש זה."
+        
+    return {"report": full_report}
+
 @router.get("/my_payroll/{month}/{year}")
 def get_my_payroll(month: int, year: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     from app.services.payroll_service import PayrollService
