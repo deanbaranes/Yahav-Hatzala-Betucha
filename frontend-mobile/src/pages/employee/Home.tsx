@@ -1,4 +1,3 @@
-import React from 'react';
 import NextTripCard from '../../features/employee/NextTripCard';
 import { useAuth } from '../../hooks/useAuth';
 import { FileText, ExternalLink } from 'lucide-react';
@@ -9,7 +8,7 @@ export default function Home() {
   return (
     <div className="animate-fade-in space-y-6 pb-6">
       <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-6 rounded-3xl shadow-lg mb-6">
-        <h2 className="text-2xl font-black mb-1">שלום {user?.full_name?.split(' ')[0] || 'עובד יקר'}! 👋</h2>
+        <h2 className="text-2xl font-black mb-1">שלום {user?.name?.split(' ')[0] || 'עובד יקר'}! 👋</h2>
         <p className="text-blue-100">מוכן ליום עבודה חדש?</p>
       </div>
 

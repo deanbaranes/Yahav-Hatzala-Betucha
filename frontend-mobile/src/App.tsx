@@ -1,4 +1,3 @@
-import React from 'react';
 import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
 import AdminLayout from './features/admin/AdminLayout';
 import Dashboard from './pages/admin/Dashboard';
