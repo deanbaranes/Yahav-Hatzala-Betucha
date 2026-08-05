@@ -16,6 +16,7 @@ class ClientUpdate(BaseModel):
     balance: Optional[str] = None
     debt_start_date: Optional[str] = None
     notes: Optional[str] = None
+    payment_terms: Optional[str] = None  # "שוטף + 30" / "שוטף + 60" / "שוטף + 75" / None
 
 @router.get("/")
 def get_clients(db: Session = Depends(get_db)):
@@ -29,7 +30,8 @@ def get_clients(db: Session = Depends(get_db)):
             "phone": c.phone,
             "balance": c.balance,
             "debt_start_date": c.debt_start_date.isoformat() if c.debt_start_date else None,
-            "notes": c.notes
+            "notes": c.notes,
+            "payment_terms": c.payment_terms
         } for c in clients
     ]
 
@@ -50,7 +52,8 @@ def search_clients(q: str = "", db: Session = Depends(get_db)):
             "phone": c.phone,
             "balance": c.balance,
             "debt_start_date": c.debt_start_date.isoformat() if c.debt_start_date else None,
-            "notes": c.notes
+            "notes": c.notes,
+            "payment_terms": c.payment_terms
         } for c in clients
     ]
 
@@ -69,6 +72,7 @@ def update_client(client_id: str, data: ClientUpdate, db: Session = Depends(get_
         from dateutil import parser
         client.debt_start_date = parser.parse(data.debt_start_date) if data.debt_start_date else None
     if data.notes is not None: client.notes = data.notes
+    if data.payment_terms is not None: client.payment_terms = data.payment_terms if data.payment_terms != '' else None
     
     db.commit()
     db.refresh(client)

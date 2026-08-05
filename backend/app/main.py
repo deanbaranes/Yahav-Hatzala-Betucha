@@ -4,8 +4,12 @@ from fastapi.staticfiles import StaticFiles
 import os
 from app.database import engine, Base
 from app.models import user, client, trip, trip_assignment, trip_report, payroll_adjustment
-from app.models import refresh_token  # register RefreshToken table
-from app.routers import auth, trips, reports, webhooks, clients, admin, payroll
+from app.models import refresh_token        # register RefreshToken table
+from app.models import password_reset_token # register PasswordResetToken table
+from app.models import supplier             # register Supplier table
+from app.models import notification         # register Notification table
+from app.models import payslip              # register Payslip table
+from app.routers import auth, trips, reports, webhooks, clients, admin, payroll, suppliers, notifications
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -18,19 +22,36 @@ limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Yahav Hatzala Betucha API")
+from contextlib import asynccontextmanager
+from app.tasks.scheduler import start_scheduler
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    start_scheduler()
+    yield
+    # Shutdown
+    pass
+
+app = FastAPI(title="Yahav Hatzala Betucha API", lifespan=lifespan)
 
 # Attach the limiter to the app state so slowapi decorators work
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
+# כתובות מותרות ל-CORS — מוגדרות ב-.env כ-ALLOWED_ORIGINS (מופרדות בפסיק)
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:5173,http://localhost:3000"
+).split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 app.include_router(auth.router)
@@ -40,6 +61,8 @@ app.include_router(reports.router)
 app.include_router(webhooks.router, prefix="/api")
 app.include_router(admin.router)
 app.include_router(payroll.router)
+app.include_router(suppliers.router)
+app.include_router(notifications.router)
 
 @app.get("/")
 def read_root():

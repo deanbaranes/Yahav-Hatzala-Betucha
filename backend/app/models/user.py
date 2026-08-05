@@ -1,6 +1,6 @@
 import enum
 import uuid
-from sqlalchemy import Column, String, Enum, Numeric
+from sqlalchemy import Column, String, Enum, Numeric, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from app.database import Base
 
@@ -21,6 +21,9 @@ class User(Base):
     status = Column(Enum(UserStatus), nullable=False, default=UserStatus.pending, index=True)
     full_name = Column(String, nullable=False)
     phone = Column(String, unique=True, index=True, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=True)
     password_hash = Column(String, nullable=False)
     hourly_rate = Column(Numeric(10, 2), default=0.0)
     base_daily_hours = Column(Numeric(10, 2), default=8.6)
+    # True = עובד בשכר גלובלי (קבוע ליום) ולא לפי שעות
+    is_global_salary = Column(Boolean, default=False, nullable=False)

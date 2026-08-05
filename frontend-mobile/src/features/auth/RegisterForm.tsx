@@ -8,6 +8,7 @@ export default function RegisterForm() {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const navigate = useNavigate();
 
@@ -31,7 +32,12 @@ export default function RegisterForm() {
       setErrorMsg('הסיסמה חייבת להכיל לפחות 6 תווים.');
       return;
     }
-    
+
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setErrorMsg('כתובת האימייל אינה תקינה.');
+      return;
+    }
+
     registerMutation.mutate();
   };
 
@@ -41,6 +47,7 @@ export default function RegisterForm() {
         full_name: fullName,
         phone: phone,
         password: password,
+        email: email || undefined,
         role: 'employee'
       });
       return res.data;
@@ -107,6 +114,20 @@ export default function RegisterForm() {
               placeholder="בחר סיסמה"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              dir="ltr"
+            />
+          </div>
+
+          <div>
+            <label className="block text-gray-700 font-bold mb-1.5 text-sm">
+              אימייל <span className="text-gray-400 font-normal text-xs">(לשחזור סיסמא — מומלץ)</span>
+            </label>
+            <input
+              type="email"
+              className="w-full p-3 border border-gray-200/80 rounded-xl bg-white/60 focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all focus:outline-none"
+              placeholder="your@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               dir="ltr"
             />
           </div>

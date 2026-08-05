@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Map, FileText, LogOut, Menu, X, ChevronRight, ChevronLeft, CalendarDays, Wallet, User as UserIcon } from 'lucide-react';
+import { Home, Map, FileText, LogOut, Menu, X, ChevronRight, ChevronLeft, CalendarDays, Wallet, User as UserIcon, FileSignature } from 'lucide-react';
 
 export default function EmployeeLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -18,6 +18,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     { to: '/employee/schedule', icon: CalendarDays, label: 'הסידור שלי' },
     { to: '/employee/trips', icon: Map, label: 'טיולים פתוחים' },
     { to: '/employee/payroll', icon: Wallet, label: 'השכר שלי' },
+    { to: '/employee/payslips', icon: FileSignature, label: 'התלושים שלי' },
     { to: '/employee/report', icon: FileText, label: 'הגשת דיווח' },
   ];
 

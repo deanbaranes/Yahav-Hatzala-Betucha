@@ -15,5 +15,7 @@ class Client(Base):
     balance = Column(String, nullable=True)
     debt_start_date = Column(DateTime, nullable=True)
     notes = Column(String, nullable=True)
+    # תנאי תשלום מיוחדים — למשל "שוטף + 60". None = ללא תנאים מיוחדים
+    payment_terms = Column(String, nullable=True)
 
     trips = relationship("Trip", back_populates="client")

@@ -2,6 +2,10 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, Calendar as CalendarIcon, CheckCircle2 } from 'lucide-react';
 import axiosClient from '../../api/axiosClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import SmartClientInput from './SmartClientInput';
+
+const AVAILABLE_ROLES = ["מע\"ר", "חובש", "פראמדיק", "שומר לילה", "מע\"ר חמוש", "חובש חמוש", "מאבטח"];
+
 
 export default function TripCalendar({ trips }: { trips: any[] }) {
   const queryClient = useQueryClient();
@@ -75,7 +79,8 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
     onSuccess: () => {
       alert('הדיווח נוסף בהצלחה!');
       setReportingAssignment(null);
-      setReportForm({ start_time: '', end_time: '' });
+      setReportDaysCount(1);
+      setReportDailyShifts([{ start_time: '', end_time: '' }]);
       queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
       queryClient.invalidateQueries({ queryKey: ['admin-reports'] });
@@ -123,7 +128,7 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
   const [reportDailyShifts, setReportDailyShifts] = useState([{ start_time: '', end_time: '' }]);
 
   const [quickEditMode, setQuickEditMode] = useState(false);
-  const [quickEditForm, setQuickEditForm] = useState({ client_name: '', location: '', start_date: '', end_date: '', capacity: 0, roles_requirements: {}, color: '' });
+  const [quickEditForm, setQuickEditForm] = useState({ client_name: '', location: '', start_date: '', end_date: '', capacity: 0, roles_requirements: {}, color: '', global_salary: '' as string | number });
 
   // Add Employee Assignment State
   const [assignEmployeeName, setAssignEmployeeName] = useState('');
@@ -133,7 +138,29 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
 
   // Create Manual Trip State
   const [creatingTripDate, setCreatingTripDate] = useState<Date | null>(null);
-  const [newTripForm, setNewTripForm] = useState({ client_name: '', location: '', start_time: '08:00', end_time: '16:00', capacity: 1 });
+  const [newTripForm, setNewTripForm] = useState({ 
+    client_name: '', 
+    location: '', 
+    start_time: '08:00', 
+    end_time: '16:00', 
+    roles_requirements: {} as Record<string, number>,
+    color: '',
+    global_salary: '' 
+  });
+
+  const updateNewTripRoleCount = (role: string, count: number) => {
+    setNewTripForm(prev => {
+      const newRoles = { ...prev.roles_requirements };
+      if (count <= 0) {
+        delete newRoles[role];
+      } else {
+        newRoles[role] = count;
+      }
+      return { ...prev, roles_requirements: newRoles };
+    });
+  };
+
+  const newTripTotalCapacity = Object.values(newTripForm.roles_requirements).reduce((a, b) => a + b, 0);
 
   useEffect(() => {
     if (assignEmployeeName && employees) {
@@ -142,6 +169,7 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
       setFilteredEmployees([]);
     }
   }, [assignEmployeeName, employees]);
+
 
   const assignEmployeeMutation = useMutation({
     mutationFn: async (payload: { trip_id: string, user_id?: string, new_user_name?: string, role: string }) => {
@@ -306,7 +334,7 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
               className="min-h-[80px] md:min-h-[120px] p-0.5 md:p-1 border-l border-b border-gray-100 relative group hover:bg-blue-50/50 transition-colors cursor-pointer"
               onClick={() => {
                 setCreatingTripDate(new Date(year, month, day));
-                setNewTripForm({ client_name: 'לקוח כללי', location: '', start_time: '08:00', end_time: '16:00', capacity: 1 });
+                setNewTripForm({ client_name: '', location: '', start_time: '08:00', end_time: '16:00', roles_requirements: {}, color: '', global_salary: '' });
               }}
             >
               <span className={`inline-block font-bold text-[10px] md:text-sm w-5 h-5 md:w-7 md:h-7 text-center leading-5 md:leading-7 rounded-full mb-1 ${
@@ -381,7 +409,8 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                         end_date: selectedTrip.end_date ? selectedTrip.end_date.substring(0, 16) : '',
                         capacity: selectedTrip.capacity || 0,
                         roles_requirements: selectedTrip.roles_requirements || {},
-                        color: selectedTrip.color || ''
+                        color: selectedTrip.color || '',
+                        global_salary: selectedTrip.global_salary || ''
                       });
                       setQuickEditMode(true);
                       setReportingAssignment(null);
@@ -416,6 +445,16 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                     className="w-full p-2 text-sm border border-gray-300 rounded" 
                     value={quickEditForm.capacity} 
                     onChange={e => setQuickEditForm({...quickEditForm, capacity: parseInt(e.target.value) || 0})} 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">שכר גלובלי לטיול</label>
+                  <input 
+                    type="number" 
+                    min="0"
+                    className="w-full p-2 text-sm border border-gray-300 rounded" 
+                    value={quickEditForm.global_salary} 
+                    onChange={e => setQuickEditForm({...quickEditForm, global_salary: e.target.value})} 
                   />
                 </div>
                 <div className="flex justify-end gap-2 mt-4 pt-2 border-t border-blue-100">
@@ -517,6 +556,16 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                     </div>
                   </div>
                 </div>
+
+                {selectedTrip.global_salary && (
+                  <div className="flex items-center gap-3 bg-green-50 p-3 rounded-lg border border-green-100">
+                    <div className="text-green-600">💰</div>
+                    <div>
+                      <div className="text-xs text-green-700 font-bold">שכר גלובלי לטיול</div>
+                      <div className="text-green-800 font-black">₪{selectedTrip.global_salary}</div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -675,73 +724,134 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
 
       {/* Create Manual Trip Modal */}
       {creatingTripDate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm" onClick={() => setCreatingTripDate(null)}>
-          <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-sm w-full animate-fade-in text-right" onClick={e => e.stopPropagation()}>
-            <h3 className="text-xl font-bold text-gray-800 mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-gray-900/60 backdrop-blur-sm overflow-hidden" onClick={() => setCreatingTripDate(null)}>
+          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-2xl max-w-lg w-full animate-fade-in text-right max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">
               הוספת טיול חדש: {creatingTripDate.toLocaleDateString('he-IL')}
             </h3>
+
             <div className="space-y-4">
+              <SmartClientInput 
+                value={newTripForm.client_name} 
+                onChange={(v) => setNewTripForm({...newTripForm, client_name: v})} 
+              />
+
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">כותרת הטיול (מיקום)</label>
+                <label className="block text-sm font-bold text-gray-700 mb-1">מיקום / שם היעד</label>
                 <input 
                   type="text" 
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
                   value={newTripForm.location}
                   onChange={e => setNewTripForm({...newTripForm, location: e.target.value})}
-                  placeholder="למשל: טיול חרמון 2 חובשים"
+                  placeholder="כתובת יעד או תיאור הטיול"
                 />
               </div>
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <label className="block text-sm font-bold text-gray-700 mb-1">משעה</label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">שעת התחלה</label>
                   <input 
                     type="time" 
-                    className="w-full p-2 border border-gray-300 rounded"
+                    className="w-full p-2 border border-gray-300 rounded text-sm"
                     value={newTripForm.start_time}
                     onChange={e => setNewTripForm({...newTripForm, start_time: e.target.value})}
                   />
                 </div>
-                <div className="flex-1">
-                  <label className="block text-sm font-bold text-gray-700 mb-1">עד שעה</label>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">שעת סיום משוערת</label>
                   <input 
                     type="time" 
-                    className="w-full p-2 border border-gray-300 rounded"
+                    className="w-full p-2 border border-gray-300 rounded text-sm"
                     value={newTripForm.end_time}
                     onChange={e => setNewTripForm({...newTripForm, end_time: e.target.value})}
                   />
                 </div>
               </div>
+
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">כמות עובדים דרושה</label>
+                <label className="block text-sm font-bold text-gray-700 mb-1">שכר גלובלי לטיול (₪)</label>
                 <input 
                   type="number" 
-                  min="1"
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                  value={newTripForm.capacity}
-                  onChange={e => setNewTripForm({...newTripForm, capacity: parseInt(e.target.value) || 1})}
+                  min="0"
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                  value={newTripForm.global_salary}
+                  onChange={e => setNewTripForm({...newTripForm, global_salary: e.target.value})}
+                  placeholder="הזן סכום גלובלי (אופציונלי)"
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">צבע הטיול ביומן</label>
+                <div className="flex flex-wrap gap-2 items-center">
+                  {[
+                    { color: '', label: 'אוטומטי (לפי סטטוס)' },
+                    { color: '#039BE5', label: 'ציאן' },
+                    { color: '#D50000', label: 'אדום' },
+                    { color: '#0B8043', label: 'ירוק' },
+                    { color: '#F4511E', label: 'כתום' },
+                    { color: '#8E24AA', label: 'סגול' },
+                    { color: '#F6BF26', label: 'צהוב' },
+                    { color: '#3F51B5', label: 'כחול' },
+                    { color: '#616161', label: 'אפור' },
+                  ].map(({ color, label }) => (
+                    <button
+                      key={label}
+                      type="button"
+                      title={label}
+                      onClick={() => setNewTripForm({ ...newTripForm, color })}
+                      className={`w-7 h-7 rounded-full border-2 transition-all ${
+                        newTripForm.color === color
+                          ? 'border-gray-900 scale-125'
+                          : 'border-gray-200 hover:scale-110'
+                      }`}
+                      style={{ backgroundColor: color || '#e5e7eb' }}
+                    >
+                      {color === '' && <span className="text-gray-400 text-xs font-bold flex items-center justify-center w-full h-full">א</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2 border-b pb-1">
+                  דרישות צוות (סה"כ: {newTripTotalCapacity})
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                  {AVAILABLE_ROLES.map(role => (
+                    <div key={role} className="flex items-center justify-between bg-gray-50 p-2 rounded border border-gray-200 text-xs">
+                      <span className="font-semibold text-gray-700 truncate">{role}</span>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        className="w-12 p-1 border border-gray-300 rounded text-center text-xs" 
+                        value={newTripForm.roles_requirements[role] || ''} 
+                        placeholder="0"
+                        onChange={e => updateNewTripRoleCount(role, parseInt(e.target.value) || 0)} 
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-            <div className="flex justify-end gap-2 mt-6">
+
+            <div className="flex justify-end gap-2 mt-6 pt-3 border-t border-gray-100">
               <button 
                 onClick={() => setCreatingTripDate(null)} 
-                className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 transition-colors text-sm"
               >
                 ביטול
               </button>
               <button 
-                disabled={!newTripForm.location || createManualTripMutation.isPending}
+                disabled={!newTripForm.client_name || !newTripForm.location || newTripTotalCapacity === 0 || createManualTripMutation.isPending}
                 onClick={() => {
                   const s = new Date(creatingTripDate);
                   const [sh, sm] = newTripForm.start_time.split(':');
-                  s.setHours(parseInt(sh), parseInt(sm));
+                  s.setHours(parseInt(sh || '8'), parseInt(sm || '0'));
                   
                   const e = new Date(creatingTripDate);
                   const [eh, em] = newTripForm.end_time.split(':');
-                  e.setHours(parseInt(eh), parseInt(em));
+                  e.setHours(parseInt(eh || '16'), parseInt(em || '0'));
 
-                  // Convert to ISO strings avoiding timezone shift issues locally if possible, but standard new Date().toISOString() works.
-                  // Since we just want local time strings formatted properly:
                   const formatLocal = (d: Date) => {
                      const pad = (n: number) => n.toString().padStart(2, '0');
                      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -752,12 +862,14 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                     location: newTripForm.location,
                     start_date: formatLocal(s),
                     end_date: formatLocal(e),
-                    capacity: newTripForm.capacity,
-                    roles_requirements: {},
-                    color: ""
+                    capacity: newTripTotalCapacity,
+                    roles_requirements: newTripForm.roles_requirements,
+                    color: newTripForm.color,
+                    global_salary: newTripForm.global_salary ? parseFloat(newTripForm.global_salary) : null
                   });
                 }}
-                className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm"
+                title={newTripTotalCapacity === 0 ? "חובה להגדיר לפחות תפקיד אחד לטיול" : ""}
               >
                 {createManualTripMutation.isPending ? 'יוצר...' : 'שמור אירוע'}
               </button>

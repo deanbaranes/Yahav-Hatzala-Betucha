@@ -9,7 +9,7 @@ const AVAILABLE_ROLES = ["מע\"ר", "חובש", "פראמדיק", "שומר ל�
 export default function TripManagementBoard() {
   const queryClient = useQueryClient();
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {} as Record<string, number>, color: '' as string });
+  const [formData, setFormData] = useState({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {} as Record<string, number>, color: '' as string, global_salary: '' as string | number });
   const [searchTerm, setSearchTerm] = useState('');
 
   const totalCapacity = Object.values(formData.roles_requirements).reduce((a, b) => a + b, 0);
@@ -20,7 +20,7 @@ export default function TripManagementBoard() {
       queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
       alert('הטיול נוצר בהצלחה!');
-      setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '' });
+      setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '' });
     },
     onError: (error: any) => {
       alert('שגיאה ביצירת הטיול: ' + (error.response?.data?.detail || 'אנא ודא שכל השדות מלאים ותקינים.'));
@@ -34,7 +34,7 @@ export default function TripManagementBoard() {
       queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
       alert('הטיול עודכן בהצלחה!');
       setEditingTripId(null);
-      setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '' });
+      setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '' });
     },
     onError: (error: any) => {
       alert('שגיאה בעדכון הטיול: ' + (error.response?.data?.detail || 'אנא ודא שכל השדות מלאים ותקינים.'));
@@ -98,6 +98,13 @@ export default function TripManagementBoard() {
           <label className="block text-gray-700 font-bold mb-2">שעת סיום משוערת</label>
           <input type="datetime-local" className="w-full p-2 border border-gray-300 rounded" 
             value={formData.end_date} onChange={e => setFormData({...formData, end_date: e.target.value})} />
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-gray-700 font-bold mb-2">שכר גלובלי לטיול (₪)</label>
+          <input type="number" min="0" className="w-full p-2 border border-gray-300 rounded placeholder:text-sm" 
+            placeholder="הזן סכום גלובלי (אופציונלי)"
+            value={formData.global_salary} onChange={e => setFormData({...formData, global_salary: e.target.value})} />
         </div>
           
         <div className="mb-4 md:col-span-2">
@@ -166,7 +173,7 @@ export default function TripManagementBoard() {
           <button 
             onClick={() => {
               setEditingTripId(null);
-              setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '' });
+              setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '' });
             }}
             className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-bold shadow transition-colors"
           >
@@ -210,7 +217,8 @@ export default function TripManagementBoard() {
                           start_date: trip.start_date ? trip.start_date.substring(0, 16) : '',
                           end_date: trip.end_date ? trip.end_date.substring(0, 16) : '',
                           roles_requirements: trip.roles_requirements || {},
-                          color: trip.color || ''
+                          color: trip.color || '',
+                          global_salary: trip.global_salary || ''
                         });
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}

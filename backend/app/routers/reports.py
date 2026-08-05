@@ -45,18 +45,22 @@ def get_my_pending_reports(db: Session = Depends(get_db), current_user: User = D
         } for a in pending_assignments
     ]
 
-# S3 Configuration
-S3_BUCKET = os.getenv("S3_BUCKET", "yahav-receipts")
-AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "dummy")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "dummy")
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
-s3_client = boto3.client(
-    's3',
-    region_name=AWS_REGION,
-    aws_access_key_id=AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=AWS_SECRET_ACCESS_KEY
-)
+# Cloudinary Configuration
+CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME", "")
+CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY", "")
+CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET", "")
+
+if CLOUDINARY_CLOUD_NAME:
+    cloudinary.config(
+        cloud_name=CLOUDINARY_CLOUD_NAME,
+        api_key=CLOUDINARY_API_KEY,
+        api_secret=CLOUDINARY_API_SECRET,
+        secure=True
+    )
 
 from fastapi import UploadFile, File
 import shutil
@@ -66,49 +70,33 @@ async def upload_file(file: UploadFile = File(...), current_user: User = Depends
     ext = ".pdf" if file.content_type == "application/pdf" else ".jpg"
     file_id = str(uuid.uuid4())
     
-    if AWS_ACCESS_KEY_ID in ["dummy", "your_aws_access_key"] or not AWS_ACCESS_KEY_ID:
+    if not CLOUDINARY_CLOUD_NAME:
+        # Fallback to local upload
         file_name = f"{file_id}{ext}"
         file_path = f"uploads/{file_name}"
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         return {"url": f"http://localhost:8000/uploads/{file_name}"}
     
-    # S3 Upload
-    file_name = f"receipts/{file_id}{ext}"
+    # Cloudinary Upload
     try:
-        s3_client.upload_fileobj(
+        # We upload to a specific folder in cloudinary so it's organized
+        result = cloudinary.uploader.upload(
             file.file,
-            S3_BUCKET,
-            file_name,
-            ExtraArgs={"ACL": "public-read", "ContentType": file.content_type}
+            folder="yahav_receipts",
+            resource_type="auto" # Auto detects image vs raw (pdf)
         )
-    except ClientError as e:
-        print(f"S3 Upload Error: {e}")
-        raise HTTPException(status_code=500, detail="Could not upload file to S3. Check AWS permissions.")
-        
-    s3_url = f"https://{S3_BUCKET}.s3.amazonaws.com/{file_name}"
-    return {"url": s3_url}
+        return {"url": result.get("secure_url")}
+    except Exception as e:
+        print(f"Cloudinary Upload Error: {e}")
+        raise HTTPException(status_code=500, detail="Could not upload file to Cloudinary. Check configuration.")
 
 @router.get("/upload-url")
 def get_upload_url(file_type: str = "image/jpeg", current_user: User = Depends(get_employee_user)):
-    ext = ".pdf" if file_type == "application/pdf" else ".jpg"
-    file_name = f"receipts/{uuid.uuid4()}{ext}"
-    try:
-        response = s3_client.generate_presigned_post(
-            Bucket=S3_BUCKET,
-            Key=file_name,
-            Fields={"acl": "public-read", "Content-Type": file_type},
-            Conditions=[
-                {"acl": "public-read"},
-                {"Content-Type": file_type},
-                ["content-length-range", 0, 10485760] # 10MB limit
-            ],
-            ExpiresIn=3600
-        )
-    except ClientError as e:
-        raise HTTPException(status_code=500, detail="Could not generate upload URL")
-        
-    return response
+    # Cloudinary supports presigned uploads as well, but since the frontend 
+    # uses POST /reports/upload directly, we can just return a placeholder or error 
+    # to encourage using the main route.
+    raise HTTPException(status_code=400, detail="Direct upload URL not supported anymore. Use POST /reports/upload")
 
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -284,6 +272,7 @@ def get_all_reports(db: Session = Depends(get_db), current_user: User = Depends(
             "expenses_notes": r.expenses_notes,
             "sleeps": r.sleeps,
             "receipt_url": r.receipt_url,
+            "manager_status": r.manager_status.value,
             "created_at": r.start_time.isoformat(),
             "employee": {
                 "id": str(u.id),
@@ -350,6 +339,26 @@ def delete_report(report_id: str, db: Session = Depends(get_db), current_user: U
     db.delete(report)
     db.commit()
     return {"message": "Report deleted successfully"}
+
+@router.patch("/{report_id}/approve")
+def approve_report(report_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
+    report = db.query(TripReport).filter(TripReport.id == report_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    
+    report.manager_status = "approved"
+    db.commit()
+    return {"message": "Report approved"}
+
+@router.patch("/{report_id}/reject")
+def reject_report(report_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
+    report = db.query(TripReport).filter(TripReport.id == report_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    
+    report.manager_status = "rejected"
+    db.commit()
+    return {"message": "Report rejected"}
 
 @router.get("/matrix/{year}/{month}")
 def get_reports_matrix(year: int, month: int, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):

@@ -6,7 +6,9 @@ from typing import Optional
 from app.database import get_db
 from app.models.user import User, UserStatus
 from app.models.refresh_token import RefreshToken
-from app.schemas import UserCreate, UserOut, Token
+from app.models.password_reset_token import PasswordResetToken
+from app.schemas import UserCreate, UserOut, Token, ForgotPasswordRequest, ResetPasswordRequest
+from app.services.email_service import EmailService
 from app.auth import (
     get_password_hash,
     verify_password,
@@ -15,6 +17,7 @@ from app.auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     REFRESH_TOKEN_EXPIRE_DAYS
 )
+import secrets
 
 # ── Rate limiting ──────────────────────────────────────────────────────────────
 from slowapi import Limiter
@@ -53,14 +56,16 @@ def _build_tokens_and_set_cookie(user: User, db: Session, response: Response) ->
     db.commit()
 
     # Set HttpOnly cookie (not accessible from JS)
+    # IMPORTANT: path must match the browser-visible URL (/api/auth/refresh),
+    # not the backend path (/auth/refresh) — Vite proxy rewrites /api → /
     response.set_cookie(
         key=REFRESH_COOKIE_NAME,
         value=raw_token,
         httponly=True,
         secure=False,     # set True in production behind HTTPS
-        samesite="lax",   # 'strict' if same origin, 'lax' for cross-site navigation
+        samesite="lax",
         max_age=REFRESH_COOKIE_MAX_AGE,
-        path="/auth/refresh"  # only sent to the refresh endpoint
+        path="/api/auth/refresh"  # must match the frontend proxy path
     )
 
     return {"access_token": access_token, "token_type": "bearer"}
@@ -78,10 +83,17 @@ def register(request: Request, user: UserCreate, db: Session = Depends(get_db)):
     if db_user_name:
         raise HTTPException(status_code=400, detail="שם עובד זה כבר קיים במערכת. אנא השתמש בשם אחר או הוסף שם משפחה מפורט יותר.")
 
+    # Check email uniqueness if provided
+    if user.email:
+        existing_email = db.query(User).filter(User.email == user.email).first()
+        if existing_email:
+            raise HTTPException(status_code=400, detail="אימייל זה כבר קיים במערכת.")
+
     hashed_password = get_password_hash(user.password)
     new_user = User(
         full_name=user.full_name,
         phone=user.phone,
+        email=user.email,
         password_hash=hashed_password,
         role=user.role,
         status=UserStatus.pending
@@ -175,5 +187,79 @@ def logout(
             db_token.revoked = True
             db.commit()
 
-    response.delete_cookie(key=REFRESH_COOKIE_NAME, path="/auth/refresh")
+    response.delete_cookie(key=REFRESH_COOKIE_NAME, path="/api/auth/refresh")
     return {"message": "Logged out successfully"}
+
+
+# ── Forgot Password ─────────────────────────────────────────────────────────────────────────────
+@router.post("/forgot-password")
+@limiter.limit("3/hour")
+def forgot_password(request: Request, body: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """
+    Accepts an email address and sends a password reset link.
+    Always returns 200 to avoid leaking which emails are registered.
+    """
+    user = db.query(User).filter(User.email == body.email).first()
+
+    if user:
+        # Invalidate any existing unused tokens for this user
+        db.query(PasswordResetToken).filter(
+            PasswordResetToken.user_id == user.id,
+            PasswordResetToken.used == False
+        ).delete()
+        db.commit()
+
+        # Generate a secure random token (64 hex chars = 256 bits)
+        raw_token = secrets.token_hex(32)
+        expires_at = datetime.utcnow() + timedelta(minutes=15)
+
+        reset_token = PasswordResetToken(
+            token=raw_token,
+            user_id=user.id,
+            expires_at=expires_at
+        )
+        db.add(reset_token)
+        db.commit()
+
+        EmailService.send_password_reset(
+            to_email=user.email,
+            full_name=user.full_name,
+            token=raw_token
+        )
+
+    # Always return 200 — don't reveal if email exists
+    return {"message": "אם האימייל קיים במערכת, נשלח אליו קישור לאיפוס הסיסמא."}
+
+
+# ── Reset Password ─────────────────────────────────────────────────────────────────────────────
+@router.post("/reset-password")
+def reset_password(body: ResetPasswordRequest, db: Session = Depends(get_db)):
+    """
+    Validates the reset token and updates the user's password.
+    The token is single-use and expires after 15 minutes.
+    """
+    token_record = db.query(PasswordResetToken).filter(
+        PasswordResetToken.token == body.token,
+        PasswordResetToken.used == False
+    ).first()
+
+    if not token_record:
+        raise HTTPException(status_code=400, detail="הקישור אינו תקין או כבר שומש.")
+
+    if token_record.expires_at < datetime.utcnow():
+        token_record.used = True
+        db.commit()
+        raise HTTPException(status_code=400, detail="הקישור פג תוקף. אנא בקש קישור חדש.")
+
+    if len(body.new_password) < 6:
+        raise HTTPException(status_code=400, detail="הסיסמא חייבת להכיל לפחות 6 תווים.")
+
+    user = db.query(User).filter(User.id == token_record.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="משתמש לא נמצא.")
+
+    user.password_hash = get_password_hash(body.new_password)
+    token_record.used = True
+    db.commit()
+
+    return {"message": "הסיסמא עודכנה בהצלחה. אפשר להתחבר עכשיו."}

@@ -11,6 +11,11 @@ from app.models.trip_report import TripReport
 from app.models.trip_assignment import TripAssignment
 from app.models.trip import Trip
 from app.dependencies import get_admin_user, get_current_user
+from app.services.payroll_service import PayrollService
+from app.models.payslip import Payslip
+import cloudinary
+import cloudinary.uploader
+import os
 from pydantic import BaseModel
 from app.auth import get_password_hash
 
@@ -179,7 +184,6 @@ def export_payroll(employee_id: str, month: int, year: int, db: Session = Depend
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    from app.services.payroll_service import PayrollService
     payroll_service = PayrollService(db)
     report_text = payroll_service.generate_employee_report(user, month, year)
 
@@ -187,7 +191,6 @@ def export_payroll(employee_id: str, month: int, year: int, db: Session = Depend
 
 @router.get("/export-all/{month}/{year}")
 def export_all_payroll(month: int, year: int, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
-    from app.services.payroll_service import PayrollService
     payroll_service = PayrollService(db)
     
     # Get all active employees who have any activity this month
@@ -223,7 +226,66 @@ def export_all_payroll(month: int, year: int, db: Session = Depends(get_db), adm
 
 @router.get("/my_payroll/{month}/{year}")
 def get_my_payroll(month: int, year: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    from app.services.payroll_service import PayrollService
     payroll_service = PayrollService(db)
     report_text = payroll_service.generate_employee_report(current_user, month, year)
     return {"report": report_text}
+
+from fastapi import UploadFile, File, Form
+
+@router.post("/payslips")
+async def upload_payslip(
+    user_id: str = Form(...),
+    month: int = Form(...),
+    year: int = Form(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(get_admin_user)
+):
+    # Verify user
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    try:
+        # Check if Cloudinary is configured
+        if not os.getenv("CLOUDINARY_CLOUD_NAME"):
+            # Fallback to local
+            file_name = f"payslip_{user_id}_{month}_{year}.pdf"
+            file_path = f"uploads/{file_name}"
+            import shutil
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            file_url = f"http://localhost:8000/uploads/{file_name}"
+        else:
+            result = cloudinary.uploader.upload(
+                file.file,
+                folder="yahav_payslips",
+                resource_type="auto"
+            )
+            file_url = result.get("secure_url")
+            
+        payslip = Payslip(
+            user_id=user.id,
+            month=month,
+            year=year,
+            file_url=file_url
+        )
+        db.add(payslip)
+        db.commit()
+        db.refresh(payslip)
+        
+        return {"message": "Payslip uploaded successfully", "id": str(payslip.id)}
+    except Exception as e:
+        print(f"Payslip upload error: {e}")
+        raise HTTPException(status_code=500, detail="Could not upload payslip")
+
+@router.get("/payslips/{user_id}")
+def get_user_payslips(user_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
+    payslips = db.query(Payslip).filter(Payslip.user_id == user_id).order_by(Payslip.year.desc(), Payslip.month.desc()).all()
+    return [{"id": str(p.id), "month": p.month, "year": p.year, "file_url": p.file_url} for p in payslips]
+
+@router.get("/my_payslips")
+def get_my_payslips(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    payslips = db.query(Payslip).filter(Payslip.user_id == current_user.id).order_by(Payslip.year.desc(), Payslip.month.desc()).all()
+    return [{"id": str(p.id), "month": p.month, "year": p.year, "file_url": p.file_url} for p in payslips]
+

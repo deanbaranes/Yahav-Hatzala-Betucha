@@ -65,6 +65,7 @@ export default function LoginForm() {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               dir="ltr"
+              autoComplete="off"
             />
           </div>
 
@@ -77,6 +78,7 @@ export default function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               dir="ltr"
+              autoComplete="new-password"
             />
           </div>
 
@@ -97,7 +99,12 @@ export default function LoginForm() {
           </button>
         </div>
 
-        <div className="mt-6 text-center">
+        <div className="mt-6 text-center space-y-2">
+          <div>
+            <Link to="/forgot-password" className="text-blue-500 text-sm font-medium hover:underline">
+              שכחתי סיסמא
+            </Link>
+          </div>
           <p className="text-gray-500 text-sm font-medium">
             עדיין לא עובד אצלנו?{' '}
             <Link to="/register" className="text-blue-600 font-bold hover:underline">

@@ -6,9 +6,16 @@ import { Search, Save, Edit2, Trash2, Copy, Check, Users } from 'lucide-react';
 export default function Clients() {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ balance: '', notes: '', debt_start_date: '' });
+  const [editForm, setEditForm] = useState({ balance: '', notes: '', debt_start_date: '', payment_terms: '' });
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
   const [mobileViewMode, setMobileViewMode] = useState<'cards' | 'table'>('cards');
+
+  const PAYMENT_TERMS_OPTIONS = [
+    { value: '', label: 'ללא תנאים מיוחדים' },
+    { value: 'שוטף + 30', label: 'שוטף + 30' },
+    { value: 'שוטף + 60', label: 'שוטף + 60' },
+    { value: 'שוטף + 75', label: 'שוטף + 75' },
+  ];
 
   const copyEmail = (email: string) => {
     navigator.clipboard.writeText(email);
@@ -56,7 +63,8 @@ export default function Clients() {
     setEditForm({ 
       balance: client.balance || '', 
       notes: client.notes || '',
-      debt_start_date: client.debt_start_date ? client.debt_start_date.split('T')[0] : ''
+      debt_start_date: client.debt_start_date ? client.debt_start_date.split('T')[0] : '',
+      payment_terms: client.payment_terms || ''
     });
   };
 
@@ -126,14 +134,14 @@ export default function Clients() {
           </h1>
           <p className="text-gray-500 text-base mt-2 font-medium">ניהול שוטף, מעקב יתרות וסטטוס גביה.</p>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="bg-red-50 px-6 py-3 rounded-xl border border-red-100 text-center min-w-[150px] shadow-sm">
+        <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+          <div className="bg-red-50 px-6 py-3 rounded-xl border border-red-100 text-center flex-1 min-w-[140px] shadow-sm">
             <div className="text-sm font-bold text-red-500 mb-1">סה"כ חובות (-)</div>
-            <div className="text-2xl font-black text-red-700" dir="ltr">{totalNegative.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₪</div>
+            <div className="text-xl md:text-2xl font-black text-red-700" dir="ltr">{totalNegative.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₪</div>
           </div>
-          <div className="bg-green-50 px-6 py-3 rounded-xl border border-green-100 text-center min-w-[150px] shadow-sm">
+          <div className="bg-green-50 px-6 py-3 rounded-xl border border-green-100 text-center flex-1 min-w-[140px] shadow-sm">
             <div className="text-sm font-bold text-green-500 mb-1">סה"כ זכות (+)</div>
-            <div className="text-2xl font-black text-green-700" dir="ltr">+{totalPositive.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₪</div>
+            <div className="text-xl md:text-2xl font-black text-green-700" dir="ltr">+{totalPositive.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₪</div>
           </div>
         </div>
       </header>
@@ -165,29 +173,30 @@ export default function Clients() {
         
         {/* Desktop View: Table */}
         <div className={`${mobileViewMode === 'table' ? 'block' : 'hidden md:block'} border-t-0 rounded-b-2xl`}>
-          <table className="w-full text-right text-sm table-fixed">
+          <table className="w-full text-right text-sm">
             <thead>
               <tr className="bg-gradient-to-l from-blue-700 to-cyan-500 text-white shadow-md">
-                <th className="px-2 py-4 font-extrabold rounded-tr-lg w-[18%] truncate">שם לקוח</th>
-                <th className="px-2 py-4 font-bold w-[12%] truncate">איש קשר</th>
-                <th className="px-2 py-4 font-bold w-[18%] truncate">אימייל</th>
-                <th className="px-2 py-4 font-bold w-[12%] truncate">טלפון</th>
-                <th className="px-2 py-4 font-bold w-[12%] cursor-pointer hover:bg-white/20 transition-colors truncate" onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')} title="לחץ לשינוי סדר המיון">
+                <th className="px-2 py-4 font-extrabold rounded-tr-lg w-[35%] md:w-[16%]">שם לקוח</th>
+                <th className="hidden md:table-cell px-2 py-4 font-bold md:w-[11%]">איש קשר</th>
+                <th className="hidden md:table-cell px-2 py-4 font-bold md:w-[16%]">אימייל</th>
+                <th className="hidden md:table-cell px-2 py-4 font-bold md:w-[10%]">טלפון</th>
+                <th className="px-2 py-4 font-bold w-[35%] md:w-[10%] cursor-pointer hover:bg-white/20 transition-colors" onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')} title="לחץ לשינוי סדר המיון">
                   <div className="flex items-center gap-1">יתרה/חוב {sortOrder === 'asc' ? '↓' : sortOrder === 'desc' ? '↑' : ''}</div>
                 </th>
-                <th className="px-2 py-4 font-bold w-[18%] truncate">הערות</th>
-                <th className="px-2 py-4 font-bold w-[10%] text-center rounded-tl-lg">פעולות</th>
+                <th className="hidden md:table-cell px-2 py-4 font-bold md:w-[13%]">תנאי תשלום</th>
+                <th className="hidden md:table-cell px-2 py-4 font-bold md:w-[14%]">הערות</th>
+                <th className="px-2 py-4 font-bold w-[30%] md:w-[10%] text-center rounded-tl-lg">פעולות</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
               {filteredClients.map((client, idx) => (
                 <tr key={client.id} className={`${getRowStyle(client, idx)} transition-all duration-200 group`}>
-                  <td className="px-2 py-3 font-bold text-gray-800 truncate group-hover:text-blue-700 transition-colors" title={client.name}>{client.name}</td>
-                  <td className="px-2 py-3 text-slate-600 truncate font-medium" title={client.contact_person || ''}>{client.contact_person || '-'}</td>
-                  <td className="px-2 py-3 text-slate-500 truncate" title={client.email || ''}>
+                  <td className="px-2 py-3 font-bold text-gray-800 break-words group-hover:text-blue-700 transition-colors">{client.name}</td>
+                  <td className="hidden md:table-cell px-2 py-3 text-slate-600 font-medium">{client.contact_person || '-'}</td>
+                  <td className="hidden md:table-cell px-2 py-3 text-slate-500 break-words">
                     {client.email ? (
                       <div className="flex items-center gap-1.5">
-                        <a href={`mailto:${client.email}`} className="hover:text-blue-600 hover:underline truncate">{client.email}</a>
+                        <a href={`mailto:${client.email}`} className="hover:text-blue-600 hover:underline break-words">{client.email}</a>
                         <button
                           onClick={() => copyEmail(client.email)}
                           className={`flex-shrink-0 p-1 rounded transition-all duration-200 ${
@@ -204,11 +213,11 @@ export default function Clients() {
                       </div>
                     ) : '-'}
                   </td>
-                  <td className="px-2 py-3 text-slate-600 truncate font-medium" dir="ltr" style={{textAlign: 'right'}}>
+                  <td className="hidden md:table-cell px-2 py-3 text-slate-600 font-medium" dir="ltr" style={{textAlign: 'right'}}>
                     {client.phone ? <a href={`tel:${client.phone}`} className="hover:text-blue-600 hover:underline">{client.phone}</a> : '-'}
                   </td>
                   
-                  <td className="px-2 py-3 truncate">
+                  <td className="px-2 py-3">
                     {editingId === client.id ? (
                       <div className="space-y-2">
                         <input 
@@ -219,21 +228,21 @@ export default function Clients() {
                           className="w-full p-1.5 border-2 border-blue-400 rounded-lg text-left focus:ring-4 focus:ring-blue-500/30 text-xs font-bold"
                           dir="ltr"
                         />
-                        <div className="text-[10px] text-gray-500 font-bold mb-1 text-right">תאריך תחילת חוב:</div>
+                        <div className="text-[10px] text-gray-500 font-bold mb-1 text-right">תאריך חוב:</div>
                         <input 
                           type="date" 
                           value={editForm.debt_start_date}
                           onChange={(e) => setEditForm({...editForm, debt_start_date: e.target.value})}
-                          className="w-full p-1 border-2 border-amber-300 rounded-lg focus:ring-4 focus:ring-amber-500/30 text-xs font-bold text-gray-700 bg-amber-50"
+                          className="w-full p-1 border-2 border-amber-300 rounded-lg focus:ring-4 focus:ring-amber-500/30 text-[10px] font-bold text-gray-700 bg-amber-50"
                         />
                       </div>
                     ) : (
-                      <div className="flex flex-col gap-1 items-end">
-                        <span className={`inline-block px-2 py-1 rounded-md font-bold truncate max-w-full shadow-sm ${String(client.balance || '').includes('-') ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`} dir="ltr" title={client.balance || '0'}>
+                      <div className="flex flex-col gap-1 items-start">
+                        <span className={`inline-block px-1.5 py-1 rounded-md font-bold max-w-full shadow-sm text-xs ${String(client.balance || '').includes('-') ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`} dir="ltr">
                           {client.balance || '0'}
                         </span>
                         {client.debt_start_date && (
-                          <span className="text-[10px] font-bold text-gray-500 bg-white/60 px-1.5 rounded-full border border-gray-200 shadow-sm" title="תאריך היווצרות החוב">
+                          <span className="text-[9px] font-bold text-gray-500 bg-white/60 px-1 rounded-full border border-gray-200 shadow-sm whitespace-nowrap">
                             {new Date(client.debt_start_date).toLocaleDateString('he-IL')}
                           </span>
                         )}
@@ -241,21 +250,41 @@ export default function Clients() {
                     )}
                   </td>
                   
-                  <td className="px-2 py-3 truncate">
+                  <td className="hidden md:table-cell px-2 py-3">
                     {editingId === client.id ? (
-                      <textarea 
+                      <select
+                        value={editForm.payment_terms}
+                        onChange={(e) => setEditForm({...editForm, payment_terms: e.target.value})}
+                        className="w-full p-1.5 border-2 border-purple-400 rounded-lg focus:ring-4 focus:ring-purple-500/30 text-xs font-bold bg-purple-50 text-right"
+                        dir="rtl"
+                      >
+                        <option value="">בחר...</option>
+                        <option value="שוטף + 30">שוטף + 30</option>
+                        <option value="שוטף + 60">שוטף + 60</option>
+                        <option value="שוטף + 90">שוטף + 90</option>
+                        <option value="מזומן">מזומן</option>
+                      </select>
+                    ) : (
+                      <span className="text-purple-700 bg-purple-50 px-2 py-1 rounded text-xs font-bold">
+                        {client.payment_terms || '-'}
+                      </span>
+                    )}
+                  </td>
+                  
+                  <td className="hidden md:table-cell px-2 py-3">
+                    {editingId === client.id ? (
+                      <textarea
                         value={editForm.notes}
                         onChange={(e) => setEditForm({...editForm, notes: e.target.value})}
-                        className="w-full p-1.5 border-2 border-blue-400 rounded-lg focus:ring-4 focus:ring-blue-500/30 text-xs shadow-sm"
-                        rows={2}
+                        placeholder="הערות..."
+                        className="w-full p-1.5 border-2 border-gray-300 rounded-lg focus:ring-4 focus:ring-blue-500/30 text-xs font-medium resize-none h-16"
                       />
                     ) : (
-                      <div className="text-xs text-slate-500 line-clamp-2 group-hover:line-clamp-none transition-all duration-300 bg-white/50 p-1 rounded" title={client.notes || ''}>
+                      <div className="text-gray-500 text-xs max-w-[150px] break-words">
                         {client.notes || '-'}
                       </div>
                     )}
                   </td>
-                  
                   <td className="px-2 py-3 text-center">
                     {editingId === client.id ? (
                       <button 
@@ -347,6 +376,27 @@ export default function Clients() {
                     <span className={`px-3 py-1 rounded-lg font-bold text-sm shadow-sm ${String(client.balance || '').includes('-') ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`} dir="ltr">
                       {client.balance || '0'}
                     </span>
+                  )}
+                </div>
+
+                {/* תנאי תשלום */}
+                <div className="flex justify-between items-center pt-2 border-t border-gray-50">
+                  <span className="text-sm font-bold text-gray-700">תנאי תשלום:</span>
+                  {editingId === client.id ? (
+                    <select
+                      value={editForm.payment_terms}
+                      onChange={(e) => setEditForm({...editForm, payment_terms: e.target.value})}
+                      className="p-1.5 border-2 border-purple-400 rounded-lg text-xs font-bold bg-purple-50 text-right"
+                      dir="rtl"
+                    >
+                      {PAYMENT_TERMS_OPTIONS.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    client.payment_terms
+                      ? <span className="px-2 py-1 rounded-lg text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200">{client.payment_terms}</span>
+                      : <span className="text-gray-400 text-xs italic">ללא תנאים מיוחדים</span>
                   )}
                 </div>
 

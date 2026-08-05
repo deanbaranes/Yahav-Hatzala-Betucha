@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
-import { Calculator, Save, Download, Copy, Check, Plus, Trash2 } from 'lucide-react';
+import { Calculator, Save, Download, Copy, Check, Plus, Trash2, UploadCloud } from 'lucide-react';
+import PayslipUploader from '../../features/admin/PayslipUploader';
 
 export default function PayrollManagement() {
   const queryClient = useQueryClient();
@@ -9,6 +10,7 @@ export default function PayrollManagement() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [copied, setCopied] = useState(false);
+  const [showUploader, setShowUploader] = useState(false);
 
   // Edit rates state
   const [editingRates, setEditingRates] = useState(false);
@@ -127,9 +129,9 @@ export default function PayrollManagement() {
 
   return (
     <div className="space-y-6 animate-fade-in pb-10" dir="rtl">
-      <header className="mb-6 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+      <header className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100 gap-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3">
             <span className="bg-green-100 text-green-700 p-2 rounded-lg">
               <Calculator size={28} />
             </span>
@@ -137,22 +139,36 @@ export default function PayrollManagement() {
           </h1>
           <p className="text-gray-500 text-base mt-2 font-medium">חישוב שכר ממוכן, שעות נוספות ותוספות שכר לעובדים.</p>
         </div>
-        
-        <button 
-          onClick={async () => {
-            try {
-              const res = await axiosClient.get(`/payroll/export-all/${selectedMonth}/${selectedYear}`);
-              navigator.clipboard.writeText(res.data.report);
-              alert('הדוח המרוכז של כל העובדים הועתק ללוח!');
-            } catch (err) {
-              alert('שגיאה בייצוא דוח מרוכז');
-            }
-          }}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm transition-colors"
-        >
-          <Copy size={18} /> העתק דוח מרוכז ({selectedMonth}/{selectedYear})
-        </button>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+          <button 
+            onClick={() => setShowUploader(!showUploader)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm transition-colors"
+          >
+            <UploadCloud size={18} /> העלאת תלושים חכמה
+          </button>
+          
+          <button 
+            onClick={async () => {
+              try {
+                const res = await axiosClient.get(`/payroll/export-all/${selectedMonth}/${selectedYear}`);
+                navigator.clipboard.writeText(res.data.report);
+                alert('הדוח המרוכז של כל העובדים הועתק ללוח!');
+              } catch (err) {
+                alert('שגיאה בייצוא דוח מרוכז');
+              }
+            }}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm transition-colors"
+          >
+            <Copy size={18} /> העתק דוח מרוכז ({selectedMonth}/{selectedYear})
+          </button>
+        </div>
       </header>
+
+      {showUploader && (
+        <div className="mb-6">
+          <PayslipUploader />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Employee List & Month selection */}
@@ -293,7 +309,7 @@ export default function PayrollManagement() {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               <h3 className="text-lg font-bold mb-4">תוספות והורדות - {selectedMonth}/{selectedYear}</h3>
               
-              <div className="flex gap-2 mb-6 p-4 bg-slate-50 rounded-xl border border-slate-100 items-end">
+              <div className="flex flex-col sm:flex-row gap-2 mb-6 p-4 bg-slate-50 rounded-xl border border-slate-100 sm:items-end">
                 <div className="flex-1">
                   <label className="block text-xs font-bold text-gray-500 mb-1">סוג תוספת</label>
                   <select value={adjForm.type} onChange={e => setAdjForm({...adjForm, type: e.target.value})} className="w-full p-2 border border-gray-300 rounded-lg font-bold text-gray-700">
@@ -318,9 +334,9 @@ export default function PayrollManagement() {
                 <button 
                   onClick={() => addAdjustmentMutation.mutate({...adjForm, user_id: selectedUser.id, month: selectedMonth, year: selectedYear, amount: Number(adjForm.amount)})}
                   disabled={!adjForm.amount}
-                  className="bg-slate-800 text-white px-4 py-2 rounded-lg font-bold hover:bg-slate-700 disabled:opacity-50 h-[42px]"
+                  className="bg-slate-800 text-white w-full sm:w-auto px-4 py-2 rounded-lg font-bold hover:bg-slate-700 disabled:opacity-50 h-[42px]"
                 >
-                  <Plus size={18} />
+                  <Plus size={18} className="mx-auto sm:mx-0" />
                 </button>
               </div>
 

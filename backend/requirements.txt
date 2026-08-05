@@ -15,3 +15,7 @@ python-multipart
 icalendar
 requests
 slowapi
+sendgrid
+python-dateutil
+apscheduler
+cloudinary

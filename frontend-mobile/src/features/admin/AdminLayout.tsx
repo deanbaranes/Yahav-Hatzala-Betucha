@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Map, FileText, LogOut, Menu, X, Users, ChevronRight, ChevronLeft, Calculator, CalendarDays, Receipt } from 'lucide-react';
+import { Home, Map, FileText, LogOut, Menu, X, Users, ChevronRight, ChevronLeft, Calculator, CalendarDays, Receipt, Truck, Bell, CheckCircle2 } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import axiosClient from '../../api/axiosClient';
 
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -14,10 +16,35 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     navigate('/login');
   };
 
+  const queryClient = useQueryClient();
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const { data: notifications = [] } = useQuery<any[]>({
+    queryKey: ['notifications'],
+    queryFn: async () => {
+      const res = await axiosClient.get('/notifications/');
+      return res.data;
+    },
+    refetchInterval: 60000 // Refetch every minute
+  });
+
+  const markReadMutation = useMutation({
+    mutationFn: (id: string) => axiosClient.put(`/notifications/${id}/read`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] })
+  });
+
+  const markAllReadMutation = useMutation({
+    mutationFn: () => axiosClient.put('/notifications/read-all'),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] })
+  });
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
   const navItems = [
     { to: '/admin', icon: Home, label: 'לוח בקרה ראשי' },
     { to: '/admin/trips', icon: Map, label: 'ניהול טיולים' },
     { to: '/admin/clients', icon: Users, label: 'לקוחות ויתרות' },
+    { to: '/admin/suppliers', icon: Truck, label: 'ספקים וחובות' },
     { to: '/admin/reports', icon: FileText, label: 'דוחות שטח' },
     { to: '/admin/matrix', icon: CalendarDays, label: 'מטריצת משמרות' },
     { to: '/admin/payroll', icon: Calculator, label: 'ניהול שכר' },
@@ -27,7 +54,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen bg-gray-50 flex" dir="rtl">
       {/* Sidebar - Desktop */}
-      <aside className={`hidden md:flex flex-col bg-slate-900 text-white shadow-xl z-10 transition-all duration-300 relative ${isMinimized ? 'w-20' : 'w-72'}`}>
+      <aside className={`hidden md:flex flex-col bg-slate-900 text-white shadow-xl z-40 transition-all duration-300 relative ${isMinimized ? 'w-20' : 'w-72'}`}>
         {/* Toggle Button */}
         <button 
           onClick={() => setIsMinimized(!isMinimized)}
@@ -120,13 +147,68 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        {/* Topbar for mobile */}
-        <header className="bg-white shadow-sm border-b border-gray-200 p-4 flex items-center justify-between md:hidden z-10">
-          <button onClick={() => setSidebarOpen(true)} className="p-2 bg-gray-100 rounded-lg text-gray-700">
-            <Menu size={24} />
-          </button>
-          <h1 className="text-lg font-black text-blue-700">יהב הצלה בטוחה</h1>
-          <div className="w-10"></div> {/* Spacer */}
+        
+        {/* Top Header Section (Desktop & Mobile) */}
+        <header className="bg-white shadow-sm border-b border-gray-200 p-4 flex items-center justify-between z-10 sticky top-0">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSidebarOpen(true)} className="md:hidden p-2 bg-gray-100 rounded-lg text-gray-700">
+              <Menu size={24} />
+            </button>
+            <h1 className="text-lg font-black text-blue-700 md:hidden">יהב הצלה בטוחה</h1>
+          </div>
+          
+          <div className="flex items-center gap-4 mr-auto relative">
+            <button 
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <Bell size={22} className={unreadCount > 0 ? "animate-pulse text-blue-600" : ""} />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 border-2 border-white rounded-full flex items-center justify-center text-[9px] font-bold text-white">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            {/* Notifications Dropdown */}
+            {showNotifications && (
+              <div className="absolute top-12 left-0 w-80 max-h-96 bg-white border border-gray-200 shadow-xl rounded-xl overflow-hidden flex flex-col z-50">
+                <div className="p-3 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                  <h3 className="font-bold text-gray-800 text-sm">התראות מערכת</h3>
+                  {unreadCount > 0 && (
+                    <button 
+                      onClick={() => markAllReadMutation.mutate()}
+                      className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      סמן הכל כנקרא
+                    </button>
+                  )}
+                </div>
+                <div className="overflow-y-auto flex-1">
+                  {notifications.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500 text-sm">אין התראות כרגע</div>
+                  ) : (
+                    notifications.map(notif => (
+                      <div key={notif.id} className={`p-3 border-b border-gray-50 text-right ${!notif.is_read ? 'bg-blue-50/50' : 'opacity-70'}`}>
+                        <div className="flex justify-between items-start gap-2 mb-1">
+                          <strong className="text-xs text-blue-900">{notif.title}</strong>
+                          {!notif.is_read && (
+                            <button onClick={() => markReadMutation.mutate(notif.id)} className="text-blue-400 hover:text-blue-600" title="סמן כנקרא">
+                              <CheckCircle2 size={14} />
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-700 whitespace-pre-wrap">{notif.message}</p>
+                        <span className="text-[10px] text-gray-400 mt-2 block">
+                          {new Date(notif.created_at).toLocaleString('he-IL')}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50/50">

@@ -1,6 +1,6 @@
 import uuid
-from datetime import datetime
-from typing import Optional
+from datetime import datetime, date
+from typing import Optional, Dict, List
 from pydantic import BaseModel
 from app.models.user import UserRole, UserStatus
 from app.models.trip_assignment import AssignmentStatus
@@ -16,6 +16,7 @@ class TokenData(BaseModel):
 class UserBase(BaseModel):
     full_name: str
     phone: str
+    email: Optional[str] = None
 
 class UserCreate(UserBase):
     password: str
@@ -25,9 +26,17 @@ class UserOut(UserBase):
     id: uuid.UUID
     role: UserRole
     status: UserStatus
-    
+    email: Optional[str] = None
+
     class Config:
         from_attributes = True
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
 
 class ClientBase(BaseModel):
     name: str
@@ -39,7 +48,7 @@ class ClientOut(ClientBase):
     class Config:
         from_attributes = True
 
-from typing import Optional, Dict
+
 
 class TripCreate(BaseModel):
     client_name: str
@@ -50,6 +59,7 @@ class TripCreate(BaseModel):
     capacity: int
     roles_requirements: Optional[Dict[str, int]] = {}
     color: Optional[str] = None
+    global_salary: Optional[float] = None
 
 class TripOut(BaseModel):
     id: uuid.UUID
@@ -60,6 +70,8 @@ class TripOut(BaseModel):
     capacity: int
     roles_requirements: Optional[Dict[str, int]] = {}
     color: Optional[str] = None
+    global_salary: Optional[float] = None
+    is_billed: bool = False
     client: ClientOut
 
     class Config:
@@ -68,7 +80,7 @@ class TripOut(BaseModel):
 class JoinTripRequest(BaseModel):
     role: str
 
-from typing import Optional, Dict, List
+
 
 class DailyShift(BaseModel):
     start_time: datetime
@@ -97,6 +109,32 @@ class TripReportOut(BaseModel):
     receipt_url: Optional[str]
     manager_status: ManagerStatus
     billing_status: BillingStatus
+
+    class Config:
+        from_attributes = True
+
+class SupplierBase(BaseModel):
+    name: str
+    debt_date: date
+    amount: float
+    details: Optional[str] = None
+    is_invoiced: bool = False
+    invoice_date: Optional[date] = None
+
+class SupplierCreate(SupplierBase):
+    pass
+
+class SupplierUpdate(BaseModel):
+    name: Optional[str] = None
+    debt_date: Optional[date] = None
+    amount: Optional[float] = None
+    details: Optional[str] = None
+    is_invoiced: Optional[bool] = None
+    invoice_date: Optional[date] = None
+
+class SupplierOut(SupplierBase):
+    id: uuid.UUID
+    created_at: datetime
 
     class Config:
         from_attributes = True
