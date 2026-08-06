@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import logo from '../../assets/logo.png';
 
 export default function ResetPassword() {
@@ -9,6 +10,7 @@ export default function ResetPassword() {
   const token = searchParams.get('token') || '';
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
@@ -82,25 +84,43 @@ export default function ResetPassword() {
             <div className="space-y-4">
               <div>
                 <label className="block text-gray-700 font-bold mb-1.5 text-sm">סיסמא חדשה</label>
-                <input
-                  type="password"
-                  className="w-full p-3 border border-gray-200/80 rounded-xl bg-white/60 focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all focus:outline-none"
-                  placeholder="לפחות 6 תווים"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  dir="ltr"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    className="w-full p-3 pl-10 border border-gray-200/80 rounded-xl bg-white/60 focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all focus:outline-none"
+                    placeholder="לפחות 6 תווים"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    dir="ltr"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block text-gray-700 font-bold mb-1.5 text-sm">אימות סיסמא</label>
-                <input
-                  type="password"
-                  className="w-full p-3 border border-gray-200/80 rounded-xl bg-white/60 focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all focus:outline-none"
-                  placeholder="הקלד שוב"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  dir="ltr"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    className="w-full p-3 pl-10 border border-gray-200/80 rounded-xl bg-white/60 focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all focus:outline-none"
+                    placeholder="הקלד שוב"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    dir="ltr"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
               </div>
               <button
                 onClick={handleSubmit}
