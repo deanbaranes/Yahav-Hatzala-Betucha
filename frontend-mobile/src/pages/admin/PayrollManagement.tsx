@@ -11,6 +11,7 @@ export default function PayrollManagement() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [copied, setCopied] = useState(false);
   const [showUploader, setShowUploader] = useState(false);
+  const [showAllEmployees, setShowAllEmployees] = useState(false);
 
   // Edit rates state
   const [editingRates, setEditingRates] = useState(false);
@@ -20,9 +21,12 @@ export default function PayrollManagement() {
   const [adjForm, setAdjForm] = useState({ type: 'מענק התמדה', amount: '', notes: '' });
 
   const { data: employees, isLoading } = useQuery<any[]>({
-    queryKey: ['payroll-employees', selectedMonth, selectedYear],
+    queryKey: ['payroll-employees', showAllEmployees ? 'all' : `${selectedMonth}-${selectedYear}`],
     queryFn: async () => {
-      const res = await axiosClient.get(`/payroll/employees?month=${selectedMonth}&year=${selectedYear}`);
+      const url = showAllEmployees 
+        ? '/payroll/employees' 
+        : `/payroll/employees?month=${selectedMonth}&year=${selectedYear}`;
+      const res = await axiosClient.get(url);
       return res.data;
     }
   });
@@ -289,6 +293,18 @@ export default function PayrollManagement() {
                 <option key={y} value={y}>{y}</option>
               ))}
             </select>
+          </div>
+
+          <div className="flex justify-between items-center mb-3 px-1">
+            <span className="text-sm font-bold text-gray-500">
+              {showAllEmployees ? 'כל עובדי החברה' : 'עובדים שעבדו החודש'}
+            </span>
+            <button 
+              onClick={() => setShowAllEmployees(!showAllEmployees)}
+              className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg font-bold transition-colors"
+            >
+              {showAllEmployees ? 'הראה רק פעילים החודש' : 'הראה את כולם'}
+            </button>
           </div>
 
           <div className="space-y-2 max-h-96 overflow-y-auto">
