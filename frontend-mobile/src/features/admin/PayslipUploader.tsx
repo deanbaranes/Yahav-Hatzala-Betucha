@@ -6,6 +6,7 @@ import { UploadCloud, Check, X, File as FileIcon, Loader2 } from 'lucide-react';
 interface Employee {
   id: string;
   full_name: string;
+  national_id?: string;
 }
 
 interface FileMatch {
@@ -49,21 +50,29 @@ export default function PayslipUploader() {
       let bestMatchId = null;
       let maxScore = 0;
       
-      employees.forEach(emp => {
-        const nameParts = emp.full_name.toLowerCase().split(' ');
-        let score = 0;
-        nameParts.forEach(part => {
-          if (part.length > 2 && fileName.includes(part)) score++;
+      // 1. Try to match by national_id first (exact match in filename)
+      const idMatch = employees.find(emp => emp.national_id && fileName.includes(emp.national_id));
+      
+      if (idMatch) {
+        bestMatchId = idMatch.id;
+      } else {
+        // 2. Fallback to name matching
+        employees.forEach(emp => {
+          const nameParts = emp.full_name.toLowerCase().split(' ');
+          let score = 0;
+          nameParts.forEach(part => {
+            if (part.length > 2 && fileName.includes(part)) score++;
+          });
+          if (score > maxScore) {
+            maxScore = score;
+            bestMatchId = emp.id;
+          }
         });
-        if (score > maxScore) {
-          maxScore = score;
-          bestMatchId = emp.id;
-        }
-      });
+      }
 
       return {
         file,
-        matchedUserId: maxScore > 0 ? bestMatchId : null,
+        matchedUserId: bestMatchId,
         status: 'pending' as const
       };
     });
