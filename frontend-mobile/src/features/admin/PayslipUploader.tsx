@@ -23,7 +23,7 @@ export default function PayslipUploader() {
   const [isUploading, setIsUploading] = useState(false);
 
   const { data: employees = [] } = useQuery<Employee[]>({
-    queryKey: ['employees-all'],
+    queryKey: ['payroll-employees', 'all'],
     queryFn: async () => {
       const res = await axiosClient.get('/payroll/employees');
       return res.data;
@@ -110,6 +110,14 @@ export default function PayslipUploader() {
       setFiles([...updatedFiles]);
     }
     setIsUploading(false);
+    
+    // Check if any uploads succeeded
+    const anySuccess = updatedFiles.some(f => f.status === 'success');
+    if (anySuccess) {
+      alert('התלושים הועלו ושויכו בהצלחה! 🚀');
+      // Remove successful files from the list to clean up UI
+      setFiles(updatedFiles.filter(f => f.status !== 'success'));
+    }
   };
 
   return (
