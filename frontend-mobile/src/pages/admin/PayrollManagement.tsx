@@ -90,6 +90,12 @@ export default function PayrollManagement() {
 
   const updateDetailsMutation = useMutation({
     mutationFn: async (data: any) => {
+      if (data.national_id && !/^\d{9}$/.test(data.national_id)) {
+        throw new Error("תעודת זהות חייבת להכיל בדיוק 9 ספרות.");
+      }
+      if (data.phone && !/^05\d{8}$/.test(data.phone)) {
+        throw new Error("מספר טלפון חייב להיות בן 10 ספרות ולהתחיל ב-05.");
+      }
       await axiosClient.put(`/payroll/employees/${selectedUser.id}/details`, data);
     },
     onSuccess: () => {
@@ -98,7 +104,34 @@ export default function PayrollManagement() {
       alert('פרטי העובד עודכנו בהצלחה!');
     },
     onError: (err: any) => {
-      alert(err.response?.data?.detail || 'שגיאה בעדכון פרטים');
+      alert(err.response?.data?.detail || err.message || 'שגיאה בעדכון פרטים');
+    }
+  });
+
+  const [showAddEmployee, setShowAddEmployee] = useState(false);
+  const [addEmployeeForm, setAddEmployeeForm] = useState({ full_name: '', phone: '', national_id: '', email: '', password: '' });
+
+  const addEmployeeMutation = useMutation({
+    mutationFn: async (data: any) => {
+      if (data.national_id && !/^\d{9}$/.test(data.national_id)) {
+        throw new Error("תעודת זהות חייבת להכיל בדיוק 9 ספרות.");
+      }
+      if (data.phone && !/^05\d{8}$/.test(data.phone)) {
+        throw new Error("מספר טלפון חייב להיות בן 10 ספרות ולהתחיל ב-05.");
+      }
+      if (!data.password || data.password.length < 6) {
+        throw new Error("הסיסמה חייבת להכיל לפחות 6 תווים.");
+      }
+      await axiosClient.post('/payroll/employees', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payroll-employees'] });
+      setShowAddEmployee(false);
+      setAddEmployeeForm({ full_name: '', phone: '', national_id: '', email: '', password: '' });
+      alert('העובד הוקם בהצלחה!');
+    },
+    onError: (err: any) => {
+      alert(err.response?.data?.detail || err.message || 'שגיאה בהקמת העובד');
     }
   });
 
@@ -230,7 +263,12 @@ export default function PayrollManagement() {
             </div>
           )}
 
-          <h2 className="text-xl font-bold mb-4">בחר עובד ותקופה</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">בחר עובד ותקופה</h2>
+            <button onClick={() => setShowAddEmployee(true)} className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-1 transition-colors">
+              <Plus size={16} /> עובד חדש
+            </button>
+          </div>
           
           <div className="flex gap-2 mb-6">
             <select 
@@ -445,6 +483,46 @@ export default function PayrollManagement() {
           </div>
         )}
       </div>
+      {/* Add Employee Modal */}
+      {showAddEmployee && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowAddEmployee(false)}>
+          <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-sm w-full animate-fade-in text-right" onClick={e => e.stopPropagation()}>
+            <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">הקמת עובד חדש</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">שם מלא</label>
+                <input type="text" className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500" value={addEmployeeForm.full_name} onChange={e => setAddEmployeeForm({...addEmployeeForm, full_name: e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">טלפון (שם משתמש)</label>
+                <input type="tel" className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500" dir="ltr" placeholder="05X-XXXXXXX" value={addEmployeeForm.phone} onChange={e => setAddEmployeeForm({...addEmployeeForm, phone: e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">תעודת זהות (9 ספרות - חובה לתלושים)</label>
+                <input type="text" className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500" dir="ltr" value={addEmployeeForm.national_id} onChange={e => setAddEmployeeForm({...addEmployeeForm, national_id: e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">אימייל (לא חובה)</label>
+                <input type="email" className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500" dir="ltr" value={addEmployeeForm.email} onChange={e => setAddEmployeeForm({...addEmployeeForm, email: e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">סיסמה התחלתית (מינימום 6 תווים)</label>
+                <input type="text" className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500" dir="ltr" value={addEmployeeForm.password} onChange={e => setAddEmployeeForm({...addEmployeeForm, password: e.target.value})} />
+              </div>
+              <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
+                <button onClick={() => setShowAddEmployee(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded font-bold">ביטול</button>
+                <button 
+                  disabled={addEmployeeMutation.isPending || !addEmployeeForm.full_name || !addEmployeeForm.phone || !addEmployeeForm.password}
+                  onClick={() => addEmployeeMutation.mutate(addEmployeeForm)} 
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold disabled:opacity-50"
+                >
+                  {addEmployeeMutation.isPending ? 'מקים...' : 'הקם עובד'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
