@@ -1,12 +1,17 @@
 import os
 import logging
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 logger = logging.getLogger(__name__)
 
-SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", "")
-FROM_EMAIL = os.getenv("FROM_EMAIL", "noreply@yahav-hatzala.co.il")
+# Gmail SMTP Configuration
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+FROM_EMAIL = os.getenv("FROM_EMAIL", SMTP_USERNAME)
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 
@@ -15,7 +20,7 @@ class EmailService:
     @staticmethod
     def send_password_reset(to_email: str, full_name: str, token: str) -> bool:
         """
-        Sends a password reset email with a link containing the token.
+        Sends a password reset email with a link containing the token via SMTP (e.g., Gmail).
         Returns True on success, False on failure.
         """
         reset_link = f"{FRONTEND_URL}/reset-password?token={token}"
@@ -38,21 +43,30 @@ class EmailService:
         </div>
         """
 
-        if not SENDGRID_API_KEY:
+        if not SMTP_USERNAME or not SMTP_PASSWORD:
             # Dev mode — just log the link
-            logger.warning(f"[EmailService] SENDGRID_API_KEY not set. Reset link: {reset_link}")
+            logger.warning(f"[EmailService] SMTP_USERNAME or SMTP_PASSWORD not set. Reset link: {reset_link}")
             return True
 
         try:
-            message = Mail(
-                from_email=FROM_EMAIL,
-                to_emails=to_email,
-                subject="איפוס סיסמא — יהב הצלה בטוחה",
-                html_content=html_content
-            )
-            sg = SendGridAPIClient(SENDGRID_API_KEY)
-            response = sg.send(message)
-            logger.info(f"[EmailService] Password reset email sent to {to_email} — status {response.status_code}")
+            # Create message
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = "איפוס סיסמא — יהב הצלה בטוחה"
+            msg['From'] = f"Yahav Hatzala <{FROM_EMAIL}>"
+            msg['To'] = to_email
+
+            # Attach HTML content
+            part = MIMEText(html_content, 'html')
+            msg.attach(part)
+
+            # Connect to SMTP server and send
+            server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+            server.starttls()
+            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.sendmail(FROM_EMAIL, to_email, msg.as_string())
+            server.quit()
+            
+            logger.info(f"[EmailService] Password reset email sent to {to_email}")
             return True
         except Exception as e:
             logger.error(f"[EmailService] Failed to send reset email to {to_email}: {e}")
