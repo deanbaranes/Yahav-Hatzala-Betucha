@@ -193,7 +193,7 @@ def logout(
 
 # ── Forgot Password ─────────────────────────────────────────────────────────────────────────────
 @router.post("/forgot-password")
-@limiter.limit("3/hour")
+@limiter.limit("10/hour")
 def forgot_password(request: Request, body: ForgotPasswordRequest, db: Session = Depends(get_db)):
     """
     Accepts an email address and sends a password reset link.
