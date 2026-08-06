@@ -134,14 +134,14 @@ export default function Clients() {
           </h1>
           <p className="text-gray-500 text-base mt-2 font-medium">ניהול שוטף, מעקב יתרות וסטטוס גביה.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
-          <div className="bg-red-50 px-6 py-3 rounded-xl border border-red-100 text-center flex-1 min-w-[140px] shadow-sm">
-            <div className="text-sm font-bold text-red-500 mb-1">סה"כ חובות (-)</div>
-            <div className="text-xl md:text-2xl font-black text-red-700" dir="ltr">{totalNegative.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₪</div>
+        <div className="flex items-stretch gap-4 w-full md:w-auto">
+          <div className="bg-red-50 px-4 py-3 rounded-xl border border-red-100 text-center w-full md:min-w-[160px] md:w-auto flex flex-col justify-center shadow-sm">
+            <div className="text-sm font-bold text-red-500 mb-1 whitespace-nowrap">סה"כ חובות (-)</div>
+            <div className="text-xl md:text-2xl font-black text-red-700 whitespace-nowrap" dir="ltr">{totalNegative.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₪</div>
           </div>
-          <div className="bg-green-50 px-6 py-3 rounded-xl border border-green-100 text-center flex-1 min-w-[140px] shadow-sm">
-            <div className="text-sm font-bold text-green-500 mb-1">סה"כ זכות (+)</div>
-            <div className="text-xl md:text-2xl font-black text-green-700" dir="ltr">+{totalPositive.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₪</div>
+          <div className="bg-green-50 px-4 py-3 rounded-xl border border-green-100 text-center w-full md:min-w-[160px] md:w-auto flex flex-col justify-center shadow-sm">
+            <div className="text-sm font-bold text-green-600 mb-1 whitespace-nowrap">סה"כ זכות (+)</div>
+            <div className="text-xl md:text-2xl font-black text-green-700 whitespace-nowrap" dir="ltr">+{totalPositive.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₪</div>
           </div>
         </div>
       </header>

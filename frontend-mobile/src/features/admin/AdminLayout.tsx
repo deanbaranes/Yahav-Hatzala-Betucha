@@ -47,7 +47,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { to: '/admin/suppliers', icon: Truck, label: 'ספקים וחובות' },
     { to: '/admin/reports', icon: FileText, label: 'דוחות שטח' },
     { to: '/admin/matrix', icon: CalendarDays, label: 'מטריצת משמרות' },
-    { to: '/admin/payroll', icon: Calculator, label: 'ניהול שכר' },
+    { to: '/admin/payroll', icon: Calculator, label: 'ניהול עובדים ושכר' },
     { to: '/admin/billing', icon: Receipt, label: 'דוח חיובים' },
   ];
 
