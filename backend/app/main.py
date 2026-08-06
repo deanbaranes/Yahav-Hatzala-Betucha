@@ -89,6 +89,12 @@ def delete_admin(phone: str, db: Session = Depends(get_db)):
     if phone in ["0533210777", "0504851269"]:
         user = db.query(User).filter(User.phone == phone).first()
         if user:
+            from app.models.refresh_token import RefreshToken
+            from app.models.password_reset_token import PasswordResetToken
+            from app.models.trip_assignment import TripAssignment
+            db.query(TripAssignment).filter_by(user_id=user.id).delete()
+            db.query(RefreshToken).filter_by(user_id=user.id).delete()
+            db.query(PasswordResetToken).filter_by(user_id=user.id).delete()
             db.delete(user)
             db.commit()
             return {"message": f"User {phone} deleted successfully! You can now register again."}
