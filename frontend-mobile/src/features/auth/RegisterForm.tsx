@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import { useNavigate, Link } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import logo from '../../assets/logo.png';
 
 export default function RegisterForm() {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const navigate = useNavigate();
@@ -108,14 +110,24 @@ export default function RegisterForm() {
 
           <div>
             <label className="block text-gray-700 font-bold mb-1.5 text-sm">סיסמה</label>
-            <input 
-              type="password" 
-              className="w-full p-3 border border-gray-200/80 rounded-xl bg-white/60 focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all focus:outline-none" 
-              placeholder="בחר סיסמה"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              dir="ltr"
-            />
+            <div className="relative">
+              <input 
+                type={showPassword ? "text" : "password"} 
+                className="w-full p-3 pl-12 border border-gray-200/80 rounded-xl bg-white/60 focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all focus:outline-none" 
+                placeholder="בחר סיסמה"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                dir="ltr"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-emerald-600 transition-colors p-1"
+                title={showPassword ? "הסתר סיסמה" : "הצג סיסמה"}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
           <div>
