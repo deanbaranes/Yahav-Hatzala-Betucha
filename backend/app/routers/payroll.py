@@ -92,7 +92,7 @@ def update_employee_details(user_id: str, data: EmployeeUpdate, db: Session = De
 
 @router.get("/employees")
 def get_employees(month: Optional[int] = None, year: Optional[int] = None, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
-    query = db.query(User).filter(User.role == UserRole.employee, User.status != "inactive")
+    query = db.query(User).filter(User.role.in_([UserRole.employee, UserRole.admin]), User.status != "inactive")
     
     if month and year:
         # Include employees who were ASSIGNED to a shift in this month (even if no report submitted yet)
@@ -240,7 +240,7 @@ def export_all_payroll(month: int, year: int, db: Session = Depends(get_db), adm
     ).subquery()
     
     employees = db.query(User).filter(
-        User.role == UserRole.employee, 
+        User.role.in_([UserRole.employee, UserRole.admin]), 
         User.status != "inactive",
         ((User.id.in_(assigned_users)) | (User.id.in_(adjusted_users)))
     ).order_by(User.full_name.asc()).all()
