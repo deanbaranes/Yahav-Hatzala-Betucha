@@ -171,7 +171,9 @@ export default function PayslipUploader() {
                   >
                     <option value="">-- בחר עובד ידנית --</option>
                     {employees.map(emp => (
-                      <option key={emp.id} value={emp.id}>{emp.full_name}</option>
+                      <option key={emp.id} value={emp.id}>
+                        {emp.full_name} {emp.national_id ? `(${emp.national_id})` : ''}
+                      </option>
                     ))}
                   </select>
 
