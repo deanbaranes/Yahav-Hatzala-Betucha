@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 # Brevo HTTP API Configuration
 BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
 FROM_EMAIL = os.getenv("FROM_EMAIL", "saferescue03@gmail.com")
+FROM_NAME = os.getenv("FROM_NAME", "יהב הצלה בטוחה")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 
@@ -50,7 +51,7 @@ class EmailService:
             "content-type": "application/json"
         }
         payload = {
-            "sender": {"name": "Yahav Hatzala", "email": FROM_EMAIL},
+            "sender": {"name": FROM_NAME, "email": FROM_EMAIL},
             "to": [{"email": to_email, "name": full_name}],
             "subject": "איפוס סיסמא — יהב הצלה בטוחה",
             "htmlContent": html_content
