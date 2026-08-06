@@ -32,7 +32,7 @@ const ProtectedRoute = ({ allowedRole }: { allowedRole: 'admin' | 'employee' }) 
     return <PendingApprovalScreen />;
   }
 
-  if (user.role !== allowedRole) {
+  if (user.role !== allowedRole && !(user.role === 'admin' && allowedRole === 'employee')) {
     return <Navigate to={user.role === 'admin' ? '/admin' : '/employee'} replace />;
   }
 

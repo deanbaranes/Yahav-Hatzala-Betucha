@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Map, FileText, LogOut, Menu, X, ChevronRight, ChevronLeft, CalendarDays, Wallet, User as UserIcon, FileSignature } from 'lucide-react';
+import { Home, Map, FileText, LogOut, Menu, X, ChevronRight, ChevronLeft, CalendarDays, Wallet, User as UserIcon, FileSignature, Settings } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function EmployeeLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -64,7 +66,17 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
           ))}
         </nav>
         
-        <div className="p-4 border-t border-slate-800">
+        <div className="p-4 border-t border-slate-800 space-y-2">
+          {user?.role === 'admin' && (
+            <button 
+              onClick={() => navigate('/admin')}
+              title={isMinimized ? 'חזור למנהל' : undefined}
+              className={`flex items-center gap-3 w-full py-3 text-emerald-400 hover:bg-emerald-500/10 rounded-xl font-bold transition-colors ${isMinimized ? 'justify-center px-0' : 'px-4'}`}
+            >
+              <Settings size={22} className={isMinimized ? '' : 'stroke-[2.5px]'} />
+              {!isMinimized && <span>חזרה לממשק ניהול</span>}
+            </button>
+          )}
           <button 
             onClick={handleLogout}
             title={isMinimized ? 'התנתק' : undefined}
@@ -107,7 +119,16 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
             </NavLink>
           ))}
         </nav>
-        <div className="p-4 border-t mt-auto">
+        <div className="p-4 border-t mt-auto space-y-2">
+          {user?.role === 'admin' && (
+            <button 
+              onClick={() => navigate('/admin')}
+              className="flex items-center gap-3 w-full py-3 px-4 text-emerald-600 hover:bg-emerald-50 rounded-xl font-bold transition-colors"
+            >
+              <Settings size={22} />
+              <span>חזרה לניהול</span>
+            </button>
+          )}
           <button 
             onClick={handleLogout}
             className="flex items-center gap-3 w-full py-3 px-4 text-red-500 hover:bg-red-50 rounded-xl font-bold transition-colors"

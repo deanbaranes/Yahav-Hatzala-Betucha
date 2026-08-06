@@ -49,6 +49,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { to: '/admin/matrix', icon: CalendarDays, label: 'מטריצת משמרות' },
     { to: '/admin/payroll', icon: Calculator, label: 'ניהול שכר ועובדים' },
     { to: '/admin/billing', icon: Receipt, label: 'דוח חיובים' },
+    { to: '/employee', icon: Users, label: 'האזור האישי שלי (עובד)' },
   ];
 
   return (
