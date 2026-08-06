@@ -116,6 +116,7 @@ def get_employees(month: Optional[int] = None, year: Optional[int] = None, db: S
             "id": str(e.id),
             "full_name": e.full_name,
             "phone": e.phone,
+            "email": e.email,
             "national_id": e.national_id,
             "hourly_rate": float(e.hourly_rate or 0),
             "base_daily_hours": float(e.base_daily_hours or 8.6)
