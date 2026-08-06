@@ -68,28 +68,6 @@ app.include_router(notifications.router)
 def read_root():
     return {"message": "Welcome to Yahav Hatzala Betucha API"}
 
-from app.database import get_db
-from sqlalchemy.orm import Session
-from app.auth import get_password_hash
-from fastapi import Depends
-
-@app.get("/setup-admins-temp")
-def setup_admins_temp(db: Session = Depends(get_db)):
-    yahav = db.query(user.User).filter(user.User.phone == "0533210777").first()
-    if yahav:
-        yahav.role = "admin"
-        yahav.status = "active"
-        yahav.password_hash = get_password_hash("yahav4590")
-    
-    dean = db.query(user.User).filter(user.User.phone == "0504851269").first()
-    if dean:
-        dean.role = "admin"
-        dean.status = "active"
-        dean.password_hash = get_password_hash("Dean2204")
-        
-    db.commit()
-    return {"message": "Admins Yahav and Dean upgraded successfully!"}
-
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
