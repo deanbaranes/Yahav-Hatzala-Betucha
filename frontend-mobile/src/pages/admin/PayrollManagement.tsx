@@ -90,7 +90,7 @@ export default function PayrollManagement() {
   });
 
   const [editingDetails, setEditingDetails] = useState(false);
-  const [detailsForm, setDetailsForm] = useState({ full_name: '', phone: '', national_id: '', email: '' });
+  const [detailsForm, setDetailsForm] = useState({ full_name: '', phone: '', national_id: '', email: '', hourly_rate: 0, base_daily_hours: 8.6 });
 
   const updateDetailsMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -100,12 +100,26 @@ export default function PayrollManagement() {
       if (data.phone && !/^05\d{8}$/.test(data.phone)) {
         throw new Error("מספר טלפון חייב להיות בן 10 ספרות ולהתחיל ב-05.");
       }
-      await axiosClient.put(`/payroll/employees/${selectedUser.id}/details`, data);
+      
+      // Update details
+      await axiosClient.put(`/payroll/employees/${selectedUser.id}/details`, {
+        full_name: data.full_name,
+        phone: data.phone,
+        national_id: data.national_id,
+        email: data.email
+      });
+      
+      // Update rates
+      await axiosClient.put(`/payroll/employees/${selectedUser.id}`, {
+        hourly_rate: data.hourly_rate,
+        base_daily_hours: data.base_daily_hours
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payroll-employees'] });
       setEditingDetails(false);
-      alert('פרטי העובד עודכנו בהצלחה!');
+      refetchReport();
+      alert('פרטי העובד והתעריף עודכנו בהצלחה!');
     },
     onError: (err: any) => {
       alert(err.response?.data?.detail || err.message || 'שגיאה בעדכון פרטים');
@@ -337,9 +351,13 @@ export default function PayrollManagement() {
                       <p>טלפון: {selectedUser.phone}</p>
                       <p>ת.ז: {selectedUser.national_id || 'לא הוזן'}</p>
                     </div>
+                    <div className="mt-2 text-gray-600 font-medium">
+                      <p>תעריף שעתי: <span className="font-bold">{selectedUser.hourly_rate} ₪</span></p>
+                      <p>שעות תקן ביום: <span className="font-bold">{selectedUser.base_daily_hours}</span></p>
+                    </div>
                   </>
                 ) : (
-                  <div className="mb-4 grid grid-cols-2 gap-2 max-w-sm">
+                  <div className="mb-4 grid grid-cols-2 gap-3 max-w-lg">
                     <div>
                       <label className="block text-xs font-bold text-gray-500">שם מלא</label>
                       <input type="text" value={detailsForm.full_name} onChange={e => setDetailsForm({...detailsForm, full_name: e.target.value})} className="p-2 border rounded-lg w-full text-sm" />
@@ -352,42 +370,37 @@ export default function PayrollManagement() {
                       <label className="block text-xs font-bold text-gray-500">טלפון</label>
                       <input type="text" value={detailsForm.phone} onChange={e => setDetailsForm({...detailsForm, phone: e.target.value})} className="p-2 border rounded-lg w-full text-sm" />
                     </div>
-                    <div className="flex items-end gap-2">
-                      <button onClick={() => updateDetailsMutation.mutate(detailsForm)} className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg font-bold w-full text-sm">שמור</button>
-                      <button onClick={() => setEditingDetails(false)} className="bg-gray-200 hover:bg-gray-300 text-gray-700 p-2 rounded-lg font-bold w-full text-sm">בטל</button>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500">אימייל</label>
+                      <input type="email" value={detailsForm.email} onChange={e => setDetailsForm({...detailsForm, email: e.target.value})} className="p-2 border rounded-lg w-full text-sm" />
                     </div>
-                  </div>
-                )}
-                {!editingRates ? (
-                  <div className="mt-2 text-gray-600 font-medium">
-                    <p>תעריף שעתי: <span className="font-bold">{selectedUser.hourly_rate} ₪</span></p>
-                    <p>שעות תקן ביום: <span className="font-bold">{selectedUser.base_daily_hours}</span></p>
-                  </div>
-                ) : (
-                  <div className="mt-4 flex gap-4">
                     <div>
                       <label className="block text-xs font-bold text-gray-500">תעריף לשעה (₪)</label>
-                      <input type="number" step="0.1" value={ratesForm.hourly_rate} onChange={e => setRatesForm({...ratesForm, hourly_rate: Number(e.target.value)})} className="p-2 border rounded-lg w-24" />
+                      <input type="number" step="0.1" value={detailsForm.hourly_rate} onChange={e => setDetailsForm({...detailsForm, hourly_rate: Number(e.target.value)})} className="p-2 border rounded-lg w-full text-sm" />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-500">שעות תקן ליום</label>
-                      <input type="number" step="0.1" value={ratesForm.base_daily_hours} onChange={e => setRatesForm({...ratesForm, base_daily_hours: Number(e.target.value)})} className="p-2 border rounded-lg w-24" />
+                      <input type="number" step="0.1" value={detailsForm.base_daily_hours} onChange={e => setDetailsForm({...detailsForm, base_daily_hours: Number(e.target.value)})} className="p-2 border rounded-lg w-full text-sm" />
                     </div>
                   </div>
                 )}
               </div>
-              <div className="mr-4">
-                {!editingRates && !editingDetails ? (
+              <div className="mr-4 flex flex-col justify-start">
+                {!editingDetails ? (
                   <div className="flex flex-col gap-2">
                     <button onClick={() => {
-                      setDetailsForm({full_name: selectedUser.full_name, phone: selectedUser.phone, national_id: selectedUser.national_id || '', email: selectedUser.email || ''});
+                      setDetailsForm({
+                        full_name: selectedUser.full_name, 
+                        phone: selectedUser.phone, 
+                        national_id: selectedUser.national_id || '', 
+                        email: selectedUser.email || '',
+                        hourly_rate: selectedUser.hourly_rate || 0,
+                        base_daily_hours: selectedUser.base_daily_hours || 8.6
+                      });
                       setEditingDetails(true);
-                    }} className="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-lg font-bold transition-colors text-sm w-full">ערוך פרטים אישיים</button>
-                    
-                    <button onClick={() => {
-                      setRatesForm({hourly_rate: selectedUser.hourly_rate, base_daily_hours: selectedUser.base_daily_hours});
-                      setEditingRates(true);
-                    }} className="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-lg font-bold transition-colors text-sm w-full">ערוך תעריף</button>
+                    }} className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-4 py-2 rounded-lg font-bold transition-colors text-sm w-full flex items-center justify-center gap-2">
+                      ✏️ ערוך פרטים ותעריף
+                    </button>
                     
                     <button 
                       onClick={() => {
@@ -395,15 +408,22 @@ export default function PayrollManagement() {
                           deactivateMutation.mutate(selectedUser.id);
                         }
                       }}
-                      className="text-red-500 hover:bg-red-50 px-3 py-1 rounded-lg font-bold transition-colors text-sm w-full flex items-center justify-center gap-1"
+                      className="text-red-500 hover:bg-red-50 px-3 py-2 rounded-lg font-bold transition-colors text-sm w-full flex items-center justify-center gap-1 mt-2"
                     >
                       <Trash2 size={14} /> הסר עובד
                     </button>
                   </div>
                 ) : (
-                  <button onClick={() => updateRatesMutation.mutate(ratesForm)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2">
-                    <Save size={16} /> שמור תעריף
-                  </button>
+                  <div className="flex flex-col gap-2">
+                    <button 
+                      disabled={updateDetailsMutation.isPending}
+                      onClick={() => updateDetailsMutation.mutate(detailsForm)} 
+                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2"
+                    >
+                      <Save size={16} /> {updateDetailsMutation.isPending ? 'שומר...' : 'שמור הכל'}
+                    </button>
+                    <button onClick={() => setEditingDetails(false)} className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-bold w-full text-sm">בטל</button>
+                  </div>
                 )}
               </div>
             </div>
