@@ -37,7 +37,15 @@ class EmployeeCreate(BaseModel):
     full_name: str
     phone: str
     password: str
+    national_id: Optional[str] = None
+    email: Optional[str] = None
     notes: Optional[str] = None
+
+class EmployeeUpdate(BaseModel):
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    national_id: Optional[str] = None
+    email: Optional[str] = None
 
 @router.post("/employees")
 def create_employee(data: EmployeeCreate, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
@@ -49,6 +57,8 @@ def create_employee(data: EmployeeCreate, db: Session = Depends(get_db), admin_u
     new_user = User(
         full_name=data.full_name,
         phone=data.phone,
+        national_id=data.national_id,
+        email=data.email,
         password_hash=get_password_hash(data.password),
         role=UserRole.employee,
         status="active"
@@ -57,6 +67,28 @@ def create_employee(data: EmployeeCreate, db: Session = Depends(get_db), admin_u
     db.commit()
     db.refresh(new_user)
     return new_user
+
+@router.put("/employees/{user_id}/details")
+def update_employee_details(user_id: str, data: EmployeeUpdate, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if data.full_name is not None:
+        user.full_name = data.full_name
+    if data.phone is not None:
+        # Check if phone belongs to someone else
+        existing = db.query(User).filter(User.phone == data.phone, User.id != user_id).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Phone already exists for another user")
+        user.phone = data.phone
+    if data.national_id is not None:
+        user.national_id = data.national_id
+    if data.email is not None:
+        user.email = data.email
+        
+    db.commit()
+    return {"message": "Employee details updated successfully"}
 
 @router.get("/employees")
 def get_employees(month: Optional[int] = None, year: Optional[int] = None, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
@@ -83,6 +115,8 @@ def get_employees(month: Optional[int] = None, year: Optional[int] = None, db: S
         {
             "id": str(e.id),
             "full_name": e.full_name,
+            "phone": e.phone,
+            "national_id": e.national_id,
             "hourly_rate": float(e.hourly_rate or 0),
             "base_daily_hours": float(e.base_daily_hours or 8.6)
         } for e in employees
