@@ -350,6 +350,7 @@ export default function PayrollManagement() {
                     <div className="text-sm text-gray-500 mb-4">
                       <p>טלפון: {selectedUser.phone}</p>
                       <p>ת.ז: {selectedUser.national_id || 'לא הוזן'}</p>
+                      <p>אימייל: {selectedUser.email || 'לא הוזן'}</p>
                     </div>
                     <div className="mt-2 text-gray-600 font-medium">
                       <p>תעריף שעתי: <span className="font-bold">{selectedUser.hourly_rate} ₪</span></p>
