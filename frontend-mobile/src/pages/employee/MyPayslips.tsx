@@ -27,21 +27,18 @@ export default function MyPayslips() {
     }
   });
 
-  // Limit to the last 2 payslips
-  const recentPayslips = payslips.slice(0, 2);
-
   return (
     <div className="animate-fade-in pb-10 space-y-6" dir="rtl">
       <header className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white p-6 rounded-3xl shadow-lg">
         <h2 className="text-2xl font-black mb-1 flex items-center gap-2"><FileSignature size={24} /> התלושים שלי</h2>
-        <p className="text-blue-100 font-medium">צפייה בתלושי השכר הרשמיים שהופקו עבורך (חודשיים אחרונים).</p>
+        <p className="text-blue-100 font-medium">צפייה בתלושי השכר הרשמיים שהופקו עבורך.</p>
       </header>
 
       {isLoading ? (
         <div className="text-center py-12 text-gray-400 font-bold animate-pulse">טוען תלושים...</div>
-      ) : recentPayslips.length > 0 ? (
+      ) : payslips.length > 0 ? (
         <div className="space-y-4">
-          {recentPayslips.map((payslip) => (
+          {payslips.map((payslip) => (
             <div key={payslip.id} className="bg-white border border-gray-100 rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
               <div className="flex items-center gap-4">
                 <div className="bg-blue-50 text-blue-600 w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0">
