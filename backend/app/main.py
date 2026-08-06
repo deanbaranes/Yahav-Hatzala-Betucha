@@ -84,6 +84,16 @@ def setup_admins(phone: str, db: Session = Depends(get_db)):
             return {"message": f"User {phone} is now an active admin!"}
     return {"message": "Not authorized"}
 
+@app.get("/setup-admins/delete/{phone}")
+def delete_admin(phone: str, db: Session = Depends(get_db)):
+    if phone in ["0533210777", "0504851269"]:
+        user = db.query(User).filter(User.phone == phone).first()
+        if user:
+            db.delete(user)
+            db.commit()
+            return {"message": f"User {phone} deleted successfully! You can now register again."}
+    return {"message": "Not authorized"}
+
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
