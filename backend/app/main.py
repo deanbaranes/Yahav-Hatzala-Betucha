@@ -68,6 +68,22 @@ app.include_router(notifications.router)
 def read_root():
     return {"message": "Welcome to Yahav Hatzala Betucha API"}
 
+from app.database import get_db
+from sqlalchemy.orm import Session
+from fastapi import Depends
+from app.models.user import User
+
+@app.get("/setup-admins/{phone}")
+def setup_admins(phone: str, db: Session = Depends(get_db)):
+    if phone in ["0533210777", "0504851269"]:
+        user = db.query(User).filter(User.phone == phone).first()
+        if user:
+            user.role = "admin"
+            user.status = "active"
+            db.commit()
+            return {"message": f"User {phone} is now an active admin!"}
+    return {"message": "Not authorized"}
+
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
