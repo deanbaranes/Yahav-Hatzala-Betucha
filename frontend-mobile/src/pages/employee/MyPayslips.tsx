@@ -1,14 +1,29 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
-import { FileSignature, Download, Calendar } from 'lucide-react';
+import { FileSignature, Download, Calendar, Trash2 } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function MyPayslips() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
   const { data: payslips = [], isLoading } = useQuery<any[]>({
     queryKey: ['my-payslips'],
     queryFn: async () => {
       const res = await axiosClient.get('/payroll/my_payslips');
       return res.data;
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (payslipId: string) => axiosClient.delete(`/payroll/payslips/${payslipId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-payslips'] });
+      alert('התלוש נמחק בהצלחה!');
+    },
+    onError: () => {
+      alert('שגיאה במחיקת התלוש');
     }
   });
 
@@ -27,7 +42,7 @@ export default function MyPayslips() {
       ) : recentPayslips.length > 0 ? (
         <div className="space-y-4">
           {recentPayslips.map((payslip) => (
-            <div key={payslip.id} className="bg-white border border-gray-100 rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-shadow">
+            <div key={payslip.id} className="bg-white border border-gray-100 rounded-3xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
               <div className="flex items-center gap-4">
                 <div className="bg-blue-50 text-blue-600 w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0">
                   <Calendar size={24} />
@@ -40,14 +55,30 @@ export default function MyPayslips() {
                 </div>
               </div>
               
-              <a 
-                href={payslip.file_url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md transition-all w-full md:w-auto"
-              >
-                <Download size={20} /> הורד תלוש PDF
-              </a>
+              <div className="flex flex-col md:flex-row items-center gap-2 w-full md:w-auto">
+                <a 
+                  href={payslip.file_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md transition-all w-full md:w-auto"
+                >
+                  <Download size={20} /> הורד תלוש PDF
+                </a>
+                
+                {user?.role === 'admin' && (
+                  <button 
+                    onClick={() => {
+                      if(window.confirm('האם אתה בטוח שברצונך למחוק תלוש זה? פעולה זו אינה הפיכה.')) {
+                        deleteMutation.mutate(payslip.id);
+                      }
+                    }}
+                    className="bg-red-50 text-red-500 hover:bg-red-100 px-4 py-3 rounded-xl font-bold flex items-center justify-center transition-colors w-full md:w-auto"
+                    title="מחק תלוש (למנהלים בלבד)"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>

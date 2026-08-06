@@ -323,4 +323,12 @@ def get_user_payslips(user_id: str, db: Session = Depends(get_db), admin_user: U
 def get_my_payslips(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     payslips = db.query(Payslip).filter(Payslip.user_id == current_user.id).order_by(Payslip.year.desc(), Payslip.month.desc()).all()
     return [{"id": str(p.id), "month": p.month, "year": p.year, "file_url": p.file_url} for p in payslips]
-
+@router.delete("/payslips/{payslip_id}")
+def delete_payslip(payslip_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
+    payslip = db.query(Payslip).filter(Payslip.id == payslip_id).first()
+    if not payslip:
+        raise HTTPException(status_code=404, detail="Payslip not found")
+        
+    db.delete(payslip)
+    db.commit()
+    return {"message": "Payslip deleted successfully"}
