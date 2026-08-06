@@ -185,7 +185,7 @@ export default function PayrollManagement() {
             <span className="bg-green-100 text-green-700 p-2 rounded-lg">
               <Calculator size={28} />
             </span>
-            ניהול עובדים ושכר
+            ניהול שכר ועובדים
           </h1>
           <p className="text-gray-500 text-base mt-2 font-medium">אישור עובדים חדשים, חישוב שכר ממוכן, ותוספות שכר.</p>
         </div>
