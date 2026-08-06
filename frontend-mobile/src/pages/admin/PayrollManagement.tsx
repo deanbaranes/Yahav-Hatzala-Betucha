@@ -85,6 +85,23 @@ export default function PayrollManagement() {
     }
   });
 
+  const [editingDetails, setEditingDetails] = useState(false);
+  const [detailsForm, setDetailsForm] = useState({ full_name: '', phone: '', national_id: '', email: '' });
+
+  const updateDetailsMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await axiosClient.put(`/payroll/employees/${selectedUser.id}/details`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payroll-employees'] });
+      setEditingDetails(false);
+      alert('פרטי העובד עודכנו בהצלחה!');
+    },
+    onError: (err: any) => {
+      alert(err.response?.data?.detail || 'שגיאה בעדכון פרטים');
+    }
+  });
+
   const deactivateMutation = useMutation({
     mutationFn: async (id: string) => {
       await axiosClient.delete(`/payroll/employees/${id}`);
@@ -258,8 +275,35 @@ export default function PayrollManagement() {
             
             {/* Rates & Settings */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex justify-between items-start">
-              <div>
-                <h3 className="text-2xl font-black text-gray-800">{selectedUser.full_name}</h3>
+              <div className="flex-1">
+                {!editingDetails ? (
+                  <>
+                    <h3 className="text-2xl font-black text-gray-800">{selectedUser.full_name}</h3>
+                    <div className="text-sm text-gray-500 mb-4">
+                      <p>טלפון: {selectedUser.phone}</p>
+                      <p>ת.ז: {selectedUser.national_id || 'לא הוזן'}</p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="mb-4 grid grid-cols-2 gap-2 max-w-sm">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500">שם מלא</label>
+                      <input type="text" value={detailsForm.full_name} onChange={e => setDetailsForm({...detailsForm, full_name: e.target.value})} className="p-2 border rounded-lg w-full text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500">ת.ז (9 ספרות)</label>
+                      <input type="text" value={detailsForm.national_id || ''} onChange={e => setDetailsForm({...detailsForm, national_id: e.target.value})} className="p-2 border rounded-lg w-full text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500">טלפון</label>
+                      <input type="text" value={detailsForm.phone} onChange={e => setDetailsForm({...detailsForm, phone: e.target.value})} className="p-2 border rounded-lg w-full text-sm" />
+                    </div>
+                    <div className="flex items-end gap-2">
+                      <button onClick={() => updateDetailsMutation.mutate(detailsForm)} className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-lg font-bold w-full text-sm">שמור</button>
+                      <button onClick={() => setEditingDetails(false)} className="bg-gray-200 hover:bg-gray-300 text-gray-700 p-2 rounded-lg font-bold w-full text-sm">בטל</button>
+                    </div>
+                  </div>
+                )}
                 {!editingRates ? (
                   <div className="mt-2 text-gray-600 font-medium">
                     <p>תעריף שעתי: <span className="font-bold">{selectedUser.hourly_rate} ₪</span></p>
@@ -278,9 +322,14 @@ export default function PayrollManagement() {
                   </div>
                 )}
               </div>
-              <div>
-                {!editingRates ? (
+              <div className="mr-4">
+                {!editingRates && !editingDetails ? (
                   <div className="flex flex-col gap-2">
+                    <button onClick={() => {
+                      setDetailsForm({full_name: selectedUser.full_name, phone: selectedUser.phone, national_id: selectedUser.national_id || '', email: selectedUser.email || ''});
+                      setEditingDetails(true);
+                    }} className="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-lg font-bold transition-colors text-sm w-full">ערוך פרטים אישיים</button>
+                    
                     <button onClick={() => {
                       setRatesForm({hourly_rate: selectedUser.hourly_rate, base_daily_hours: selectedUser.base_daily_hours});
                       setEditingRates(true);

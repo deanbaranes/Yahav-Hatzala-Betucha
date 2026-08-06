@@ -8,6 +8,7 @@ import logo from '../../assets/logo.png';
 export default function RegisterForm() {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [nationalId, setNationalId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -30,6 +31,11 @@ export default function RegisterForm() {
       return;
     }
     
+    if (nationalId && !/^\d{9}$/.test(nationalId)) {
+      setErrorMsg('תעודת זהות חייבת להכיל בדיוק 9 ספרות.');
+      return;
+    }
+    
     if (password.length < 6) {
       setErrorMsg('הסיסמה חייבת להכיל לפחות 6 תווים.');
       return;
@@ -48,6 +54,7 @@ export default function RegisterForm() {
       const res = await axiosClient.post('/auth/register', {
         full_name: fullName,
         phone: phone,
+        national_id: nationalId || undefined,
         password: password,
         email: email || undefined,
         role: 'employee'
@@ -59,7 +66,7 @@ export default function RegisterForm() {
       navigate('/pending');
     },
     onError: (err: any) => {
-      setErrorMsg(err.response?.data?.detail || 'אירעה שגיאה בהרשמה. ייתכן שהמספר כבר קיים במערכת.');
+      setErrorMsg(err.response?.data?.detail || 'אירעה שגיאה בהרשמה. ייתכן שהמספר או האימייל כבר קיימים במערכת.');
     }
   });
 
@@ -104,6 +111,18 @@ export default function RegisterForm() {
               placeholder="050-0000000"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
+              dir="ltr"
+            />
+          </div>
+
+          <div>
+            <label className="block text-gray-700 font-bold mb-1.5 text-sm">תעודת זהות <span className="text-gray-400 font-normal text-xs">(לצורך חיבור לתלושי שכר)</span></label>
+            <input 
+              type="text" 
+              className="w-full p-3 border border-gray-200/80 rounded-xl bg-white/60 focus:bg-white focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all focus:outline-none placeholder-gray-400" 
+              placeholder="9 ספרות"
+              value={nationalId}
+              onChange={(e) => setNationalId(e.target.value)}
               dir="ltr"
             />
           </div>
