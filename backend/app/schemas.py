@@ -16,6 +16,7 @@ class TokenData(BaseModel):
 class UserBase(BaseModel):
     full_name: str
     phone: str
+    national_id: Optional[str] = None
     email: Optional[str] = None
 
 class UserCreate(UserBase):

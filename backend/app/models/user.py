@@ -21,6 +21,7 @@ class User(Base):
     status = Column(Enum(UserStatus), nullable=False, default=UserStatus.pending, index=True)
     full_name = Column(String, nullable=False)
     phone = Column(String, unique=True, index=True, nullable=False)
+    national_id = Column(String(9), unique=True, index=True, nullable=True) # Added for payslip matching
     email = Column(String, unique=True, index=True, nullable=True)
     password_hash = Column(String, nullable=False)
     hourly_rate = Column(Numeric(10, 2), default=0.0)
