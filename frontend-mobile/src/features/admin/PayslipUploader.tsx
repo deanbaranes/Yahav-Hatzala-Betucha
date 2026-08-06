@@ -23,9 +23,9 @@ export default function PayslipUploader() {
   const [isUploading, setIsUploading] = useState(false);
 
   const { data: employees = [] } = useQuery<Employee[]>({
-    queryKey: ['employees', month, year],
+    queryKey: ['employees-all'],
     queryFn: async () => {
-      const res = await axiosClient.get('/payroll/employees', { params: { month, year } });
+      const res = await axiosClient.get('/payroll/employees');
       return res.data;
     }
   });
