@@ -44,7 +44,11 @@ class PayrollService:
         ot_hours = Decimal(0)
         auto_accom_nights = Decimal(0)
         for r in reports:
-            ot_hours += Decimal(str(r.overtime_decimal or 0))
+            report_ot = Decimal(str(r.overtime_decimal or 0))
+            ot_hours += report_ot
+            if report_ot > 0:
+                # Add 0.4 automatically for every report (day) that includes overtime
+                ot_hours += Decimal('0.4')
             if hasattr(r, 'sleeps') and r.sleeps is not None:
                 auto_accom_nights += Decimal(str(r.sleeps))
             else:
