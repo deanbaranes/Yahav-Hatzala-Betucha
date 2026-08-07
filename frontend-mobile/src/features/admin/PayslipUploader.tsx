@@ -179,7 +179,7 @@ export default function PayslipUploader() {
 
                   <div className="w-10 flex justify-center flex-shrink-0">
                     {f.status === 'success' && <Check className="text-green-500" />}
-                    {f.status === 'error' && <X className="text-red-500" title={f.errorMessage} />}
+                    {f.status === 'error' && <span title={f.errorMessage}><X className="text-red-500" /></span>}
                     {f.status === 'uploading' && <Loader2 className="animate-spin text-blue-500" />}
                     {f.status === 'pending' && (
                       <button onClick={() => setFiles(files.filter((_, idx) => idx !== i))} className="text-gray-400 hover:text-red-500 p-2">
