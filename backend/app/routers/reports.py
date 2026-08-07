@@ -108,6 +108,10 @@ def calculate_overtime_decimal(start_time, end_time) -> float:
     
     # Use Decimal for strict financial precision rounding to nearest 0.05
     d_overtime = Decimal(str(overtime_hours))
+    
+    if d_overtime > 0:
+        d_overtime += Decimal('0.4')
+        
     d_scaled = d_overtime * Decimal('20')
     d_rounded = d_scaled.quantize(Decimal('1'), rounding=ROUND_HALF_UP)
     d_final = d_rounded / Decimal('20')
