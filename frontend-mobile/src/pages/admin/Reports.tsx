@@ -83,7 +83,7 @@ export default function Reports() {
   return (
     <div className="space-y-6 animate-fade-in pb-10" dir="rtl">
       <header className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-black text-gray-900 drop-shadow-sm mb-2">ניהול דוחות ושכר</h1>
+        <h1 className="text-2xl sm:text-3xl font-black text-gray-900 drop-shadow-sm mb-2">דיווחי עובדים</h1>
         <p className="text-gray-500 font-medium">צפה בדיווחי שעות וקבלות הוצאות של עובדים</p>
       </header>
 
