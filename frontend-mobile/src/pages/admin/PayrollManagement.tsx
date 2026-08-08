@@ -90,7 +90,7 @@ export default function PayrollManagement() {
   });
 
   const [editingDetails, setEditingDetails] = useState(false);
-  const [detailsForm, setDetailsForm] = useState({ full_name: '', phone: '', national_id: '', email: '', hourly_rate: 0, base_daily_hours: 8.6 });
+  const [detailsForm, setDetailsForm] = useState({ full_name: '', phone: '', national_id: '', email: '', hourly_rate: 0, base_daily_hours: 8.6, employment_type: 'שכיר' });
 
   const updateDetailsMutation = useMutation({
     mutationFn: async (data: any) => {

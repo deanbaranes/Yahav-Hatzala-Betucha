@@ -431,8 +431,8 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
       </div>
 
       {selectedTrip && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 sm:p-4 bg-gray-900/60 backdrop-blur-sm overflow-y-auto" onClick={() => setSelectedTrip(null)}>
-          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-2xl max-w-md w-full animate-fade-in text-right my-4 sm:my-auto" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 p-3 sm:p-6 bg-gray-900/60 backdrop-blur-sm overflow-y-auto" onClick={() => setSelectedTrip(null)}>
+          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-2xl max-w-md w-full mx-auto animate-fade-in text-right my-4 sm:my-10" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-2xl font-bold text-gray-800">{selectedTrip.client?.name === 'לקוח כללי' ? selectedTrip.location : (selectedTrip.client?.name || 'לקוח לא ידוע')}</h3>
               <div className="flex items-center gap-2">
@@ -771,8 +771,8 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
       )}
 
       {creatingTripDate && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 sm:p-4 bg-gray-900/60 backdrop-blur-sm overflow-y-auto" onClick={() => setCreatingTripDate(null)}>
-          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-2xl max-w-lg w-full animate-fade-in text-right my-4 sm:my-auto" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 p-3 sm:p-6 bg-gray-900/60 backdrop-blur-sm overflow-y-auto" onClick={() => setCreatingTripDate(null)}>
+          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-2xl max-w-lg w-full mx-auto animate-fade-in text-right my-4 sm:my-10" onClick={e => e.stopPropagation()}>
             <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">
               הוספת טיול חדש: {creatingTripDate.toLocaleDateString('he-IL')}
             </h3>
