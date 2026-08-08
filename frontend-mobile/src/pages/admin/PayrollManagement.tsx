@@ -293,7 +293,7 @@ export default function PayrollManagement() {
           <div className="flex gap-2 mb-6">
             <select 
               value={selectedMonth} 
-              onChange={e => setSelectedMonth(Number(e.target.value))}
+              onChange={e => { setSelectedMonth(Number(e.target.value)); setSelectedUser(null); }}
               className="w-full p-2 border border-gray-200 rounded-lg bg-gray-50 font-bold"
             >
               {Array.from({length: 12}, (_, i) => i + 1).map(m => (
@@ -302,7 +302,7 @@ export default function PayrollManagement() {
             </select>
             <select 
               value={selectedYear} 
-              onChange={e => setSelectedYear(Number(e.target.value))}
+              onChange={e => { setSelectedYear(Number(e.target.value)); setSelectedUser(null); }}
               className="w-full p-2 border border-gray-200 rounded-lg bg-gray-50 font-bold"
             >
               {[2024, 2025, 2026].map(y => (
@@ -316,7 +316,7 @@ export default function PayrollManagement() {
               {showAllEmployees ? 'כל עובדי החברה' : 'עובדים שעבדו החודש'}
             </span>
             <button 
-              onClick={() => setShowAllEmployees(!showAllEmployees)}
+              onClick={() => { setShowAllEmployees(!showAllEmployees); setSelectedUser(null); }}
               className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg font-bold transition-colors"
             >
               {showAllEmployees ? 'הראה רק פעילים החודש' : 'רשימת עובדים כללית'}
