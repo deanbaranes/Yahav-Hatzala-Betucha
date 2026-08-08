@@ -65,45 +65,48 @@ export default function EmployeeMatrix() {
 
   return (
     <div className="space-y-6 animate-fade-in pb-10" dir="rtl">
-      <header className="mb-6 flex flex-col lg:flex-row justify-between items-start lg:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100 gap-6">
-        <div className="flex-1">
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3 whitespace-nowrap">
-            <span className="bg-blue-100 text-blue-700 p-2 rounded-lg shrink-0">
-              <Calendar size={28} />
-            </span>
-            מטריצת משמרות לעובדים
-          </h1>
-          <p className="text-gray-500 text-base mt-2 font-medium">פריסת ימי עבודה לכלל העובדים בחודש הנבחר.</p>
-        </div>
-        
-        <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full lg:w-auto">
+      <header className="mb-6 relative bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+              <span className="bg-blue-100 text-blue-700 p-2 rounded-lg shrink-0">
+                <Calendar size={28} />
+              </span>
+              מטריצת משמרות
+            </h1>
+            <p className="text-gray-500 text-sm sm:text-base mt-2 font-medium">פריסת עבודה לכלל העובדים בחודש הנבחר.</p>
+          </div>
+          
           <button 
             onClick={handleExport}
-            className="flex items-center justify-center gap-2 px-5 h-12 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl font-bold transition-colors border border-emerald-200 whitespace-nowrap"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 h-9 sm:h-10 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg font-bold text-sm transition-colors border border-emerald-200 whitespace-nowrap shrink-0"
           >
-            <Download size={18} />
-            ייצא לאקסל
+            <Download size={16} />
+            <span className="hidden sm:inline">ייצוא לאקסל</span>
+            <span className="sm:hidden">ייצוא</span>
           </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 w-full border-t border-gray-100 pt-4">
+          <div className="flex items-center justify-between px-2 bg-gray-50 h-11 rounded-xl border border-gray-200 min-w-[200px] shrink-0">
+            <button onClick={prevMonth} className="p-2 hover:bg-white rounded-lg shadow-sm text-gray-600 transition-colors"><ChevronRight size={20} /></button>
+            <span className="font-black text-sm sm:text-base whitespace-nowrap text-center flex-1">{currentDate.toLocaleString('he-IL', { month: 'long', year: 'numeric' })}</span>
+            <button onClick={nextMonth} className="p-2 hover:bg-white rounded-lg shadow-sm text-gray-600 transition-colors"><ChevronLeft size={20} /></button>
+          </div>
           
-          <div className="flex bg-gray-100 p-1 rounded-xl h-12 items-center">
+          <div className="flex bg-gray-100 p-1 rounded-xl h-11 items-center shrink-0">
             <button 
               onClick={() => setViewMode('matrix')}
-              className={`flex items-center gap-2 px-4 h-10 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${viewMode === 'matrix' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`flex items-center gap-2 px-3 sm:px-4 h-9 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${viewMode === 'matrix' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
             >
               <LayoutGrid size={16} /> מטריצה
             </button>
             <button 
               onClick={() => setViewMode('list')}
-              className={`flex items-center gap-2 px-4 h-10 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${viewMode === 'list' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`flex items-center gap-2 px-3 sm:px-4 h-9 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${viewMode === 'list' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
             >
               <List size={16} /> רשימה
             </button>
-          </div>
-          
-          <div className="flex items-center justify-between px-2 bg-gray-50 h-12 rounded-xl border border-gray-200 min-w-[200px]">
-            <button onClick={prevMonth} className="p-2 hover:bg-white rounded-lg shadow-sm text-gray-600 transition-colors"><ChevronRight size={20} /></button>
-            <span className="font-black text-base whitespace-nowrap text-center flex-1">{currentDate.toLocaleString('he-IL', { month: 'long', year: 'numeric' })}</span>
-            <button onClick={nextMonth} className="p-2 hover:bg-white rounded-lg shadow-sm text-gray-600 transition-colors"><ChevronLeft size={20} /></button>
           </div>
         </div>
       </header>
