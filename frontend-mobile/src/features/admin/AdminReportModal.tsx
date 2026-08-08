@@ -2,11 +2,29 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import { X, Plus } from 'lucide-react';
-import S3Uploader from '../employee/S3Uploader';
+import ReceiptUploader from '../employee/ReceiptUploader';
 
 interface AdminReportModalProps {
   isOpen: boolean;
   onClose: () => void;
+}
+
+interface PendingAssignment {
+  assignment_id: string;
+  trip_id: string;
+  employee_name: string;
+  location: string;
+  start_date: string;
+  role: string;
+}
+
+interface ManualReportData {
+  assignment_id: string;
+  expenses: number;
+  expenses_notes: string;
+  sleeps: number;
+  receipt_url: string;
+  daily_shifts: { start_time: string; end_time: string }[];
 }
 
 export default function AdminReportModal({ isOpen, onClose }: AdminReportModalProps) {
@@ -16,7 +34,7 @@ export default function AdminReportModal({ isOpen, onClose }: AdminReportModalPr
   const [dailyShifts, setDailyShifts] = useState([{ start_time: '', end_time: '' }]);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const { data: pendingAssignments, isLoading } = useQuery<any[]>({
+  const { data: pendingAssignments, isLoading } = useQuery<PendingAssignment[]>({
     queryKey: ['all-pending-reports'],
     queryFn: async () => {
       const res = await axiosClient.get('/reports/all-pending-reports');
@@ -26,7 +44,7 @@ export default function AdminReportModal({ isOpen, onClose }: AdminReportModalPr
   });
 
   const reportMutation = useMutation({
-    mutationFn: (data: any) => axiosClient.post('/reports/admin-manual', data),
+    mutationFn: (data: ManualReportData) => axiosClient.post('/reports/admin-manual', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-reports'] });
       queryClient.invalidateQueries({ queryKey: ['all-pending-reports'] });
@@ -35,7 +53,7 @@ export default function AdminReportModal({ isOpen, onClose }: AdminReportModalPr
       setDailyShifts([{ start_time: '', end_time: '' }]);
       onClose();
     },
-    onError: (err: any) => {
+    onError: (err: { response?: { data?: { detail?: string } } }) => {
       setErrorMsg(err.response?.data?.detail || 'שגיאה בשמירת הדיווח.');
     }
   });
@@ -172,7 +190,7 @@ export default function AdminReportModal({ isOpen, onClose }: AdminReportModalPr
 
               <div className="mb-4">
                 <label className="block text-gray-700 font-bold mb-2 text-sm">קבלה</label>
-                <S3Uploader 
+                <ReceiptUploader 
                   onUploadComplete={(url) => setFormData(prev => ({...prev, receipt_url: url}))} 
                   onRemove={() => setFormData(prev => ({...prev, receipt_url: ''}))}
                 />

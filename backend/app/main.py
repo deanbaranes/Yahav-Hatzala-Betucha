@@ -9,15 +9,14 @@ from app.models import password_reset_token # register PasswordResetToken table
 from app.models import supplier             # register Supplier table
 from app.models import notification         # register Notification table
 from app.models import payslip              # register Payslip table
-from app.routers import auth, trips, reports, webhooks, clients, admin, payroll, suppliers, notifications
+from app.routers import auth, trips, reports, webhooks, clients, payroll, suppliers, notifications
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 # ── Rate limiter (shared instance) ────────────────────────────────────────────
-limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
+from app.rate_limiter import limiter
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -68,7 +67,7 @@ app.include_router(trips.router)
 app.include_router(clients.router)
 app.include_router(reports.router)
 app.include_router(webhooks.router, prefix="/api")
-app.include_router(admin.router)
+
 app.include_router(payroll.router)
 app.include_router(suppliers.router)
 app.include_router(notifications.router)

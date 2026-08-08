@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
-from sqlalchemy import func, extract
-from typing import List, Optional
-from decimal import Decimal, ROUND_HALF_UP
+from sqlalchemy import extract
 
 from app.database import get_db
 from app.models.user import User, UserRole
@@ -12,40 +12,14 @@ from app.models.trip_assignment import TripAssignment
 from app.models.trip import Trip
 from app.dependencies import get_admin_user, get_current_user
 from app.services.payroll_service import PayrollService
+from app.services.storage_service import StorageService
 from app.models.payslip import Payslip
-import cloudinary
-import cloudinary.uploader
-import os
-from pydantic import BaseModel
 from app.auth import get_password_hash
+from app.schemas import EmployeeRatesUpdate, AdjustmentCreate, EmployeeCreate, EmployeeUpdate
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/payroll", tags=["payroll"])
-
-class EmployeeRatesUpdate(BaseModel):
-    hourly_rate: float
-    base_daily_hours: float
-
-class AdjustmentCreate(BaseModel):
-    user_id: str
-    month: int
-    year: int
-    type: str
-    amount: float
-    notes: Optional[str] = None
-
-class EmployeeCreate(BaseModel):
-    full_name: str
-    phone: str
-    password: str
-    national_id: Optional[str] = None
-    email: Optional[str] = None
-    notes: Optional[str] = None
-
-class EmployeeUpdate(BaseModel):
-    full_name: Optional[str] = None
-    phone: Optional[str] = None
-    national_id: Optional[str] = None
-    email: Optional[str] = None
 
 @router.post("/employees")
 def create_employee(data: EmployeeCreate, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
@@ -265,8 +239,6 @@ def get_my_payroll(month: int, year: int, db: Session = Depends(get_db), current
     report_text = payroll_service.generate_employee_report(current_user, month, year)
     return {"report": report_text}
 
-from fastapi import UploadFile, File, Form
-
 @router.post("/payslips")
 async def upload_payslip(
     user_id: str = Form(...),
@@ -282,23 +254,12 @@ async def upload_payslip(
         raise HTTPException(status_code=404, detail="User not found")
         
     try:
-        # Check if Cloudinary is configured
-        if not os.getenv("CLOUDINARY_CLOUD_NAME"):
-            # Fallback to local
-            file_name = f"payslip_{user_id}_{month}_{year}.pdf"
-            file_path = f"uploads/{file_name}"
-            import shutil
-            with open(file_path, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
-            file_url = f"http://localhost:8000/uploads/{file_name}"
-        else:
-            result = cloudinary.uploader.upload(
-                file.file,
-                folder="yahav_payslips",
-                resource_type="auto"
-            )
-            file_url = result.get("secure_url")
-            
+        file_url = StorageService.upload_file(
+            file.file,
+            folder="yahav_payslips",
+            content_type=file.content_type or "",
+        )
+
         payslip = Payslip(
             user_id=user.id,
             month=month,
@@ -311,7 +272,7 @@ async def upload_payslip(
         
         return {"message": "Payslip uploaded successfully", "id": str(payslip.id)}
     except Exception as e:
-        print(f"Payslip upload error: {e}")
+        logger.error(f"Payslip upload error: {e}")
         raise HTTPException(status_code=500, detail="Could not upload payslip")
 
 @router.get("/payslips/{user_id}")

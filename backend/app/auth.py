@@ -5,7 +5,9 @@ from typing import Optional
 from passlib.context import CryptContext
 from jose import jwt
 
-SECRET_KEY = os.getenv("SECRET_KEY", "supersecretkey_change_me_in_production")
+SECRET_KEY = os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("FATAL: SECRET_KEY environment variable is not set. Cannot start.")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30          # Short-lived: 30 minutes
 REFRESH_TOKEN_EXPIRE_DAYS = 30            # Long-lived: 30 days

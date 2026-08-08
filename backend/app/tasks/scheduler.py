@@ -7,9 +7,8 @@ from app.database import SessionLocal
 from app.models.client import Client
 from app.models.trip import Trip
 from app.services.notification_service import NotificationService
+from app.services.storage_service import StorageService
 import os
-import cloudinary
-import cloudinary.uploader
 from app.models.trip_report import TripReport
 
 logger = logging.getLogger(__name__)
@@ -143,27 +142,11 @@ def delete_old_receipts():
     
     deleted_count = 0
     for report in old_reports:
-        url = report.receipt_url
-        if "cloudinary.com" in url:
-            # Extract public_id from url. 
-            # typical url: https://res.cloudinary.com/cloud_name/image/upload/v1234567/yahav_receipts/filename.ext
-            try:
-                parts = url.split("/upload/")
-                if len(parts) == 2:
-                    # remove version (e.g. v1234567/) and extension
-                    path_parts = parts[1].split("/")
-                    if path_parts[0].startswith("v"):
-                        path_parts = path_parts[1:]
-                    
-                    full_path = "/".join(path_parts)
-                    public_id = full_path.rsplit(".", 1)[0]
-                    
-                    if os.getenv("CLOUDINARY_CLOUD_NAME"):
-                        cloudinary.uploader.destroy(public_id)
-            except Exception as e:
-                logger.error(f"Failed to delete {url} from Cloudinary: {str(e)}")
+        # Delegate deletion to StorageService (handles Cloudinary + logging)
+        if report.receipt_url:
+            StorageService.delete_file(report.receipt_url)
         
-        # Whether it's cloudinary or local, we clear the URL after 90 days
+        # Clear the URL regardless of storage backend
         report.receipt_url = None
         deleted_count += 1
         

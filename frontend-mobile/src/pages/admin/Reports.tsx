@@ -4,14 +4,58 @@ import axiosClient from '../../api/axiosClient';
 import { Edit2, Save, X, Trash2, CheckCircle, XCircle, FileText, Plus } from 'lucide-react';
 import AdminReportModal from '../../features/admin/AdminReportModal';
 
+interface DailyShift {
+  start_time: string;
+  end_time: string;
+}
+
+interface ReportEmployee {
+  id: string;
+  full_name: string;
+  phone: string;
+  role: string;
+}
+
+interface ReportTrip {
+  id: string;
+  location: string;
+  start_date: string;
+  client_name?: string;
+}
+
+export interface TripReport {
+  id: string;
+  start_time: string;
+  end_time: string;
+  daily_shifts?: DailyShift[];
+  overtime_decimal: number;
+  expenses: number;
+  expenses_notes?: string;
+  sleeps: number;
+  receipt_url?: string;
+  manager_status: string;
+  created_at: string;
+  employee: ReportEmployee;
+  trip: ReportTrip;
+}
+
+interface ReportUpdateData {
+  start_time: string;
+  end_time: string;
+  daily_shifts: DailyShift[];
+  overtime_decimal: number;
+  expenses: number;
+  sleeps: number;
+}
+
 export default function Reports() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
-  const [editingReport, setEditingReport] = useState<any>(null);
-  const [editForm, setEditForm] = useState<any>({ start_time: '', end_time: '', daily_shifts: [], overtime_decimal: 0, expenses: 0, sleeps: 0 });
+  const [editingReport, setEditingReport] = useState<TripReport | null>(null);
+  const [editForm, setEditForm] = useState<ReportUpdateData>({ start_time: '', end_time: '', daily_shifts: [], overtime_decimal: 0, expenses: 0, sleeps: 0 });
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
 
-  const { data: reports, isLoading } = useQuery<any[]>({
+  const { data: reports, isLoading } = useQuery<TripReport[]>({
     queryKey: ['admin-reports'],
     queryFn: async () => {
       const res = await axiosClient.get('/reports/');
@@ -19,14 +63,15 @@ export default function Reports() {
     }
   });
 
-  const filteredReports = reports?.filter((report: any) => 
-    report?.employee?.full_name?.includes(searchTerm) || 
-    report?.trip?.location?.includes(searchTerm) ||
-    (report?.trip?.client_name && report.trip.client_name.includes(searchTerm))
+  const filteredReports = reports?.filter((report: TripReport) => 
+    report.employee?.full_name?.includes(searchTerm) || 
+    report.trip?.location?.includes(searchTerm) ||
+    (report.trip?.client_name && report.trip.client_name.includes(searchTerm))
   );
 
   const updateMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: ReportUpdateData) => {
+      if (!editingReport) return;
       await axiosClient.put(`/reports/${editingReport.id}`, data);
     },
     onSuccess: () => {
@@ -284,7 +329,7 @@ export default function Reports() {
                                   daily_shifts: editForm.daily_shifts?.length > 0 ? editForm.daily_shifts.map((s: any) => ({
                                     start_time: new Date(s.start_time).toISOString(),
                                     end_time: new Date(s.end_time).toISOString()
-                                  })) : null,
+                                  })) : [],
                                   overtime_decimal: editForm.overtime_decimal,
                                   expenses: editForm.expenses,
                                   sleeps: editForm.sleeps

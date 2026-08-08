@@ -6,6 +6,9 @@ from app.models.user import UserRole, UserStatus
 from app.models.trip_assignment import AssignmentStatus
 from app.models.trip_report import ManagerStatus, BillingStatus
 
+
+# ── Auth Schemas ──────────────────────────────────────────────────────────────
+
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -39,6 +42,9 @@ class ResetPasswordRequest(BaseModel):
     token: str
     new_password: str
 
+
+# ── Client Schemas ────────────────────────────────────────────────────────────
+
 class ClientBase(BaseModel):
     name: str
     contact_person: Optional[str] = None
@@ -49,7 +55,18 @@ class ClientOut(ClientBase):
     class Config:
         from_attributes = True
 
+class ClientUpdate(BaseModel):
+    name: Optional[str] = None
+    contact_person: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    balance: Optional[str] = None
+    debt_start_date: Optional[str] = None
+    notes: Optional[str] = None
+    payment_terms: Optional[str] = None  # "שוטף + 30" / "שוטף + 60" / "שוטף + 75" / None
 
+
+# ── Trip Schemas ──────────────────────────────────────────────────────────────
 
 class TripCreate(BaseModel):
     client_name: str
@@ -81,7 +98,18 @@ class TripOut(BaseModel):
 class JoinTripRequest(BaseModel):
     role: str
 
+class AdminAssignRequest(BaseModel):
+    user_id: str
+    role: str = "כללי"
+    status: str = "assigned"
+    is_confirmed: bool = True
 
+class IcalImportRequest(BaseModel):
+    ical_url: str
+    default_client_name: str = "לקוח מיומן גוגל"
+
+
+# ── Report Schemas ────────────────────────────────────────────────────────────
 
 class DailyShift(BaseModel):
     start_time: datetime
@@ -113,6 +141,46 @@ class TripReportOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ReportUpdate(BaseModel):
+    start_time: datetime
+    end_time: datetime
+    overtime_decimal: float
+    expenses: float
+    sleeps: int = 0
+    daily_shifts: Optional[List[dict]] = None
+
+
+# ── Payroll / Employee Schemas ────────────────────────────────────────────────
+
+class EmployeeRatesUpdate(BaseModel):
+    hourly_rate: float
+    base_daily_hours: float
+
+class AdjustmentCreate(BaseModel):
+    user_id: str
+    month: int
+    year: int
+    type: str
+    amount: float
+    notes: Optional[str] = None
+
+class EmployeeCreate(BaseModel):
+    full_name: str
+    phone: str
+    password: str
+    national_id: Optional[str] = None
+    email: Optional[str] = None
+    notes: Optional[str] = None
+
+class EmployeeUpdate(BaseModel):
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    national_id: Optional[str] = None
+    email: Optional[str] = None
+
+
+# ── Supplier Schemas ──────────────────────────────────────────────────────────
 
 class SupplierBase(BaseModel):
     name: str

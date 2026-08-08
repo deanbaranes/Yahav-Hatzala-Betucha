@@ -21,9 +21,10 @@ from app.auth import (
 import secrets
 
 # ── Rate limiting ──────────────────────────────────────────────────────────────
-from slowapi import Limiter
-from slowapi.util import get_remote_address
-limiter = Limiter(key_func=get_remote_address)
+# Import the shared app-level limiter so SlowAPI decorators and middleware use
+# the same instance.  The limiter is created in main.py and attached to
+# app.state.limiter; importing it here keeps a single source of truth.
+from app.rate_limiter import limiter
 # ──────────────────────────────────────────────────────────────────────────────
 
 router = APIRouter(prefix="/auth", tags=["auth"])

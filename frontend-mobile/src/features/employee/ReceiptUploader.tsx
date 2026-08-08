@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import axiosClient from '../../api/axiosClient';
-import axios from 'axios';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 
 type UploadState = 'idle' | 'uploading' | 'success' | 'error';
 
-export default function S3Uploader({ onUploadComplete, onRemove }: { onUploadComplete: (url: string) => void, onRemove?: () => void }) {
+export default function ReceiptUploader({ onUploadComplete, onRemove }: { onUploadComplete: (url: string) => void, onRemove?: () => void }) {
   const [uploadState, setUploadState] = useState<UploadState>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -28,7 +27,7 @@ export default function S3Uploader({ onUploadComplete, onRemove }: { onUploadCom
       setUploadState('success');
 
     } catch (err: any) {
-      console.error('[S3Uploader] Upload failed:', err);
+      console.error('[ReceiptUploader] Upload failed:', err);
       setErrorMessage(err?.response?.data?.detail || 'שגיאה בהעלאת הקובץ. אנא נסה שנית.');
       setUploadState('error');
     }

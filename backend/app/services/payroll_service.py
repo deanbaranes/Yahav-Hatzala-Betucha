@@ -8,6 +8,13 @@ from app.models.user import User
 from app.models.trip_report import TripReport
 from app.models.trip_assignment import TripAssignment
 from app.models.payroll_adjustment import PayrollAdjustment
+from app.constants import (
+    EMPLOYEE_ACCOMMODATION_PAY,
+    EMPLOYEE_TRAVEL_PAY_PER_DAY,
+    EMPLOYEE_RECOVERY_PAY_PER_DAY,
+    OVERTIME_MULTIPLIER,
+    DEFAULT_BASE_DAILY_HOURS
+)
 
 class PayrollService:
     def __init__(self, db: Session):
@@ -55,7 +62,7 @@ class PayrollService:
                         auto_accom_nights += Decimal(trip_nights)
 
         hourly_rate = Decimal(str(user.hourly_rate or 0))
-        base_daily = Decimal(str(user.base_daily_hours or 8.6))
+        base_daily = Decimal(str(user.base_daily_hours or DEFAULT_BASE_DAILY_HOURS))
         
         # Calculate bonus for global salary trips
         is_global_salary = bool(user.is_global_salary)
@@ -74,8 +81,8 @@ class PayrollService:
                 
                 report_days = Decimal(len(report_days_set))
                 report_base = report_days * base_daily * hourly_rate
-                report_recovery = report_days * Decimal('12.00')
-                report_travel = report_days * Decimal('22.60')
+                report_recovery = report_days * EMPLOYEE_RECOVERY_PAY_PER_DAY
+                report_travel = report_days * EMPLOYEE_TRAVEL_PAY_PER_DAY
                 report_regular_pay = report_base + report_recovery + report_travel
                 
                 promised = Decimal(str(r.assignment.trip.global_salary))
@@ -90,11 +97,11 @@ class PayrollService:
             PayrollAdjustment.year == year
         ).all()
 
-        recovery_pay = Decimal(days_worked) * Decimal('12.00')
-        travel_pay = Decimal(days_worked) * Decimal('22.60')
+        recovery_pay = Decimal(days_worked) * EMPLOYEE_RECOVERY_PAY_PER_DAY
+        travel_pay = Decimal(days_worked) * EMPLOYEE_TRAVEL_PAY_PER_DAY
         
         accom_nights = auto_accom_nights
-        accom_pay = auto_accom_nights * Decimal('80.00')
+        accom_pay = auto_accom_nights * EMPLOYEE_ACCOMMODATION_PAY
         other_adjs = Decimal(0)
         
         # True = עובד בשכר גלובלי — נקבע ב-DB, לא לפי שם
@@ -110,7 +117,7 @@ class PayrollService:
                 travel_pay += amt
             elif a.type == "לינה":
                 accom_nights += amt
-                accom_pay += amt * Decimal('80.00')
+                accom_pay += amt * EMPLOYEE_ACCOMMODATION_PAY
             elif a.type == "שעות נוספות":
                 ot_hours += amt
             elif a.type == "שכר יומי" and is_global_salary:
@@ -130,7 +137,7 @@ class PayrollService:
         else:
             base_salary = Decimal(days_worked) * base_daily * hourly_rate
             
-        ot_total = ot_hours * hourly_rate * Decimal('1.5')
+        ot_total = ot_hours * hourly_rate * OVERTIME_MULTIPLIER
 
         gross_total = base_salary + ot_total + recovery_pay + travel_pay + accom_pay + other_adjs + trip_global_bonus
 
@@ -148,7 +155,7 @@ class PayrollService:
         report_text += f"ימי עבודה: {days_worked}\n"
         report_text += f"שעות עבודה בחודש: {total_hours.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)}\n"
         report_text += f"שכר בסיס: {base_salary.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)} ₪\n"
-        report_text += f"שעות נוספות: {ot_hours.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)} × {hourly_rate} × 1.5 = {ot_total.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)} ₪\n"
+        report_text += f"שעות נוספות: {ot_hours.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)} × {hourly_rate} × {float(OVERTIME_MULTIPLIER)} = {ot_total.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)} ₪\n"
         report_text += f"הבראה: {recovery_pay.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)} ₪\n"
         report_text += f"נסיעות: {travel_pay.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)} ₪"
 

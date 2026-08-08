@@ -1,24 +1,33 @@
-import os
-import uuid
-import boto3
-from typing import Optional, List
-from botocore.exceptions import ClientError
-from fastapi import APIRouter, Depends, HTTPException
+import logging
+from datetime import datetime
+from decimal import Decimal
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
-from sqlalchemy import not_
+from sqlalchemy import not_, extract
+
 from app.database import get_db
 from app.models.trip_report import TripReport
 from app.models.trip_assignment import TripAssignment
 from app.models.trip import Trip
 from app.models.user import User
-from app.schemas import TripReportCreate, TripReportOut
+from app.schemas import TripReportCreate, TripReportOut, ReportUpdate
 from app.dependencies import get_employee_user, get_admin_user
-from pydantic import BaseModel
-from decimal import Decimal
-from datetime import datetime
-from sqlalchemy import extract
+from app.services.report_service import (
+    calculate_overtime_decimal,
+    process_and_save_report,
+)
+from app.services.storage_service import StorageService
+
+logger = logging.getLogger(__name__)
+
+# ── Constants ─────────────────────────────────────────────────────────────────
+MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
 
 router = APIRouter(prefix="/reports", tags=["reports"])
+
+
+# ── Pending reports ───────────────────────────────────────────────────────────
 
 @router.get("/all-pending-reports")
 def get_all_pending_reports(db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
@@ -67,78 +76,34 @@ def get_my_pending_reports(db: Session = Depends(get_db), current_user: User = D
         } for a in pending_assignments
     ]
 
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
 
-# Cloudinary Configuration
-CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME", "")
-CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY", "")
-CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET", "")
-
-if CLOUDINARY_CLOUD_NAME:
-    cloudinary.config(
-        cloud_name=CLOUDINARY_CLOUD_NAME,
-        api_key=CLOUDINARY_API_KEY,
-        api_secret=CLOUDINARY_API_SECRET,
-        secure=True
-    )
-
-from fastapi import UploadFile, File
-import shutil
+# ── File Upload ───────────────────────────────────────────────────────────────
 
 @router.post("/upload")
 async def upload_file(file: UploadFile = File(...), current_user: User = Depends(get_employee_user)):
-    ext = ".pdf" if file.content_type == "application/pdf" else ".jpg"
-    file_id = str(uuid.uuid4())
-    
-    if not CLOUDINARY_CLOUD_NAME:
-        # Fallback to local upload
-        file_name = f"{file_id}{ext}"
-        file_path = f"uploads/{file_name}"
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-        return {"url": f"http://localhost:8000/uploads/{file_name}"}
-    
-    # Cloudinary Upload
+    # Validate file size
+    contents = await file.read()
+    if len(contents) > MAX_UPLOAD_SIZE_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"הקובץ גדול מדי. גודל מקסימלי: {MAX_UPLOAD_SIZE_BYTES // (1024*1024)} MB"
+        )
+    # Reset file position for subsequent reads
+    await file.seek(0)
+
     try:
-        # We upload to a specific folder in cloudinary so it's organized
-        result = cloudinary.uploader.upload(
+        url = StorageService.upload_file(
             file.file,
             folder="yahav_receipts",
-            resource_type="auto" # Auto detects image vs raw (pdf)
+            content_type=file.content_type or "",
         )
-        return {"url": result.get("secure_url")}
-    except Exception as e:
-        print(f"Cloudinary Upload Error: {e}")
-        raise HTTPException(status_code=500, detail="Could not upload file to Cloudinary. Check configuration.")
+        return {"url": url}
+    except RuntimeError as e:
+        logger.error(f"Receipt upload failed: {e}")
+        raise HTTPException(status_code=500, detail="שגיאה בהעלאת הקובץ. אנא נסה שנית.")
 
-@router.get("/upload-url")
-def get_upload_url(file_type: str = "image/jpeg", current_user: User = Depends(get_employee_user)):
-    # Cloudinary supports presigned uploads as well, but since the frontend 
-    # uses POST /reports/upload directly, we can just return a placeholder or error 
-    # to encourage using the main route.
-    raise HTTPException(status_code=400, detail="Direct upload URL not supported anymore. Use POST /reports/upload")
 
-from decimal import Decimal, ROUND_HALF_UP
-
-def calculate_overtime_decimal(start_time, end_time) -> float:
-    total_time = end_time.replace(tzinfo=None) - start_time.replace(tzinfo=None)
-    total_minutes = total_time.total_seconds() / 60.0
-    overtime_minutes = max(0, total_minutes - (9 * 60))
-    overtime_hours = overtime_minutes / 60.0
-    
-    # Use Decimal for strict financial precision rounding to nearest 0.05
-    d_overtime = Decimal(str(overtime_hours))
-    
-    if d_overtime > 0:
-        d_overtime += Decimal('0.4')
-        
-    d_scaled = d_overtime * Decimal('20')
-    d_rounded = d_scaled.quantize(Decimal('1'), rounding=ROUND_HALF_UP)
-    d_final = d_rounded / Decimal('20')
-    
-    return float(d_final)
+# ── Report Submission (Employee) ──────────────────────────────────────────────
 
 @router.post("/", response_model=TripReportOut)
 def submit_trip_report(report_data: TripReportCreate, db: Session = Depends(get_db), current_user: User = Depends(get_employee_user)):
@@ -150,66 +115,11 @@ def submit_trip_report(report_data: TripReportCreate, db: Session = Depends(get_
     
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found or does not belong to you")
-        
-    # Check if report already exists
-    existing_report = db.query(TripReport).filter(TripReport.assignment_id == assignment.id).first()
-    if existing_report:
-         raise HTTPException(status_code=400, detail="Report already submitted for this assignment")
 
-    # Calculate overtime and total span
-    total_overtime = 0.0
-    final_start = report_data.start_time
-    final_end = report_data.end_time
-    shifts_json = None
-    
-    print("DEBUG: Received daily_shifts from client:", report_data.daily_shifts)
-    if report_data.daily_shifts and len(report_data.daily_shifts) > 0:
-        shifts_json = [{"start_time": s.start_time.isoformat(), "end_time": s.end_time.isoformat()} for s in report_data.daily_shifts]
-        final_start = min([s.start_time for s in report_data.daily_shifts])
-        final_end = max([s.end_time for s in report_data.daily_shifts])
-        for shift in report_data.daily_shifts:
-            total_overtime += calculate_overtime_decimal(shift.start_time, shift.end_time)
-    else:
-        if not report_data.start_time or not report_data.end_time:
-            raise HTTPException(status_code=400, detail="Must provide start_time and end_time if no daily_shifts")
-        total_overtime = calculate_overtime_decimal(report_data.start_time, report_data.end_time)
+    return process_and_save_report(db, assignment, report_data)
 
-    new_report = TripReport(
-        assignment_id=assignment.id,
-        start_time=final_start,
-        end_time=final_end,
-        daily_shifts=shifts_json,
-        overtime_decimal=Decimal(str(total_overtime)),
-        expenses=report_data.expenses,
-        expenses_notes=report_data.expenses_notes,
-        sleeps=report_data.sleeps,
-        receipt_url=report_data.receipt_url
-    )
-    db.add(new_report)
-    
-    # Auto-charge client for accommodation
-    trip = assignment.trip
-    if trip.start_date and trip.end_date:
-        nights = (trip.end_date.date() - trip.start_date.date()).days
-        if nights > 0:
-            client = trip.client
-            if client:
-                try:
-                    current_bal = float(str(client.balance or '0').replace(',', ''))
-                except ValueError:
-                    current_bal = 0.0
-                
-                charge = nights * 180
-                client.balance = str(current_bal - charge)
-                note_addition = f"חיוב אוטומטי {charge} ₪ על לינת עובד בטיול {trip.location} ({trip.start_date.strftime('%d/%m/%Y')})"
-                client.notes = f"{client.notes or ''}\n{note_addition}".strip()
-                db.add(client)
 
-    db.commit()
-    db.refresh(new_report)
-    return new_report
-
-from app.dependencies import get_admin_user
+# ── Report Submission (Admin Manual) ──────────────────────────────────────────
 
 @router.post("/admin-manual", response_model=TripReportOut)
 def submit_trip_report_admin(report_data: TripReportCreate, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
@@ -220,67 +130,15 @@ def submit_trip_report_admin(report_data: TripReportCreate, db: Session = Depend
     
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
-        
-    # Check if report already exists
-    existing_report = db.query(TripReport).filter(TripReport.assignment_id == assignment.id).first()
-    if existing_report:
-         raise HTTPException(status_code=400, detail="Report already submitted for this assignment")
 
-    # Calculate overtime and total span
-    total_overtime = 0.0
-    final_start = report_data.start_time
-    final_end = report_data.end_time
-    shifts_json = None
-    
-    if report_data.daily_shifts and len(report_data.daily_shifts) > 0:
-        shifts_json = [{"start_time": s.start_time.isoformat(), "end_time": s.end_time.isoformat()} for s in report_data.daily_shifts]
-        final_start = min([s.start_time for s in report_data.daily_shifts])
-        final_end = max([s.end_time for s in report_data.daily_shifts])
-        for shift in report_data.daily_shifts:
-            total_overtime += calculate_overtime_decimal(shift.start_time, shift.end_time)
-    else:
-        if not report_data.start_time or not report_data.end_time:
-            raise HTTPException(status_code=400, detail="Must provide start_time and end_time if no daily_shifts")
-        total_overtime = calculate_overtime_decimal(report_data.start_time, report_data.end_time)
+    return process_and_save_report(db, assignment, report_data)
 
-    new_report = TripReport(
-        assignment_id=assignment.id,
-        start_time=final_start,
-        end_time=final_end,
-        daily_shifts=shifts_json,
-        overtime_decimal=Decimal(str(total_overtime)),
-        expenses=report_data.expenses,
-        expenses_notes=report_data.expenses_notes,
-        sleeps=report_data.sleeps,
-        receipt_url=report_data.receipt_url
-    )
-    db.add(new_report)
-    
-    # Auto-charge client for accommodation
-    trip = assignment.trip
-    if trip.start_date and trip.end_date:
-        nights = (trip.end_date.date() - trip.start_date.date()).days
-        if nights > 0:
-            client = trip.client
-            if client:
-                try:
-                    current_bal = float(str(client.balance or '0').replace(',', ''))
-                except ValueError:
-                    current_bal = 0.0
-                
-                charge = nights * 180
-                client.balance = str(current_bal - charge)
-                note_addition = f"חיוב אוטומטי {charge} ₪ על לינת עובד בטיול {trip.location} ({trip.start_date.strftime('%d/%m/%Y')})"
-                client.notes = f"{client.notes or ''}\n{note_addition}".strip()
-                db.add(client)
 
-    db.commit()
-    db.refresh(new_report)
-    return new_report
+# ── Report List (Admin) ──────────────────────────────────────────────────────
 
 @router.get("/")
-def get_all_reports(db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
-    reports = db.query(TripReport).join(TripAssignment).join(Trip).join(User).order_by(TripReport.start_time.desc()).all()
+def get_all_reports(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
+    reports = db.query(TripReport).join(TripAssignment).join(Trip).join(User).order_by(TripReport.start_time.desc()).offset(skip).limit(limit).all()
     
     result = []
     for r in reports:
@@ -315,13 +173,9 @@ def get_all_reports(db: Session = Depends(get_db), current_user: User = Depends(
         })
     return result
 
-class ReportUpdate(BaseModel):
-    start_time: datetime
-    end_time: datetime
-    overtime_decimal: float
-    expenses: float
-    sleeps: int = 0
-    daily_shifts: Optional[List[dict]] = None
+
+# ── Report Update / Delete / Approve / Reject ────────────────────────────────
+
 
 @router.put("/{report_id}")
 def update_report(report_id: str, data: ReportUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
@@ -385,6 +239,9 @@ def reject_report(report_id: str, db: Session = Depends(get_db), current_user: U
     report.manager_status = "rejected"
     db.commit()
     return {"message": "Report rejected"}
+
+
+# ── Reports Matrix ────────────────────────────────────────────────────────────
 
 @router.get("/matrix/{year}/{month}")
 def get_reports_matrix(year: int, month: int, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):

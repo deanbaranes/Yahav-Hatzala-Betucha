@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
-from datetime import datetime, timezone
+from datetime import datetime, timezone, time
+from urllib.parse import urlparse
 from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.models.trip import Trip
 from app.models.client import Client
 from app.models.user import User
 from app.models.trip_assignment import TripAssignment
-from app.schemas import TripCreate, TripOut, JoinTripRequest
+from app.schemas import TripCreate, TripOut, JoinTripRequest, AdminAssignRequest, IcalImportRequest
 from app.dependencies import get_admin_user, get_current_user
 from app.services.sms_service import SMSService
-from pydantic import BaseModel
 import requests as http_requests
 from icalendar import Calendar as ICalendar
 from sqlalchemy import extract
@@ -21,28 +21,15 @@ ADMIN_PHONE = os.getenv("ADMIN_PHONE", "")
 router = APIRouter(prefix="/trips", tags=["trips"])
 
 
-# ── Schema classes ─────────────────────────────────────────────────────────────
-
-class AdminAssignRequest(BaseModel):
-    user_id: str
-    role: str = "כללי"
-    status: str = "assigned"
-    is_confirmed: bool = True
-
-class IcalImportRequest(BaseModel):
-    ical_url: str
-    default_client_name: str = "לקוח מיומן גוגל"
-
-
 # ── Static GET routes (no dynamic /{trip_id} as first segment) ─────────────────
 
 @router.get("/")
-def get_trips(db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
+def get_trips(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     # Eager load client and assignments (with their users) to avoid severe N+1 bottlenecks
     trips = db.query(Trip).options(
         joinedload(Trip.client),
         joinedload(Trip.assignments).joinedload(TripAssignment.user)
-    ).order_by(Trip.start_date.desc()).all()
+    ).order_by(Trip.start_date.desc()).offset(skip).limit(limit).all()
     result = []
     for t in trips:
         result.append({
@@ -283,6 +270,14 @@ def import_from_ical(
     Imports trips from a Google Calendar secret ICS URL.
     Parses each VEVENT and creates a Trip in the DB.
     """
+    # ── SSRF Protection: only allow known calendar providers ──
+    ALLOWED_ICAL_HOSTS = {"calendar.google.com", "outlook.office365.com", "outlook.live.com", "p18-caldav.icloud.com"}
+    parsed_url = urlparse(body.ical_url)
+    if not parsed_url.scheme.startswith("https"):
+        raise HTTPException(status_code=400, detail="רק כתובות HTTPS נתמכות.")
+    if parsed_url.hostname not in ALLOWED_ICAL_HOSTS:
+        raise HTTPException(status_code=400, detail=f"URL לא מורשה. נתמכים: Google Calendar, Outlook, iCloud בלבד.")
+
     try:
         resp = http_requests.get(body.ical_url, timeout=15)
         resp.raise_for_status()
@@ -320,7 +315,6 @@ def import_from_ical(
 
             # Handle date-only events (all-day)
             if not hasattr(start_dt, 'hour'):
-                from datetime import time
                 start_dt = datetime.combine(start_dt, time(9, 0))
                 end_dt = datetime.combine(end_dt, time(18, 0))
             else:

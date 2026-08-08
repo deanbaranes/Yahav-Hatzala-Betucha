@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import axiosClient from '../../api/axiosClient';
-import S3Uploader from './S3Uploader';
+import ReceiptUploader from './ReceiptUploader';
 
 export default function ReportForm() {
   const queryClient = useQueryClient();
@@ -165,7 +165,7 @@ export default function ReportForm() {
               value={formData.expenses_notes} onChange={e => setFormData(prev => ({...prev, expenses_notes: e.target.value}))}></textarea>
           </div>
 
-          <S3Uploader 
+          <ReceiptUploader 
             onUploadComplete={(url) => setFormData(prev => ({...prev, receipt_url: url}))} 
             onRemove={() => setFormData(prev => ({...prev, receipt_url: ''}))}
           />
