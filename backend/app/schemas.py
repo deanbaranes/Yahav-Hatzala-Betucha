@@ -156,6 +156,7 @@ class ReportUpdate(BaseModel):
 class EmployeeRatesUpdate(BaseModel):
     hourly_rate: float
     base_daily_hours: float
+    employment_type: Optional[str] = "שכיר"
 
 class AdjustmentCreate(BaseModel):
     user_id: str
@@ -178,6 +179,7 @@ class EmployeeUpdate(BaseModel):
     phone: Optional[str] = None
     national_id: Optional[str] = None
     email: Optional[str] = None
+    employment_type: Optional[str] = None
 
 
 # ── Supplier Schemas ──────────────────────────────────────────────────────────

@@ -28,3 +28,5 @@ class User(Base):
     base_daily_hours = Column(Numeric(10, 2), default=8.6)
     # True = עובד בשכר גלובלי (קבוע ליום) ולא לפי שעות
     is_global_salary = Column(Boolean, default=False, nullable=False)
+    # סוג העסקה: "שכיר" או "עצמאי"
+    employment_type = Column(String, default="שכיר", nullable=False)

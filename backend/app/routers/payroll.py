@@ -63,6 +63,8 @@ def update_employee_details(user_id: str, data: EmployeeUpdate, db: Session = De
         user.national_id = data.national_id
     if data.email is not None:
         user.email = data.email
+    if data.employment_type is not None:
+        user.employment_type = data.employment_type
         
     db.commit()
     return {"message": "Employee details updated successfully"}
@@ -100,7 +102,8 @@ def get_employees(month: Optional[int] = None, year: Optional[int] = None, db: S
             "email": e.email,
             "national_id": e.national_id,
             "hourly_rate": float(e.hourly_rate or 0),
-            "base_daily_hours": float(e.base_daily_hours or 8.6)
+            "base_daily_hours": float(e.base_daily_hours or 8.6),
+            "employment_type": e.employment_type or "שכיר"
         } for e in employees
     ]
 
@@ -142,6 +145,8 @@ def update_rates(user_id: str, data: EmployeeRatesUpdate, db: Session = Depends(
         raise HTTPException(status_code=404, detail="User not found")
     user.hourly_rate = data.hourly_rate
     user.base_daily_hours = data.base_daily_hours
+    if data.employment_type is not None:
+        user.employment_type = data.employment_type
     db.commit()
     return {"message": "Rates updated successfully"}
 

@@ -21,6 +21,14 @@ from app.rate_limiter import limiter
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
+# Quick migration for new columns
+from sqlalchemy import text
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE users ADD COLUMN employment_type VARCHAR DEFAULT 'שכיר'"))
+except Exception:
+    pass # Column already exists or error
+
 from contextlib import asynccontextmanager
 from app.tasks.scheduler import start_scheduler
 

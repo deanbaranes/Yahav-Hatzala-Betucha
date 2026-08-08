@@ -106,7 +106,8 @@ export default function PayrollManagement() {
         full_name: data.full_name,
         phone: data.phone,
         national_id: data.national_id,
-        email: data.email
+        email: data.email,
+        employment_type: data.employment_type
       });
       
       // Update rates
@@ -331,7 +332,12 @@ export default function PayrollManagement() {
                 }}
                 className={`w-full text-right p-3 rounded-xl transition-all font-bold ${selectedUser?.id === emp.id ? 'bg-green-500 text-white shadow-md' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'}`}
               >
-                {emp.full_name}
+                <div className="flex justify-between items-center">
+                  <span>{emp.full_name}</span>
+                  {emp.employment_type === 'עצמאי' && (
+                    <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded border border-purple-200">עצמאי</span>
+                  )}
+                </div>
               </button>
             ))}
           </div>
@@ -351,6 +357,7 @@ export default function PayrollManagement() {
                       <p>טלפון: {selectedUser.phone}</p>
                       <p>ת.ז: {selectedUser.national_id || 'לא הוזן'}</p>
                       <p>אימייל: {selectedUser.email || 'לא הוזן'}</p>
+                      <p>סוג העסקה: <span className={`font-bold ${selectedUser.employment_type === 'עצמאי' ? 'text-purple-600' : 'text-blue-600'}`}>{selectedUser.employment_type || 'שכיר'}</span></p>
                     </div>
                     <div className="mt-2 text-gray-600 font-medium">
                       <p>תעריף שעתי: <span className="font-bold">{selectedUser.hourly_rate} ₪</span></p>
@@ -370,6 +377,17 @@ export default function PayrollManagement() {
                     <div>
                       <label className="block text-xs font-bold text-gray-500">טלפון</label>
                       <input type="text" value={detailsForm.phone} onChange={e => setDetailsForm({...detailsForm, phone: e.target.value})} className="p-2 border rounded-lg w-full text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500">סוג העסקה</label>
+                      <select 
+                        value={detailsForm.employment_type || 'שכיר'} 
+                        onChange={e => setDetailsForm({...detailsForm, employment_type: e.target.value})} 
+                        className="p-2 border rounded-lg w-full text-sm font-bold bg-gray-50 text-gray-700"
+                      >
+                        <option value="שכיר">שכיר (תלוש שכר)</option>
+                        <option value="עצמאי">עצמאי (ספק קבלות)</option>
+                      </select>
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-gray-500">אימייל</label>
@@ -396,7 +414,8 @@ export default function PayrollManagement() {
                         national_id: selectedUser.national_id || '', 
                         email: selectedUser.email || '',
                         hourly_rate: selectedUser.hourly_rate || 0,
-                        base_daily_hours: selectedUser.base_daily_hours || 8.6
+                        base_daily_hours: selectedUser.base_daily_hours || 8.6,
+                        employment_type: selectedUser.employment_type || 'שכיר'
                       });
                       setEditingDetails(true);
                     }} className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-4 py-2 rounded-lg font-bold transition-colors text-sm w-full flex items-center justify-center gap-2">
