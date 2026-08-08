@@ -227,12 +227,6 @@ def get_unconfirmed_assignments(db: Session = Depends(get_db), admin_user: User 
 @router.post("/", response_model=TripOut)
 def create_trip(trip_data: TripCreate, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
     # Validations
-    now = datetime.now()
-    # Since trip_data.start_date is naive (from datetime-local), now() should also be naive
-    start_date_naive = trip_data.start_date.replace(tzinfo=None)
-
-    if start_date_naive < now and (now - start_date_naive).total_seconds() > 3600:
-        raise HTTPException(status_code=400, detail="Start date cannot be in the past")
 
     if trip_data.end_date <= trip_data.start_date:
         raise HTTPException(status_code=400, detail="End date must be after start date")

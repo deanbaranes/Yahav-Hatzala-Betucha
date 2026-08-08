@@ -24,6 +24,13 @@ export default function Clients() {
     setTimeout(() => setCopiedEmail(null), 2000);
   };
   
+  const [copiedPhone, setCopiedPhone] = useState<string | null>(null);
+  const copyPhone = (phone: string) => {
+    navigator.clipboard.writeText(phone);
+    setCopiedPhone(phone);
+    setTimeout(() => setCopiedPhone(null), 2000);
+  };
+  
   const queryClient = useQueryClient();
 
   const { data: clients, isLoading } = useQuery<any[]>({
@@ -196,29 +203,29 @@ export default function Clients() {
           </div>
         </div>
         
-        {/* Desktop View: Table */}
-        <div className={`${mobileViewMode === 'table' ? 'block' : 'hidden md:block'} border-t-0 rounded-b-2xl`}>
-          <table className="w-full text-right text-sm">
+        {/* Desktop View / Scrolling Table */}
+        <div className={`${mobileViewMode === 'table' ? 'block overflow-x-auto' : 'hidden md:block overflow-x-auto'} border-t-0 rounded-b-2xl`}>
+          <table className="w-full text-right text-sm min-w-[800px]">
             <thead>
               <tr className="bg-gradient-to-l from-blue-700 to-cyan-500 text-white shadow-md">
-                <th className="px-2 py-4 font-extrabold rounded-tr-lg w-[35%] md:w-[16%]">שם לקוח</th>
-                <th className="hidden md:table-cell px-2 py-4 font-bold md:w-[11%]">איש קשר</th>
-                <th className="hidden md:table-cell px-2 py-4 font-bold md:w-[16%]">אימייל</th>
-                <th className="hidden md:table-cell px-2 py-4 font-bold md:w-[10%]">טלפון</th>
-                <th className="px-2 py-4 font-bold w-[35%] md:w-[10%] cursor-pointer hover:bg-white/20 transition-colors" onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')} title="לחץ לשינוי סדר המיון">
+                <th className="px-2 py-4 font-extrabold rounded-tr-lg whitespace-nowrap">שם לקוח</th>
+                <th className="px-2 py-4 font-bold whitespace-nowrap">איש קשר</th>
+                <th className="px-2 py-4 font-bold whitespace-nowrap">אימייל</th>
+                <th className="px-2 py-4 font-bold whitespace-nowrap">טלפון</th>
+                <th className="px-2 py-4 font-bold cursor-pointer hover:bg-white/20 transition-colors whitespace-nowrap" onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')} title="לחץ לשינוי סדר המיון">
                   <div className="flex items-center gap-1">יתרה/חוב {sortOrder === 'asc' ? '↓' : sortOrder === 'desc' ? '↑' : ''}</div>
                 </th>
-                <th className="hidden md:table-cell px-2 py-4 font-bold md:w-[13%]">תנאי תשלום</th>
-                <th className="hidden md:table-cell px-2 py-4 font-bold md:w-[14%]">הערות</th>
-                <th className="px-2 py-4 font-bold w-[30%] md:w-[10%] text-center rounded-tl-lg">פעולות</th>
+                <th className="px-2 py-4 font-bold whitespace-nowrap">תנאי תשלום</th>
+                <th className="px-2 py-4 font-bold whitespace-nowrap">הערות</th>
+                <th className="px-2 py-4 font-bold text-center rounded-tl-lg whitespace-nowrap">פעולות</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
               {filteredClients.map((client, idx) => (
                 <tr key={client.id} className={`${getRowStyle(client, idx)} transition-all duration-200 group`}>
                   <td className="px-2 py-3 font-bold text-gray-800 break-words group-hover:text-blue-700 transition-colors">{client.name}</td>
-                  <td className="hidden md:table-cell px-2 py-3 text-slate-600 font-medium">{client.contact_person || '-'}</td>
-                  <td className="hidden md:table-cell px-2 py-3 text-slate-500 break-words">
+                  <td className="px-2 py-3 text-slate-600 font-medium whitespace-nowrap">{client.contact_person || '-'}</td>
+                  <td className="px-2 py-3 text-slate-500 break-words">
                     {client.email ? (
                       <div className="flex items-center gap-1.5">
                         <a href={`mailto:${client.email}`} className="hover:text-blue-600 hover:underline break-words">{client.email}</a>
@@ -238,8 +245,25 @@ export default function Clients() {
                       </div>
                     ) : '-'}
                   </td>
-                  <td className="hidden md:table-cell px-2 py-3 text-slate-600 font-medium" dir="ltr" style={{textAlign: 'right'}}>
-                    {client.phone ? <a href={`tel:${client.phone}`} className="hover:text-blue-600 hover:underline">{client.phone}</a> : '-'}
+                  <td className="px-2 py-3 text-slate-600 font-medium" dir="ltr" style={{textAlign: 'right'}}>
+                    {client.phone ? (
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => copyPhone(client.phone)}
+                          className={`flex-shrink-0 p-1 rounded transition-all duration-200 ${
+                            copiedPhone === client.phone
+                              ? 'text-green-600 bg-green-50'
+                              : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                          }`}
+                          title="העתק טלפון"
+                        >
+                          {copiedPhone === client.phone
+                            ? <Check size={13} />
+                            : <Copy size={13} />}
+                        </button>
+                        <a href={`tel:${client.phone}`} className="hover:text-blue-600 hover:underline">{client.phone}</a>
+                      </div>
+                    ) : '-'}
                   </td>
                   
                   <td className="px-2 py-3">
@@ -275,7 +299,7 @@ export default function Clients() {
                     )}
                   </td>
                   
-                  <td className="hidden md:table-cell px-2 py-3">
+                  <td className="px-2 py-3">
                     {editingId === client.id ? (
                       <select
                         value={editForm.payment_terms}
@@ -296,7 +320,7 @@ export default function Clients() {
                     )}
                   </td>
                   
-                  <td className="hidden md:table-cell px-2 py-3">
+                  <td className="px-2 py-3">
                     {editingId === client.id ? (
                       <textarea
                         value={editForm.notes}
@@ -361,7 +385,22 @@ export default function Clients() {
                   <h3 className="font-bold text-gray-800 text-lg mb-1">{client.name}</h3>
                   <div className="text-sm text-gray-600 flex flex-wrap gap-x-2 gap-y-1 items-center">
                     {client.contact_person && <span className="font-medium bg-gray-100 px-2 py-0.5 rounded text-gray-700">{client.contact_person}</span>}
-                    {client.phone && <a href={`tel:${client.phone}`} className="text-blue-600 hover:underline font-medium bg-blue-50 px-2 py-0.5 rounded" dir="ltr">{client.phone}</a>}
+                    {client.phone && (
+                      <div className="flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded" dir="ltr">
+                        <a href={`tel:${client.phone}`} className="text-blue-600 hover:underline font-medium">{client.phone}</a>
+                        <button
+                          onClick={() => copyPhone(client.phone)}
+                          className={`flex-shrink-0 p-1 rounded transition-all duration-200 ${
+                            copiedPhone === client.phone
+                              ? 'text-green-600'
+                              : 'text-gray-400 hover:text-blue-600'
+                          }`}
+                          title="העתק טלפון"
+                        >
+                          {copiedPhone === client.phone ? <Check size={13} /> : <Copy size={13} />}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div>
@@ -379,9 +418,22 @@ export default function Clients() {
               </div>
 
               {client.email && (
-                <div className="text-sm flex items-center gap-2 bg-slate-50 p-2 rounded-lg">
-                  <span className="text-slate-400">📧</span>
-                  <a href={`mailto:${client.email}`} className="text-blue-600 hover:underline truncate flex-1">{client.email}</a>
+                <div className="text-sm flex items-center justify-between gap-2 bg-slate-50 p-2 rounded-lg">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <span className="text-slate-400">📧</span>
+                    <a href={`mailto:${client.email}`} className="text-blue-600 hover:underline truncate">{client.email}</a>
+                  </div>
+                  <button
+                    onClick={() => copyEmail(client.email)}
+                    className={`flex-shrink-0 p-1.5 rounded transition-all duration-200 ${
+                      copiedEmail === client.email
+                        ? 'text-green-600 bg-green-100'
+                        : 'text-gray-500 hover:text-blue-600 hover:bg-blue-100'
+                    }`}
+                    title="העתק אימייל"
+                  >
+                    {copiedEmail === client.email ? <Check size={14} /> : <Copy size={14} />}
+                  </button>
                 </div>
               )}
 
