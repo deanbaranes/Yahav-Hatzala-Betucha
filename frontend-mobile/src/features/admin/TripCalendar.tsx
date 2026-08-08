@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { ChevronRight, ChevronLeft, Calendar as CalendarIcon, CheckCircle2 } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Calendar as CalendarIcon, CheckCircle2, Download } from 'lucide-react';
 import axiosClient from '../../api/axiosClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import SmartClientInput from './SmartClientInput';
+import { exportToCSV } from '../../utils/csvExport';
 
 const AVAILABLE_ROLES = ["מע\"ר", "חובש", "פראמדיק", "שומר לילה", "מע\"ר חמוש", "חובש חמוש", "מאבטח"];
 
@@ -271,15 +272,63 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
     return tooltip;
   };
 
+  const handleExport = () => {
+    const currentMonthTrips = trips.filter(trip => {
+      const d = new Date(trip.start_date);
+      return d.getFullYear() === year && d.getMonth() === month;
+    }).sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+
+    if (currentMonthTrips.length === 0) {
+      alert('אין טיולים בחודש זה לייצוא.');
+      return;
+    }
+
+    const headers = ['תאריך', 'לקוח', 'מיקום', 'שעת התחלה', 'שעת סיום', 'סטטוס חיוב', 'עובדים ששובצו'];
+    
+    const rows = currentMonthTrips.map(trip => {
+      const d = new Date(trip.start_date);
+      const start = d.toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'});
+      const end = trip.end_date ? new Date(trip.end_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'}) : '';
+      const clientName = trip.client?.name === 'לקוח כללי' ? 'לקוח כללי (מיומן גוגל)' : (trip.client?.name || '');
+      const billed = trip.is_billed ? 'חויב' : 'לא חויב';
+      
+      const assignments = (trip.assignments || [])
+        .filter((a: any) => a.is_confirmed && a.status === 'assigned')
+        .map((a: any) => `${a.user?.full_name} (${a.role || 'כללי'})`)
+        .join(', ');
+
+      return [
+        d.toLocaleDateString('he-IL'),
+        clientName,
+        trip.location || '',
+        start,
+        end,
+        billed,
+        assignments || 'ללא עובדים'
+      ];
+    });
+
+    exportToCSV(`יומן_טיולים_${month + 1}_${year}`, headers, rows);
+  };
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden" dir="rtl">
       {/* Calendar Header */}
       <div className="flex flex-col md:flex-row items-center justify-between p-4 border-b border-gray-100 gap-4">
         <div className="flex items-center gap-2">
-          <CalendarIcon className="text-blue-600" />
-          <h2 className="text-xl font-bold text-gray-800">
+          <CalendarIcon className="text-blue-600 shrink-0" />
+          <h2 className="text-xl font-bold text-gray-800 whitespace-nowrap">
             {currentDate.toLocaleString('he-IL', { month: 'long', year: 'numeric' })}
           </h2>
+          <button 
+            onClick={handleExport}
+            className="mr-3 flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg font-bold text-xs md:text-sm transition-colors border border-emerald-200 whitespace-nowrap shrink-0"
+            title="ייצא טיולים ושיבוצים לאקסל"
+          >
+            <Download size={14} />
+            <span className="hidden sm:inline">ייצוא יומן לאקסל</span>
+            <span className="sm:hidden">ייצוא</span>
+          </button>
         </div>
         
         <div className="flex-1 w-full max-w-sm mx-auto md:mx-4">
