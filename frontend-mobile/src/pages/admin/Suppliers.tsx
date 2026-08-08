@@ -125,7 +125,7 @@ export default function Suppliers() {
         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -ml-10 -mb-10"></div>
         
-        <div className="relative z-10 flex justify-between items-start mb-4">
+        <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-black text-gray-900 mb-2 flex items-center gap-3">
               <span className="p-2 bg-blue-50 text-blue-600 rounded-xl shrink-0"><Truck size={28} /></span>
@@ -133,27 +133,29 @@ export default function Suppliers() {
             </h1>
             <p className="text-gray-500 text-sm sm:text-base font-medium pr-14">ניהול ספקים, מעקב אחר התחייבויות וחשבוניות</p>
           </div>
-          <button 
-            onClick={handleExport}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 h-9 sm:h-10 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg font-bold text-sm transition-colors border border-emerald-200 whitespace-nowrap shrink-0"
-          >
-            <Download size={16} />
-            <span className="hidden sm:inline">ייצוא לאקסל</span>
-            <span className="sm:hidden">ייצוא</span>
-          </button>
+          <div className="flex flex-row gap-2 w-full sm:w-auto justify-start sm:justify-end">
+            <button 
+              onClick={() => { resetForm(); setIsModalOpen(true); }}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 h-10 bg-blue-600 text-white hover:bg-blue-700 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-md shadow-blue-500/20 whitespace-nowrap shrink-0"
+            >
+              <Plus size={16} /> ספק חדש
+            </button>
+            <button 
+              onClick={handleExport}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 h-10 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl font-bold text-xs sm:text-sm transition-colors border border-emerald-200 whitespace-nowrap shrink-0"
+            >
+              <Download size={16} />
+              <span className="hidden sm:inline">ייצוא לאקסל</span>
+              <span className="sm:hidden">ייצוא</span>
+            </button>
+          </div>
         </div>
         
         <div className="relative z-10 flex flex-col sm:flex-row gap-4 w-full border-t border-gray-100 pt-4">
-          <div className="bg-red-50 text-red-700 px-4 sm:px-6 py-3 rounded-2xl flex-1 md:flex-none border border-red-100 text-center">
-            <div className="text-xs font-bold opacity-80 mb-1">סה"כ חוב פתוח</div>
+          <div className="bg-red-50 text-red-700 px-4 sm:px-6 py-3 rounded-2xl w-full sm:w-auto sm:min-w-[200px] border border-red-100 text-center">
+            <div className="text-xs font-bold opacity-80 mb-1">ס"הכ חובות לספקים</div>
             <div className="text-xl sm:text-2xl font-black">₪{totalDebt.toLocaleString()}</div>
           </div>
-          <button 
-            onClick={() => { resetForm(); setIsModalOpen(true); }}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all hover:scale-105 shadow-md shadow-blue-500/20 h-full min-h-[60px]"
-          >
-            <Plus size={20} /> ספק חדש
-          </button>
         </div>
       </div>
 
