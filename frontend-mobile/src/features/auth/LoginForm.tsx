@@ -105,12 +105,12 @@ export default function LoginForm() {
               שכחתי סיסמא
             </Link>
           </div>
-          <p className="text-gray-500 text-sm font-medium">
-            עדיין לא עובד אצלנו?{' '}
-            <Link to="/register" className="text-blue-600 font-bold hover:underline">
+          <div className="text-gray-500 text-sm font-medium mt-4">
+            <div>לא רשום למערכת?</div>
+            <Link to="/register" className="text-blue-600 font-bold hover:underline block mt-1">
               הירשם כעובד חדש
             </Link>
-          </p>
+          </div>
         </div>
       </div>
     </div>
