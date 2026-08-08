@@ -116,8 +116,9 @@ export default function PayrollManagement() {
         base_daily_hours: data.base_daily_hours
       });
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['payroll-employees'] });
+      setSelectedUser((prev: any) => prev ? { ...prev, ...variables } : prev);
       setEditingDetails(false);
       refetchReport();
       alert('פרטי העובד והתעריף עודכנו בהצלחה!');
@@ -357,7 +358,7 @@ export default function PayrollManagement() {
                       <p>טלפון: {selectedUser.phone}</p>
                       <p>ת.ז: {selectedUser.national_id || 'לא הוזן'}</p>
                       <p>אימייל: {selectedUser.email || 'לא הוזן'}</p>
-                      <p>סוג העסקה: <span className={`font-bold ${selectedUser.employment_type === 'עצמאי' ? 'text-purple-600' : 'text-blue-600'}`}>{selectedUser.employment_type || 'שכיר'}</span></p>
+                      <p>סוג עובד: <span className={`font-bold ${selectedUser.employment_type === 'עצמאי' ? 'text-purple-600' : 'text-blue-600'}`}>{selectedUser.employment_type || 'שכיר'}</span></p>
                     </div>
                     <div className="mt-2 text-gray-600 font-medium">
                       <p>תעריף שעתי: <span className="font-bold">{selectedUser.hourly_rate} ₪</span></p>
@@ -379,7 +380,7 @@ export default function PayrollManagement() {
                       <input type="text" value={detailsForm.phone} onChange={e => setDetailsForm({...detailsForm, phone: e.target.value})} className="p-2 border rounded-lg w-full text-sm" />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500">סוג העסקה</label>
+                      <label className="block text-xs font-bold text-gray-500">סוג עובד</label>
                       <select 
                         value={detailsForm.employment_type || 'שכיר'} 
                         onChange={e => setDetailsForm({...detailsForm, employment_type: e.target.value})} 
