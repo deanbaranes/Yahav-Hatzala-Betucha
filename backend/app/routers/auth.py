@@ -58,11 +58,12 @@ def _build_tokens_and_set_cookie(user: User, db: Session, response: Response) ->
     # Set HttpOnly cookie (not accessible from JS)
     # IMPORTANT: path must match the browser-visible URL (/api/auth/refresh),
     # not the backend path (/auth/refresh) — Vite proxy rewrites /api → /
+    is_prod = os.getenv("ENVIRONMENT", "development") == "production"
     response.set_cookie(
         key=REFRESH_COOKIE_NAME,
         value=raw_token,
         httponly=True,
-        secure=False,     # set True in production behind HTTPS
+        secure=is_prod,     # set True in production behind HTTPS
         samesite="lax",
         max_age=REFRESH_COOKIE_MAX_AGE,
         path="/api/auth/refresh"  # must match the frontend proxy path

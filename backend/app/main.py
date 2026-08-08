@@ -46,6 +46,15 @@ ALLOWED_ORIGINS = os.getenv(
     "http://localhost:5173,http://localhost:3000"
 ).split(",")
 
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
@@ -67,38 +76,6 @@ app.include_router(notifications.router)
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Yahav Hatzala Betucha API"}
-
-from app.database import get_db
-from sqlalchemy.orm import Session
-from fastapi import Depends
-from app.models.user import User
-
-@app.get("/setup-admins/{phone}")
-def setup_admins(phone: str, db: Session = Depends(get_db)):
-    if phone in ["0533210777", "0504851269"]:
-        user = db.query(User).filter(User.phone == phone).first()
-        if user:
-            user.role = "admin"
-            user.status = "active"
-            db.commit()
-            return {"message": f"User {phone} is now an active admin!"}
-    return {"message": "Not authorized"}
-
-@app.get("/setup-admins/delete/{phone}")
-def delete_admin(phone: str, db: Session = Depends(get_db)):
-    if phone in ["0533210777", "0504851269"]:
-        user = db.query(User).filter(User.phone == phone).first()
-        if user:
-            from app.models.refresh_token import RefreshToken
-            from app.models.password_reset_token import PasswordResetToken
-            from app.models.trip_assignment import TripAssignment
-            db.query(TripAssignment).filter_by(user_id=user.id).delete()
-            db.query(RefreshToken).filter_by(user_id=user.id).delete()
-            db.query(PasswordResetToken).filter_by(user_id=user.id).delete()
-            db.delete(user)
-            db.commit()
-            return {"message": f"User {phone} deleted successfully! You can now register again."}
-    return {"message": "Not authorized"}
 
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
