@@ -20,6 +20,28 @@ from sqlalchemy import extract
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
+@router.get("/all-pending-reports")
+def get_all_pending_reports(db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
+    # Find all assignments that are confirmed and do not have a report already
+    reported_assignment_ids = db.query(TripReport.assignment_id).subquery()
+    
+    pending_assignments = db.query(TripAssignment).join(Trip).join(User, TripAssignment.user_id == User.id).filter(
+        TripAssignment.status == "assigned",
+        TripAssignment.is_confirmed == True,
+        not_(TripAssignment.id.in_(reported_assignment_ids))
+    ).order_by(Trip.start_date.desc()).all()
+    
+    return [
+        {
+            "assignment_id": str(a.id),
+            "trip_id": str(a.trip_id),
+            "employee_name": a.user.full_name,
+            "location": a.trip.location,
+            "start_date": a.trip.start_date.isoformat(),
+            "role": a.role
+        } for a in pending_assignments
+    ]
+
 @router.get("/my-pending-reports")
 def get_my_pending_reports(db: Session = Depends(get_db), current_user: User = Depends(get_employee_user)):
     # Find all assignments for this user that are confirmed

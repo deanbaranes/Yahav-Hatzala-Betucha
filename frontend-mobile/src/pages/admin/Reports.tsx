@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
-import { Edit2, Save, X, Trash2, CheckCircle, XCircle, FileText } from 'lucide-react';
+import { Edit2, Save, X, Trash2, CheckCircle, XCircle, FileText, Plus } from 'lucide-react';
+import AdminReportModal from '../../features/admin/AdminReportModal';
 
 export default function Reports() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [editingReport, setEditingReport] = useState<any>(null);
   const [editForm, setEditForm] = useState<any>({ start_time: '', end_time: '', daily_shifts: [], overtime_decimal: 0, expenses: 0, sleeps: 0 });
+  const [isManualModalOpen, setIsManualModalOpen] = useState(false);
 
   const { data: reports, isLoading } = useQuery<any[]>({
     queryKey: ['admin-reports'],
@@ -82,10 +84,23 @@ export default function Reports() {
 
   return (
     <div className="space-y-6 animate-fade-in pb-10" dir="rtl">
-      <header className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-black text-gray-900 drop-shadow-sm mb-2">דיווחי עובדים</h1>
-        <p className="text-gray-500 font-medium">צפה בדיווחי שעות וקבלות הוצאות של עובדים</p>
+      <header className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-gray-900 drop-shadow-sm mb-2">דיווחי עובדים</h1>
+          <p className="text-gray-500 font-medium">צפה בדיווחי שעות וקבלות הוצאות של עובדים</p>
+        </div>
+        <button 
+          onClick={() => setIsManualModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-xl font-bold text-sm transition-all shadow-md shadow-blue-500/20 whitespace-nowrap"
+        >
+          <Plus size={18} /> דיווח ידני
+        </button>
       </header>
+
+      <AdminReportModal 
+        isOpen={isManualModalOpen}
+        onClose={() => setIsManualModalOpen(false)}
+      />
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 overflow-hidden">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
