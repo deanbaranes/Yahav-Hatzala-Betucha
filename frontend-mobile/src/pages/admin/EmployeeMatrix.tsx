@@ -72,7 +72,7 @@ export default function EmployeeMatrix() {
               <span className="bg-blue-100 text-blue-700 p-2 rounded-lg shrink-0">
                 <Calendar size={28} />
               </span>
-              מטריצת משמרות
+              דו"ח משמרות
             </h1>
             <p className="text-gray-500 text-sm sm:text-base mt-2 font-medium">פריסת עבודה לכלל העובדים בחודש הנבחר.</p>
           </div>
