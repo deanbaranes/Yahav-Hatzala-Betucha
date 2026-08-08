@@ -2,7 +2,8 @@ from decimal import Decimal, ROUND_HALF_UP
 from typing import List
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import extract
-from datetime import datetime
+from datetime import datetime, date
+import calendar
 
 from app.models.user import User
 from app.models.trip_report import TripReport
@@ -28,13 +29,17 @@ class PayrollService:
         if year > now.year or (year == now.year and month > now.month):
             raise ValueError(f"Cannot generate payroll for future date {month}/{year}")
 
+        last_day = calendar.monthrange(year, month)[1]
+        start_date_bound = datetime(year, month, 1)
+        end_date_bound = datetime(year, month, last_day, 23, 59, 59)
+
         reports = self.db.query(TripReport).options(
             joinedload(TripReport.assignment).joinedload(TripAssignment.trip)
         ).join(TripAssignment).filter(
             TripAssignment.user_id == user.id,
             TripReport.manager_status == "approved",
-            extract('month', TripReport.start_time) == month,
-            extract('year', TripReport.start_time) == year
+            TripReport.start_time >= start_date_bound,
+            TripReport.start_time <= end_date_bound
         ).all()
 
         days_worked_set = set()

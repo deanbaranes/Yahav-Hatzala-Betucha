@@ -1,4 +1,7 @@
 import logging
+import calendar
+from datetime import date
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
@@ -69,10 +72,14 @@ def get_employees(month: Optional[int] = None, year: Optional[int] = None, db: S
     query = db.query(User).filter(User.role.in_([UserRole.employee, UserRole.admin]), User.status != "inactive")
     
     if month and year:
+        last_day = calendar.monthrange(year, month)[1]
+        start_date = date(year, month, 1)
+        end_date = date(year, month, last_day)
+
         # Include employees who were ASSIGNED to a shift in this month (even if no report submitted yet)
         assigned_users = db.query(TripAssignment.user_id).join(Trip).filter(
-            extract('month', Trip.start_date) == month,
-            extract('year', Trip.start_date) == year,
+            Trip.start_date >= start_date,
+            Trip.start_date <= end_date,
             TripAssignment.status == "assigned"
         ).subquery()
         
