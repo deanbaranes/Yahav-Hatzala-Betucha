@@ -317,7 +317,7 @@ export default function PayrollManagement() {
               onClick={() => setShowAllEmployees(!showAllEmployees)}
               className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg font-bold transition-colors"
             >
-              {showAllEmployees ? 'הראה רק פעילים החודש' : 'הראה את כולם'}
+              {showAllEmployees ? 'הראה רק פעילים החודש' : 'רשימת עובדים כללית'}
             </button>
           </div>
 

@@ -41,7 +41,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
   const navItems = [
-    { to: '/admin', icon: Home, label: 'לוח בקרה ראשי' },
+    { to: '/admin', icon: Home, label: 'יומן שיבוצים' },
     { to: '/admin/trips', icon: Map, label: 'ניהול טיולים' },
     { to: '/admin/clients', icon: Users, label: 'לקוחות ויתרות' },
     { to: '/admin/suppliers', icon: Truck, label: 'ספקים וחובות' },
