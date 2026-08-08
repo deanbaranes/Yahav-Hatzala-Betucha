@@ -139,29 +139,32 @@ export default function Clients() {
 
   return (
     <div className="space-y-6 animate-fade-in pb-10">
-      <header className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100 gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3">
-            <span className="bg-blue-100 text-blue-700 p-2 rounded-lg">
-              <Users size={28} />
-            </span>
-            ניהול לקוחות
-          </h1>
-          <p className="text-gray-500 text-base mt-2 font-medium">ניהול שוטף, מעקב יתרות וסטטוס גביה.</p>
-        </div>
-        <div className="flex flex-col md:flex-row items-stretch gap-4 w-full md:w-auto">
+      <header className="mb-6 relative bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+              <span className="bg-blue-100 text-blue-700 p-2 rounded-lg shrink-0">
+                <Users size={28} />
+              </span>
+              ניהול לקוחות
+            </h1>
+            <p className="text-gray-500 text-sm sm:text-base mt-2 font-medium">ניהול שוטף, מעקב יתרות וסטטוס גביה.</p>
+          </div>
           <button 
             onClick={handleExport}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl font-bold transition-colors border border-emerald-200"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 h-9 sm:h-10 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg font-bold text-sm transition-colors border border-emerald-200 whitespace-nowrap shrink-0"
           >
-            <Download size={18} />
-            ייצא לאקסל
+            <Download size={16} />
+            <span className="hidden sm:inline">ייצוא לאקסל</span>
+            <span className="sm:hidden">ייצוא</span>
           </button>
-          <div className="bg-red-50 px-4 py-3 rounded-xl border border-red-100 text-center w-full md:min-w-[160px] md:w-auto flex flex-col justify-center shadow-sm">
+        </div>
+        <div className="flex flex-col sm:flex-row items-stretch gap-4 w-full border-t border-gray-100 pt-4">
+          <div className="bg-red-50 px-4 py-3 rounded-xl border border-red-100 text-center w-full sm:w-auto flex flex-col justify-center shadow-sm">
             <div className="text-sm font-bold text-red-500 mb-1 whitespace-nowrap">סה"כ חובות (-)</div>
             <div className="text-xl md:text-2xl font-black text-red-700 whitespace-nowrap" dir="ltr">{totalNegative.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₪</div>
           </div>
-          <div className="bg-green-50 px-4 py-3 rounded-xl border border-green-100 text-center w-full md:min-w-[160px] md:w-auto flex flex-col justify-center shadow-sm">
+          <div className="bg-green-50 px-4 py-3 rounded-xl border border-green-100 text-center w-full sm:w-auto flex flex-col justify-center shadow-sm">
             <div className="text-sm font-bold text-green-600 mb-1 whitespace-nowrap">סה"כ זכות (+)</div>
             <div className="text-xl md:text-2xl font-black text-green-700 whitespace-nowrap" dir="ltr">+{totalPositive.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₪</div>
           </div>

@@ -121,36 +121,39 @@ export default function Suppliers() {
   return (
     <div className="space-y-6" dir="rtl">
       {/* Header */}
-      <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 relative overflow-hidden">
+      <div className="bg-white rounded-3xl p-5 sm:p-6 md:p-8 shadow-sm border border-gray-100 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -ml-10 -mb-10"></div>
         
-        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="relative z-10 flex justify-between items-start mb-4">
           <div>
-            <h1 className="text-3xl font-black text-gray-900 mb-2 flex items-center gap-3">
-              <span className="p-2 bg-blue-50 text-blue-600 rounded-xl"><Truck size={28} /></span>
+            <h1 className="text-2xl sm:text-3xl font-black text-gray-900 mb-2 flex items-center gap-3">
+              <span className="p-2 bg-blue-50 text-blue-600 rounded-xl shrink-0"><Truck size={28} /></span>
               ספקים וחובות
             </h1>
-            <p className="text-gray-500 font-medium pr-14">ניהול ספקים, מעקב אחר התחייבויות וחשבוניות</p>
+            <p className="text-gray-500 text-sm sm:text-base font-medium pr-14">ניהול ספקים, מעקב אחר התחייבויות וחשבוניות</p>
           </div>
-          <div className="flex gap-4 w-full md:w-auto">
-            <button 
-              onClick={handleExport}
-              className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm"
-            >
-              <Download size={20} /> <span className="hidden md:inline">ייצא לאקסל</span>
-            </button>
-            <div className="bg-red-50 text-red-700 px-6 py-3 rounded-2xl flex-1 md:flex-none border border-red-100 text-center">
-              <div className="text-xs font-bold opacity-80 mb-1">סה"כ חוב פתוח</div>
-              <div className="text-2xl font-black">₪{totalDebt.toLocaleString()}</div>
-            </div>
-            <button 
-              onClick={() => { resetForm(); setIsModalOpen(true); }}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all hover:scale-105 shadow-md shadow-blue-500/20"
-            >
-              <Plus size={20} /> <span className="hidden md:inline">ספק חדש</span>
-            </button>
+          <button 
+            onClick={handleExport}
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 h-9 sm:h-10 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg font-bold text-sm transition-colors border border-emerald-200 whitespace-nowrap shrink-0"
+          >
+            <Download size={16} />
+            <span className="hidden sm:inline">ייצוא לאקסל</span>
+            <span className="sm:hidden">ייצוא</span>
+          </button>
+        </div>
+        
+        <div className="relative z-10 flex flex-col sm:flex-row gap-4 w-full border-t border-gray-100 pt-4">
+          <div className="bg-red-50 text-red-700 px-4 sm:px-6 py-3 rounded-2xl flex-1 md:flex-none border border-red-100 text-center">
+            <div className="text-xs font-bold opacity-80 mb-1">סה"כ חוב פתוח</div>
+            <div className="text-xl sm:text-2xl font-black">₪{totalDebt.toLocaleString()}</div>
           </div>
+          <button 
+            onClick={() => { resetForm(); setIsModalOpen(true); }}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all hover:scale-105 shadow-md shadow-blue-500/20 h-full min-h-[60px]"
+          >
+            <Plus size={20} /> ספק חדש
+          </button>
         </div>
       </div>
 
