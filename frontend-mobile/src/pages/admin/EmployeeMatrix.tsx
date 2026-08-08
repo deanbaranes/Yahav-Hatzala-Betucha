@@ -65,44 +65,45 @@ export default function EmployeeMatrix() {
 
   return (
     <div className="space-y-6 animate-fade-in pb-10" dir="rtl">
-      <header className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100 gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3">
-            <span className="bg-blue-100 text-blue-700 p-2 rounded-lg">
+      <header className="mb-6 flex flex-col lg:flex-row justify-between items-start lg:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100 gap-6">
+        <div className="flex-1">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3 whitespace-nowrap">
+            <span className="bg-blue-100 text-blue-700 p-2 rounded-lg shrink-0">
               <Calendar size={28} />
             </span>
             מטריצת משמרות לעובדים
           </h1>
           <p className="text-gray-500 text-base mt-2 font-medium">פריסת ימי עבודה לכלל העובדים בחודש הנבחר.</p>
         </div>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
+        
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full lg:w-auto">
           <button 
             onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl font-bold transition-colors border border-emerald-200"
+            className="flex items-center justify-center gap-2 px-5 h-12 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl font-bold transition-colors border border-emerald-200 whitespace-nowrap"
           >
             <Download size={18} />
             ייצא לאקסל
           </button>
           
-          <div className="flex bg-gray-100 p-1 rounded-xl">
+          <div className="flex bg-gray-100 p-1 rounded-xl h-12 items-center">
             <button 
               onClick={() => setViewMode('matrix')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-all ${viewMode === 'matrix' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`flex items-center gap-2 px-4 h-10 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${viewMode === 'matrix' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
             >
               <LayoutGrid size={16} /> מטריצה
             </button>
             <button 
               onClick={() => setViewMode('list')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-all ${viewMode === 'list' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`flex items-center gap-2 px-4 h-10 rounded-lg font-bold text-sm transition-all whitespace-nowrap ${viewMode === 'list' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
             >
               <List size={16} /> רשימה
             </button>
           </div>
           
-          <div className="flex items-center gap-4 bg-gray-50 p-2 rounded-xl border border-gray-200">
-            <button onClick={prevMonth} className="p-2 hover:bg-white rounded-lg shadow-sm text-gray-600"><ChevronRight size={20} /></button>
-            <span className="font-black text-lg min-w-[120px] text-center">{currentDate.toLocaleString('he-IL', { month: 'long', year: 'numeric' })}</span>
-            <button onClick={nextMonth} className="p-2 hover:bg-white rounded-lg shadow-sm text-gray-600"><ChevronLeft size={20} /></button>
+          <div className="flex items-center justify-between px-2 bg-gray-50 h-12 rounded-xl border border-gray-200 min-w-[200px]">
+            <button onClick={prevMonth} className="p-2 hover:bg-white rounded-lg shadow-sm text-gray-600 transition-colors"><ChevronRight size={20} /></button>
+            <span className="font-black text-base whitespace-nowrap text-center flex-1">{currentDate.toLocaleString('he-IL', { month: 'long', year: 'numeric' })}</span>
+            <button onClick={nextMonth} className="p-2 hover:bg-white rounded-lg shadow-sm text-gray-600 transition-colors"><ChevronLeft size={20} /></button>
           </div>
         </div>
       </header>
