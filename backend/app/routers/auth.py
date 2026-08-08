@@ -108,7 +108,7 @@ def register(request: Request, user: UserCreate, db: Session = Depends(get_db)):
 
 # ── Login ─────────────────────────────────────────────────────────────────────
 @router.post("/login", response_model=Token)
-@limiter.limit("10/15minutes")
+@limiter.limit("100/15minutes")
 def login(
     request: Request,
     response: Response,
