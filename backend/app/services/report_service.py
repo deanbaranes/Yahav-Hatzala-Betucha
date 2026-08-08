@@ -9,6 +9,11 @@ from app.models.trip_report import TripReport
 from app.models.trip_assignment import TripAssignment
 from app.schemas import TripReportCreate
 from app.constants import CLIENT_ACCOMMODATION_CHARGE
+import os
+import logging
+from app.services.notification_service import NotificationService
+
+logger = logging.getLogger(__name__)
 
 
 def calculate_overtime_decimal(start_time, end_time) -> float:
@@ -113,4 +118,15 @@ def process_and_save_report(
 
     db.commit()
     db.refresh(new_report)
+
+    # Send Notification to Admin
+    try:
+        worker_name = assignment.user.full_name if assignment.user else "עובד"
+        location = trip.location if trip else "לא ידוע"
+        msg = f"העובד/ת {worker_name} הגיש/ה דיווח עבור הטיול ב-{location} וממתין לאישור."
+        admin_phone = os.getenv("ADMIN_PHONE", "0533210777")
+        NotificationService.send_sms(admin_phone, msg, db=db)
+    except Exception as e:
+        logger.error(f"Failed to send notification for report submission: {e}")
+
     return new_report

@@ -10,6 +10,7 @@ from app.models.refresh_token import RefreshToken
 from app.models.password_reset_token import PasswordResetToken
 from app.schemas import UserCreate, UserOut, Token, ForgotPasswordRequest, ResetPasswordRequest
 from app.services.email_service import EmailService
+from app.services.notification_service import NotificationService
 from app.auth import (
     get_password_hash,
     verify_password,
@@ -104,6 +105,15 @@ def register(request: Request, user: UserCreate, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
+    # Send Notification to Admin
+    try:
+        msg = f"משתמש/ת חדש/ה נרשם/ה למערכת וממתין/ה לאישור: {new_user.full_name} ({new_user.phone})"
+        admin_phone = os.getenv("ADMIN_PHONE", "0533210777")
+        NotificationService.send_sms(admin_phone, msg, db=db)
+    except Exception:
+        pass
+
     return new_user
 
 
