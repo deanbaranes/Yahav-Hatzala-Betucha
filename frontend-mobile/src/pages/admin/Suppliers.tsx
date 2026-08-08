@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
-import { Plus, Search, Trash2, Edit2, Check, X, Truck } from 'lucide-react';
+import { Plus, Search, Trash2, Edit2, Check, X, Truck, Download } from 'lucide-react';
+import { exportToCSV } from '../../utils/csvExport';
 
 interface Supplier {
   id: string;
@@ -101,6 +102,20 @@ export default function Suppliers() {
 
   const totalDebt = filteredSuppliers.reduce((sum, s) => sum + (!s.is_invoiced ? s.amount : 0), 0);
 
+  const handleExport = () => {
+    if (!filteredSuppliers || filteredSuppliers.length === 0) return;
+    const headers = ['שם ספק', 'תאריך חוב', 'פירוט', 'סכום (₪)', 'חשבונית יצאה?', 'תאריך חשבונית'];
+    const rows = filteredSuppliers.map((s: Supplier) => [
+      s.name,
+      new Date(s.debt_date).toLocaleDateString('he-IL'),
+      s.details || '',
+      s.amount,
+      s.is_invoiced ? 'כן' : 'לא',
+      s.invoice_date ? new Date(s.invoice_date).toLocaleDateString('he-IL') : ''
+    ]);
+    exportToCSV(`ספקים_וחובות_${new Date().toISOString().split('T')[0]}`, headers, rows);
+  };
+
   if (isLoading) return <div className="p-8 text-center text-gray-500 font-bold">טוען נתונים...</div>;
 
   return (
@@ -119,13 +134,19 @@ export default function Suppliers() {
             <p className="text-gray-500 font-medium pr-14">ניהול ספקים, מעקב אחר התחייבויות וחשבוניות</p>
           </div>
           <div className="flex gap-4 w-full md:w-auto">
+            <button 
+              onClick={handleExport}
+              className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all shadow-sm"
+            >
+              <Download size={20} /> <span className="hidden md:inline">ייצא לאקסל</span>
+            </button>
             <div className="bg-red-50 text-red-700 px-6 py-3 rounded-2xl flex-1 md:flex-none border border-red-100 text-center">
               <div className="text-xs font-bold opacity-80 mb-1">סה"כ חוב פתוח</div>
               <div className="text-2xl font-black">₪{totalDebt.toLocaleString()}</div>
             </div>
             <button 
               onClick={() => { resetForm(); setIsModalOpen(true); }}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all hover:scale-105 shadow-md shadow-blue-500/20"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all hover:scale-105 shadow-md shadow-blue-500/20"
             >
               <Plus size={20} /> <span className="hidden md:inline">ספק חדש</span>
             </button>

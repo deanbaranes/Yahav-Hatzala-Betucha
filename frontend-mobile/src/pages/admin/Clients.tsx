@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
-import { Search, Save, Edit2, Trash2, Copy, Check, Users } from 'lucide-react';
+import { Search, Save, Edit2, Trash2, Copy, Check, Users, Download } from 'lucide-react';
+import { exportToCSV } from '../../utils/csvExport';
 
 export default function Clients() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -122,6 +123,20 @@ export default function Clients() {
     return `${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/80'} hover:bg-blue-50/70 border-b border-gray-100`;
   };
 
+  const handleExport = () => {
+    if (!filteredClients || filteredClients.length === 0) return;
+    const headers = ['שם הלקוח', 'איש קשר', 'טלפון', 'אימייל', 'יתרה (₪)', 'הערות'];
+    const rows = filteredClients.map((c: any) => [
+      c.name || '',
+      c.contact_person || '',
+      c.contact_phone || '',
+      c.contact_email || '',
+      c.balance || '0',
+      c.notes || ''
+    ]);
+    exportToCSV(`לקוחות_וחובות_${new Date().toISOString().split('T')[0]}`, headers, rows);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in pb-10">
       <header className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100 gap-4">
@@ -134,7 +149,14 @@ export default function Clients() {
           </h1>
           <p className="text-gray-500 text-base mt-2 font-medium">ניהול שוטף, מעקב יתרות וסטטוס גביה.</p>
         </div>
-        <div className="flex items-stretch gap-4 w-full md:w-auto">
+        <div className="flex flex-col md:flex-row items-stretch gap-4 w-full md:w-auto">
+          <button 
+            onClick={handleExport}
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl font-bold transition-colors border border-emerald-200"
+          >
+            <Download size={18} />
+            ייצא לאקסל
+          </button>
           <div className="bg-red-50 px-4 py-3 rounded-xl border border-red-100 text-center w-full md:min-w-[160px] md:w-auto flex flex-col justify-center shadow-sm">
             <div className="text-sm font-bold text-red-500 mb-1 whitespace-nowrap">סה"כ חובות (-)</div>
             <div className="text-xl md:text-2xl font-black text-red-700 whitespace-nowrap" dir="ltr">{totalNegative.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₪</div>

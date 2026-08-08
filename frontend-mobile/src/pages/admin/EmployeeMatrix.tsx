@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
-import { Calendar, ChevronRight, ChevronLeft, LayoutGrid, List, ChevronDown, ChevronUp } from 'lucide-react';
+import { Calendar, ChevronRight, ChevronLeft, LayoutGrid, List, ChevronDown, ChevronUp, Download } from 'lucide-react';
+import { exportToCSV } from '../../utils/csvExport';
 
 export default function EmployeeMatrix() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -34,6 +35,32 @@ export default function EmployeeMatrix() {
     setCurrentDate(new Date(year, month, 1));
   };
 
+  const handleExport = () => {
+    if (!data || !data.matrix) return;
+    
+    const headers = ['תאריך', ...data.matrix.map((u: any) => u.name)];
+    
+    const rows = daysArray.map(day => {
+      const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dayOfWeek = new Date(year, month - 1, day).toLocaleDateString('he-IL', { weekday: 'short' });
+      
+      const row = [`${day}/${month} (${dayOfWeek})`];
+      
+      data.matrix.forEach((user: any) => {
+        const shifts = user.shifts[dateStr];
+        if (!shifts || shifts.length === 0) {
+          row.push('');
+        } else {
+          const shiftStr = shifts.map((s: any) => s.role + (s.is_overtime ? ' (נ)' : '')).join(' + ');
+          row.push(shiftStr);
+        }
+      });
+      return row;
+    });
+    
+    exportToCSV(`משמרות_${month}_${year}`, headers, rows);
+  };
+
   if (isLoading) return <div className="p-8 text-center">טוען נתונים...</div>;
 
   return (
@@ -49,6 +76,14 @@ export default function EmployeeMatrix() {
           <p className="text-gray-500 text-base mt-2 font-medium">פריסת ימי עבודה לכלל העובדים בחודש הנבחר.</p>
         </div>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
+          <button 
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl font-bold transition-colors border border-emerald-200"
+          >
+            <Download size={18} />
+            ייצא לאקסל
+          </button>
+          
           <div className="flex bg-gray-100 p-1 rounded-xl">
             <button 
               onClick={() => setViewMode('matrix')}
