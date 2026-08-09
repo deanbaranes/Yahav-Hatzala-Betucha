@@ -29,9 +29,27 @@ export default function TripFeed() {
   };
 
   const groupedTrips = trips?.reduce((acc: any, trip: any) => {
-    const week = getWeekRange(trip.start_date);
-    if (!acc[week]) acc[week] = [];
-    acc[week].push(trip);
+    const tStart = new Date(trip.start_date);
+    const tEnd = trip.end_date ? new Date(trip.end_date) : tStart;
+    const actualEnd = tEnd < tStart ? tStart : tEnd;
+    
+    let curr = new Date(tStart);
+    curr.setHours(0,0,0,0);
+    const endDay = new Date(actualEnd);
+    endDay.setHours(0,0,0,0);
+    
+    const weeksAdded = new Set<string>();
+    while (curr <= endDay) {
+      // Create a clean ISO string for getWeekRange without time zone shift issues
+      const dateStr = `${curr.getFullYear()}-${String(curr.getMonth()+1).padStart(2,'0')}-${String(curr.getDate()).padStart(2,'0')}T12:00:00`;
+      const week = getWeekRange(dateStr);
+      if (!weeksAdded.has(week)) {
+         weeksAdded.add(week);
+         if (!acc[week]) acc[week] = [];
+         acc[week].push(trip);
+      }
+      curr.setDate(curr.getDate() + 1);
+    }
     return acc;
   }, {}) || {};
 
@@ -63,9 +81,17 @@ export default function TripFeed() {
     for (let i = 1; i <= daysInMonth; i++) {
       const date = new Date(year, month, i);
       const isSelected = selectedDate.getDate() === i && selectedDate.getMonth() === month && selectedDate.getFullYear() === year;
-      const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
       
-      const tripsOnDay = trips?.filter((t: any) => t.start_date.startsWith(dateStr));
+      const dayStart = new Date(year, month, i, 0, 0, 0);
+      const dayEnd = new Date(year, month, i, 23, 59, 59);
+
+      const tripsOnDay = trips?.filter((t: any) => {
+        const tStart = new Date(t.start_date);
+        const tEnd = t.end_date ? new Date(t.end_date) : tStart;
+        const actualEnd = tEnd < tStart ? tStart : tEnd;
+        
+        return tStart <= dayEnd && actualEnd >= dayStart;
+      });
       const hasTrips = tripsOnDay && tripsOnDay.length > 0;
       
       days.push(
@@ -82,8 +108,16 @@ export default function TripFeed() {
       );
     }
     
-    const selectedDateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
-    const selectedTrips = trips?.filter((t: any) => t.start_date.startsWith(selectedDateStr)) || [];
+    const selDayStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 0, 0, 0);
+    const selDayEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59, 59);
+
+    const selectedTrips = trips?.filter((t: any) => {
+      const tStart = new Date(t.start_date);
+      const tEnd = t.end_date ? new Date(t.end_date) : tStart;
+      const actualEnd = tEnd < tStart ? tStart : tEnd;
+      
+      return tStart <= selDayEnd && actualEnd >= selDayStart;
+    }) || [];
     
     return (
       <div className="animate-fade-in">
