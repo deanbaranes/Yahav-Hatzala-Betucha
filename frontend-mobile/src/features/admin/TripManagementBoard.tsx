@@ -9,7 +9,7 @@ const AVAILABLE_ROLES = ["מע\"ר", "חובש", "פראמדיק", "שומר ל�
 export default function TripManagementBoard() {
   const queryClient = useQueryClient();
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {} as Record<string, number>, color: '' as string, global_salary: '' as string | number });
+  const [formData, setFormData] = useState({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {} as Record<string, number>, color: '' as string, global_salary: '' as string | number, contact_phone: '' as string });
   const [searchTerm, setSearchTerm] = useState('');
 
   const totalCapacity = Object.values(formData.roles_requirements).reduce((a, b) => a + b, 0);
@@ -20,7 +20,7 @@ export default function TripManagementBoard() {
       queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
       alert('הטיול נוצר בהצלחה!');
-      setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '' });
+      setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_phone: '' });
     },
     onError: (error: any) => {
       alert('שגיאה ביצירת הטיול: ' + (error.response?.data?.detail || 'אנא ודא שכל השדות מלאים ותקינים.'));
@@ -34,7 +34,7 @@ export default function TripManagementBoard() {
       queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
       alert('הטיול עודכן בהצלחה!');
       setEditingTripId(null);
-      setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '' });
+      setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_phone: '' });
     },
     onError: (error: any) => {
       alert('שגיאה בעדכון הטיול: ' + (error.response?.data?.detail || 'אנא ודא שכל השדות מלאים ותקינים.'));
@@ -107,6 +107,13 @@ export default function TripManagementBoard() {
             placeholder="הזן סכום גלובלי (אופציונלי)"
             value={formData.global_salary} onChange={e => setFormData({...formData, global_salary: e.target.value})} />
         </div>
+
+        <div className="mb-4">
+          <label className="block text-gray-700 font-bold mb-2">איש קשר (לא יוצג לעובדים טרם אישור)</label>
+          <input type="text" className="w-full p-2 border border-gray-300 rounded placeholder:text-sm" 
+            placeholder="לדוגמה: 050-1234567"
+            value={formData.contact_phone} onChange={e => setFormData({...formData, contact_phone: e.target.value})} />
+        </div>
           
         <div className="mb-4 md:col-span-2">
           <label className="block text-gray-700 font-bold mb-2">צבע הטיול ביומן</label>
@@ -174,7 +181,7 @@ export default function TripManagementBoard() {
           <button 
             onClick={() => {
               setEditingTripId(null);
-              setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '' });
+              setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_phone: '' });
             }}
             className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-bold shadow transition-colors"
           >
@@ -219,7 +226,8 @@ export default function TripManagementBoard() {
                           end_date: trip.end_date ? trip.end_date.substring(0, 16) : '',
                           roles_requirements: trip.roles_requirements || {},
                           color: trip.color || '',
-                          global_salary: trip.global_salary || ''
+                          global_salary: trip.global_salary || '',
+                          contact_phone: trip.contact_phone || ''
                         });
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
