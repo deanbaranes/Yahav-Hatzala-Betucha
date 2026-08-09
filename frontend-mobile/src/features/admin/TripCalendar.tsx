@@ -32,17 +32,33 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
   const tripsByDate = useMemo(() => {
     const map = new Map<number, any[]>();
     trips.forEach(trip => {
-      const d = new Date(trip.start_date);
-      if (d.getFullYear() === year && d.getMonth() === month) {
-        if (searchTerm) {
-          const nameMatch = (trip.client?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
-          const locMatch = (trip.location || '').toLowerCase().includes(searchTerm.toLowerCase());
-          if (!nameMatch && !locMatch) return;
+      if (searchTerm) {
+        const nameMatch = (trip.client?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const locMatch = (trip.location || '').toLowerCase().includes(searchTerm.toLowerCase());
+        if (!nameMatch && !locMatch) return;
+      }
+
+      const start = new Date(trip.start_date);
+      const end = trip.end_date ? new Date(trip.end_date) : start;
+      const actualEnd = end < start ? start : end;
+
+      const currentMonthStart = new Date(year, month, 1);
+      const currentMonthEnd = new Date(year, month + 1, 0, 23, 59, 59);
+
+      if (start <= currentMonthEnd && actualEnd >= currentMonthStart) {
+        let iter = new Date(start);
+        iter.setHours(0, 0, 0, 0); 
+        const endDay = new Date(actualEnd);
+        endDay.setHours(0, 0, 0, 0);
+
+        while (iter <= endDay) {
+          if (iter.getFullYear() === year && iter.getMonth() === month) {
+            const day = iter.getDate();
+            if (!map.has(day)) map.set(day, []);
+            map.get(day)!.push(trip);
+          }
+          iter.setDate(iter.getDate() + 1);
         }
-        
-        const day = d.getDate();
-        if (!map.has(day)) map.set(day, []);
-        map.get(day)!.push(trip);
       }
     });
     return map;
@@ -142,8 +158,8 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
   const [newTripForm, setNewTripForm] = useState({ 
     client_name: '', 
     location: '', 
-    start_time: '08:00', 
-    end_time: '16:00', 
+    start_date: '', 
+    end_date: '', 
     roles_requirements: {} as Record<string, number>,
     color: '',
     global_salary: '' 
@@ -382,8 +398,11 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
               key={day} 
               className="min-h-[80px] md:min-h-[120px] p-0.5 md:p-1 border-l border-b border-gray-100 relative group hover:bg-blue-50/50 transition-colors cursor-pointer"
               onClick={() => {
+                const pad = (n: number) => n.toString().padStart(2, '0');
+                const sd = `${year}-${pad(month+1)}-${pad(day)}T08:00`;
+                const ed = `${year}-${pad(month+1)}-${pad(day)}T16:00`;
                 setCreatingTripDate(new Date(year, month, day));
-                setNewTripForm({ client_name: '', location: '', start_time: '08:00', end_time: '16:00', roles_requirements: {}, color: '', global_salary: '' });
+                setNewTripForm({ client_name: '', location: '', start_date: sd, end_date: ed, roles_requirements: {}, color: '', global_salary: '' });
               }}
             >
               <span className={`inline-block font-bold text-[10px] md:text-sm w-5 h-5 md:w-7 md:h-7 text-center leading-5 md:leading-7 rounded-full mb-1 ${
@@ -798,19 +817,19 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">שעת התחלה</label>
                   <input 
-                    type="time" 
+                    type="datetime-local" 
                     className="w-full p-2 border border-gray-300 rounded text-sm"
-                    value={newTripForm.start_time}
-                    onChange={e => setNewTripForm({...newTripForm, start_time: e.target.value})}
+                    value={newTripForm.start_date}
+                    onChange={e => setNewTripForm({...newTripForm, start_date: e.target.value})}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-1">שעת סיום משוערת</label>
                   <input 
-                    type="time" 
+                    type="datetime-local" 
                     className="w-full p-2 border border-gray-300 rounded text-sm"
-                    value={newTripForm.end_time}
-                    onChange={e => setNewTripForm({...newTripForm, end_time: e.target.value})}
+                    value={newTripForm.end_date}
+                    onChange={e => setNewTripForm({...newTripForm, end_date: e.target.value})}
                   />
                 </div>
               </div>
@@ -891,24 +910,11 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
               <button 
                 disabled={!newTripForm.client_name || !newTripForm.location || newTripTotalCapacity === 0 || createManualTripMutation.isPending}
                 onClick={() => {
-                  const s = new Date(creatingTripDate);
-                  const [sh, sm] = newTripForm.start_time.split(':');
-                  s.setHours(parseInt(sh || '8'), parseInt(sm || '0'));
-                  
-                  const e = new Date(creatingTripDate);
-                  const [eh, em] = newTripForm.end_time.split(':');
-                  e.setHours(parseInt(eh || '16'), parseInt(em || '0'));
-
-                  const formatLocal = (d: Date) => {
-                     const pad = (n: number) => n.toString().padStart(2, '0');
-                     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-                  };
-
                   createManualTripMutation.mutate({
                     client_name: newTripForm.client_name,
                     location: newTripForm.location,
-                    start_date: formatLocal(s),
-                    end_date: formatLocal(e),
+                    start_date: newTripForm.start_date,
+                    end_date: newTripForm.end_date || null,
                     capacity: newTripTotalCapacity,
                     roles_requirements: newTripForm.roles_requirements,
                     color: newTripForm.color,
