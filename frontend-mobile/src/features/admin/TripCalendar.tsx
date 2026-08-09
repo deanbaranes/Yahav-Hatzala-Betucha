@@ -507,8 +507,8 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                   <input type="datetime-local" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.end_date} onChange={e => setQuickEditForm({...quickEditForm, end_date: e.target.value})} />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">איש קשר לטיול (טלפון)</label>
-                  <input type="text" placeholder="050-1234567" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.contact_phone} onChange={e => setQuickEditForm({...quickEditForm, contact_phone: e.target.value})} />
+                  <label className="block text-xs font-bold text-gray-600 mb-1">איש קשר לטיול (אופציונלי - שם/טלפון)</label>
+                  <input type="text" placeholder="לדוגמה: דוד 050-1234567" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.contact_phone} onChange={e => setQuickEditForm({...quickEditForm, contact_phone: e.target.value})} />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-600 mb-1">סה״כ עובדים דרושים</label>
@@ -853,13 +853,13 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">טלפון איש קשר (לא יוצג לצוות טרם אישור)</label>
+                <label className="block text-sm font-bold text-gray-700 mb-1">פרטי איש קשר (אופציונלי - שם/טלפון, לא יוצג לצוות טרם אישור)</label>
                 <input 
                   type="text" 
                   className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
                   value={newTripForm.contact_phone}
                   onChange={e => setNewTripForm({...newTripForm, contact_phone: e.target.value})}
-                  placeholder="לדוגמה: 050-1234567"
+                  placeholder="לדוגמה: דוד 050-1234567"
                 />
               </div>
 

@@ -148,9 +148,9 @@ export default function TripManagementBoard() {
         </div>
 
         <div className="mb-4">
-          <label className="block text-gray-700 font-bold mb-2">איש קשר (לא יוצג לעובדים טרם אישור)</label>
+          <label className="block text-gray-700 font-bold mb-2">פרטי איש קשר (אופציונלי - שם/טלפון, לא יוצג טרם אישור)</label>
           <input type="text" className="w-full p-2 border border-gray-300 rounded placeholder:text-sm" 
-            placeholder="לדוגמה: 050-1234567"
+            placeholder="לדוגמה: דוד 050-1234567"
             value={formData.contact_phone} onChange={e => setFormData({...formData, contact_phone: e.target.value})} />
         </div>
           
