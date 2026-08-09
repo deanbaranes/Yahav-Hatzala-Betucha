@@ -17,6 +17,7 @@ class Trip(Base):
     is_billed = Column(Boolean, default=False, nullable=False, index=True)
     color = Column(String, nullable=True)  # Custom color hex e.g. '#039BE5'
     global_salary = Column(Numeric(10, 2), nullable=True)
+    contact_phone = Column(String, nullable=True)
 
     client = relationship("Client", back_populates="trips")
     assignments = relationship("TripAssignment", back_populates="trip", cascade="all, delete-orphan")

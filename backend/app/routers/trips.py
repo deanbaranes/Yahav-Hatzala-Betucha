@@ -151,6 +151,7 @@ def get_my_trips(db: Session = Depends(get_db), current_user: User = Depends(get
             "status": a.status,
             "role": a.role,
             "is_confirmed": a.is_confirmed,
+            "contact_phone": t.contact_phone if a.is_confirmed else None,
             "client": {"name": t.client.name} if t.client else None
         })
     return result
@@ -217,7 +218,8 @@ def get_unconfirmed_assignments(db: Session = Depends(get_db), admin_user: User 
             "phone": a.user.phone,
             "role": a.role,
             "trip_location": a.trip.location,
-            "trip_start": a.trip.start_date.isoformat()
+            "trip_start": a.trip.start_date.isoformat(),
+            "contact_phone": a.trip.contact_phone
         } for a in assignments
     ]
 
@@ -247,7 +249,8 @@ def create_trip(trip_data: TripCreate, db: Session = Depends(get_db), current_us
         capacity=trip_data.capacity,
         roles_requirements=trip_data.roles_requirements,
         color=trip_data.color,
-        global_salary=trip_data.global_salary
+        global_salary=trip_data.global_salary,
+        contact_phone=trip_data.contact_phone
     )
     db.add(new_trip)
     db.commit()
@@ -380,6 +383,16 @@ def confirm_assignment(assignment_id: str, db: Session = Depends(get_db), admin_
 
     assignment.is_confirmed = True
     db.commit()
+
+    # Send SMS to assigned user
+    user = assignment.user
+    trip = assignment.trip
+    if user and user.phone:
+        contact_str = f"איש קשר לטיול: {trip.contact_phone}" if trip.contact_phone else ""
+        date_str = trip.start_date.strftime("%d/%m/%Y %H:%M") if trip.start_date else ""
+        msg = f"הטיול אושר! שובצת סופית לטיול ב-{trip.location} בתאריך {date_str} בתפקיד {assignment.role}. {contact_str}\nלפרטים נוספים היכנס לאפליקציה."
+        SMSService.send_sms(user.phone, msg)
+
     return {"message": "Assignment confirmed"}
 
 @router.delete("/assignments/{assignment_id}")
@@ -428,6 +441,7 @@ def update_trip(trip_id: str, trip_data: TripCreate, db: Session = Depends(get_d
     trip.roles_requirements = trip_data.roles_requirements
     trip.color = trip_data.color
     trip.global_salary = trip_data.global_salary
+    trip.contact_phone = trip_data.contact_phone
 
     db.commit()
     db.refresh(trip)
@@ -579,6 +593,15 @@ def admin_assign_trip(trip_id: str, request: AdminAssignRequest, db: Session = D
         db.flush()  # flush to get new_assignment.id
 
     db.commit()
+
+    # Send SMS to assigned user
+    user = db.query(User).filter(User.id == request.user_id).first()
+    if user and user.phone:
+        contact_str = f"איש קשר לטיול: {trip.contact_phone}" if trip.contact_phone else ""
+        date_str = trip.start_date.strftime("%d/%m/%Y %H:%M") if trip.start_date else ""
+        msg = f"שובצת לטיול ב-{trip.location} בתאריך {date_str} בתפקיד {request.role}. {contact_str}\nלפרטים ואישור היכנס לאפליקציה."
+        SMSService.send_sms(user.phone, msg)
+
     return {"message": "Assigned and reported successfully"}
 
 @router.delete("/{trip_id}/assign/{user_id}")

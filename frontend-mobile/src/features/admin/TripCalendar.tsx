@@ -145,7 +145,7 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
   const [reportDailyShifts, setReportDailyShifts] = useState([{ start_time: '', end_time: '' }]);
 
   const [quickEditMode, setQuickEditMode] = useState(false);
-  const [quickEditForm, setQuickEditForm] = useState({ client_name: '', location: '', start_date: '', end_date: '', capacity: 0, roles_requirements: {}, color: '', global_salary: '' as string | number });
+  const [quickEditForm, setQuickEditForm] = useState({ client_name: '', location: '', start_date: '', end_date: '', capacity: 0, roles_requirements: {}, color: '', global_salary: '' as string | number, contact_phone: '' });
 
   // Add Employee Assignment State
   const [assignEmployeeName, setAssignEmployeeName] = useState('');
@@ -162,7 +162,8 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
     end_date: '', 
     roles_requirements: {} as Record<string, number>,
     color: '',
-    global_salary: '' 
+    global_salary: '',
+    contact_phone: ''
   });
 
   const updateNewTripRoleCount = (role: string, count: number) => {
@@ -402,7 +403,7 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                 const sd = `${year}-${pad(month+1)}-${pad(day)}T08:00`;
                 const ed = `${year}-${pad(month+1)}-${pad(day)}T16:00`;
                 setCreatingTripDate(new Date(year, month, day));
-                setNewTripForm({ client_name: '', location: '', start_date: sd, end_date: ed, roles_requirements: {}, color: '', global_salary: '' });
+                setNewTripForm({ client_name: '', location: '', start_date: sd, end_date: ed, roles_requirements: {}, color: '', global_salary: '', contact_phone: '' });
               }}
             >
               <span className={`inline-block font-bold text-[10px] md:text-sm w-5 h-5 md:w-7 md:h-7 text-center leading-5 md:leading-7 rounded-full mb-1 ${
@@ -477,7 +478,8 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                         capacity: selectedTrip.capacity || 0,
                         roles_requirements: selectedTrip.roles_requirements || {},
                         color: selectedTrip.color || '',
-                        global_salary: selectedTrip.global_salary || ''
+                        global_salary: selectedTrip.global_salary || '',
+                        contact_phone: selectedTrip.contact_phone || ''
                       });
                       setQuickEditMode(true);
                       setReportingAssignment(null);
@@ -503,6 +505,10 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                 <div>
                   <label className="block text-xs font-bold text-gray-600 mb-1">שעת סיום</label>
                   <input type="datetime-local" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.end_date} onChange={e => setQuickEditForm({...quickEditForm, end_date: e.target.value})} />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">איש קשר לטיול (טלפון)</label>
+                  <input type="text" placeholder="050-1234567" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.contact_phone} onChange={e => setQuickEditForm({...quickEditForm, contact_phone: e.target.value})} />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-600 mb-1">סה״כ עובדים דרושים</label>
@@ -847,6 +853,17 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
               </div>
 
               <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">טלפון איש קשר (לא יוצג לצוות טרם אישור)</label>
+                <input 
+                  type="text" 
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                  value={newTripForm.contact_phone}
+                  onChange={e => setNewTripForm({...newTripForm, contact_phone: e.target.value})}
+                  placeholder="לדוגמה: 050-1234567"
+                />
+              </div>
+
+              <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1">צבע הטיול ביומן</label>
                 <div className="flex flex-wrap gap-2 items-center">
                   {[
@@ -918,7 +935,8 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                     capacity: newTripTotalCapacity,
                     roles_requirements: newTripForm.roles_requirements,
                     color: newTripForm.color,
-                    global_salary: newTripForm.global_salary ? parseFloat(newTripForm.global_salary) : null
+                    global_salary: newTripForm.global_salary ? parseFloat(newTripForm.global_salary as string) : null,
+                    contact_phone: newTripForm.contact_phone || null
                   });
                 }}
                 className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm"
