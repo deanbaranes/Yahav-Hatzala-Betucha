@@ -351,30 +351,28 @@ export default function Reports() {
                             </div>
                         </div>
                       ) : (
-                        <div className="flex justify-center gap-2 flex-wrap">
+                        <div className="flex items-center justify-center gap-2 flex-nowrap">
                           {report.manager_status === 'pending' && (
-                            <>
-                              <button 
-                                onClick={() => {
-                                  if (window.confirm('האם אתה בטוח שברצונך לאשר דיווח זה? הנתונים יועברו ישירות לחישוב השכר.')) {
-                                    approveMutation.mutate(report.id);
-                                  }
-                                }} 
-                                className="text-white bg-green-500 hover:bg-green-600 px-3 py-1.5 rounded-lg transition-colors text-xs font-bold flex items-center gap-1"
-                              >
-                                <CheckCircle size={14} /> אשר 
-                              </button>
-                            </>
+                            <button 
+                              onClick={() => {
+                                if (window.confirm('האם אתה בטוח שברצונך לאשר דיווח זה? הנתונים יועברו ישירות לחישוב השכר.')) {
+                                  approveMutation.mutate(report.id);
+                                }
+                              }} 
+                              className="text-white bg-green-500 hover:bg-green-600 px-3 py-1.5 rounded-lg transition-colors text-sm font-bold flex items-center gap-1 shrink-0 whitespace-nowrap"
+                            >
+                              <CheckCircle size={16} /> אשר
+                            </button>
                           )}
-                          <button onClick={() => handleEdit(report)} className="text-blue-600 bg-blue-50 hover:bg-blue-100 p-1.5 rounded-lg transition-colors" title="ערוך דוח">
-                            <Edit2 size={16} />
+                          <button onClick={() => handleEdit(report)} className="text-blue-600 bg-blue-50 hover:bg-blue-100 p-1.5 rounded-lg transition-colors shrink-0" title="ערוך דוח">
+                            <Edit2 size={18} />
                           </button>
                           <button onClick={() => {
                             if (window.confirm('האם אתה בטוח שברצונך למחוק דוח זה? לא ניתן לשחזר פעולה זו.')) {
                               deleteMutation.mutate(report.id);
                             }
-                          }} className="text-red-600 bg-red-50 hover:bg-red-100 p-1.5 rounded-lg transition-colors" title="מחק דוח">
-                            <Trash2 size={16} />
+                          }} className="text-red-600 bg-red-50 hover:bg-red-100 p-1.5 rounded-lg transition-colors shrink-0" title="מחק דוח">
+                            <Trash2 size={18} />
                           </button>
                         </div>
                       )}
