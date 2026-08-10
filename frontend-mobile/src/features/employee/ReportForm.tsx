@@ -245,7 +245,7 @@ export default function ReportForm() {
             <option value="" disabled>-- לחץ כאן לבחירת טיול --</option>
             {pendingAssignments?.map(a => (
               <option key={a.assignment_id} value={a.assignment_id}>
-                {a.location} | {new Date(a.start_date).toLocaleDateString('he-IL')} | {a.role === 'general' || !a.role ? 'כללי' : a.role}
+                {a.location} | {new Date(a.start_date).toLocaleDateString('he-IL')}{a.end_date && new Date(a.start_date).toDateString() !== new Date(a.end_date).toDateString() ? ` - ${new Date(a.end_date).toLocaleDateString('he-IL')}` : ''} | {a.role === 'general' || !a.role ? 'כללי' : a.role}
               </option>
             ))}
           </select>
@@ -370,7 +370,7 @@ export default function ReportForm() {
         disabled={reportMutation.isPending || !formData.assignment_id}
         className="w-full bg-yellow-400 hover:bg-yellow-500 text-yellow-900 py-4 rounded-xl font-bold text-xl shadow-md transition-colors disabled:opacity-50 mt-4 mb-2"
       >
-        💾 שמירת טיוטה (המשך דיווח במועד מאוחר יותר)
+        💾 שמירת טיוטה
       </button>
 
       {(dailyShifts.length > 0 && dailyShifts.length === daysCount && dailyShifts.every(s => s.is_absent || (s.start_time && s.end_time))) && (
