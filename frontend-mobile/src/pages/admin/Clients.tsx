@@ -215,6 +215,7 @@ export default function Clients() {
                 <th className="px-2 py-4 font-bold cursor-pointer hover:bg-white/20 transition-colors whitespace-nowrap" onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')} title="לחץ לשינוי סדר המיון">
                   <div className="flex items-center gap-1">יתרה/חוב {sortOrder === 'asc' ? '↓' : sortOrder === 'desc' ? '↑' : ''}</div>
                 </th>
+                <th className="px-2 py-4 font-bold whitespace-nowrap">תאריך עדכון</th>
                 <th className="px-2 py-4 font-bold whitespace-nowrap">תנאי תשלום</th>
                 <th className="px-2 py-4 font-bold whitespace-nowrap">הערות</th>
                 <th className="px-2 py-4 font-bold text-center rounded-tl-lg whitespace-nowrap">פעולות</th>
@@ -268,34 +269,37 @@ export default function Clients() {
                   
                   <td className="px-2 py-3">
                     {editingId === client.id ? (
-                      <div className="space-y-2">
-                        <input 
-                          type="text" 
-                          value={editForm.balance}
-                          onChange={(e) => setEditForm({...editForm, balance: e.target.value})}
-                          placeholder="סכום יתרה"
-                          className="w-full p-1.5 border-2 border-blue-400 rounded-lg text-left focus:ring-4 focus:ring-blue-500/30 text-xs font-bold"
-                          dir="ltr"
-                        />
-                        <div className="text-[10px] text-gray-500 font-bold mb-1 text-right">תאריך חוב:</div>
-                        <input 
-                          type="date" 
-                          value={editForm.debt_start_date}
-                          onChange={(e) => setEditForm({...editForm, debt_start_date: e.target.value})}
-                          className="w-full p-1 border-2 border-amber-300 rounded-lg focus:ring-4 focus:ring-amber-500/30 text-[10px] font-bold text-gray-700 bg-amber-50"
-                        />
-                      </div>
+                      <input 
+                        type="text" 
+                        value={editForm.balance}
+                        onChange={(e) => setEditForm({...editForm, balance: e.target.value})}
+                        placeholder="סכום יתרה"
+                        className="w-full p-1.5 border-2 border-blue-400 rounded-lg text-left focus:ring-4 focus:ring-blue-500/30 text-xs font-bold"
+                        dir="ltr"
+                      />
                     ) : (
-                      <div className="flex flex-col gap-1 items-start">
-                        <span className={`inline-block px-1.5 py-1 rounded-md font-bold max-w-full shadow-sm text-xs ${String(client.balance || '').includes('-') ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`} dir="ltr">
-                          {client.balance || '0'}
+                      <span className={`inline-block px-1.5 py-1 rounded-md font-bold shadow-sm text-xs ${String(client.balance || '').includes('-') ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`} dir="ltr">
+                        {client.balance || '0'}
+                      </span>
+                    )}
+                  </td>
+                  
+                  <td className="px-2 py-3">
+                    {editingId === client.id ? (
+                      <input 
+                        type="date" 
+                        value={editForm.debt_start_date}
+                        onChange={(e) => setEditForm({...editForm, debt_start_date: e.target.value})}
+                        className="w-full p-1.5 border-2 border-amber-300 rounded-lg focus:ring-4 focus:ring-amber-500/30 text-xs font-bold text-gray-700 bg-amber-50"
+                      />
+                    ) : (
+                      client.debt_start_date ? (
+                        <span className="text-xs font-bold text-gray-700 bg-gray-100 px-2 py-1.5 rounded-md border border-gray-200 shadow-sm whitespace-nowrap">
+                          {new Date(client.debt_start_date).toLocaleDateString('he-IL')}
                         </span>
-                        {client.debt_start_date && (
-                          <span className="text-[9px] font-bold text-gray-500 bg-white/60 px-1 rounded-full border border-gray-200 shadow-sm whitespace-nowrap">
-                            {new Date(client.debt_start_date).toLocaleDateString('he-IL')}
-                          </span>
-                        )}
-                      </div>
+                      ) : (
+                        <span className="text-gray-300 text-xs">-</span>
+                      )
                     )}
                   </td>
                   
