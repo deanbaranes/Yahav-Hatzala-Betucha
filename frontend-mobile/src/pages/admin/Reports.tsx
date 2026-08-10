@@ -127,6 +127,16 @@ export default function Reports() {
     setEditingReport(report);
   };
 
+  const handleDownloadReceipt = async (url: string) => {
+    try {
+      const res = await axiosClient.get(url, { responseType: 'blob' });
+      const objectUrl = window.URL.createObjectURL(new Blob([res.data]));
+      window.open(objectUrl, '_blank');
+    } catch (err) {
+      alert("שגיאה בהורדת הקבלה. ייתכן שאין לך הרשאה.");
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in pb-10" dir="rtl">
       <header className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -281,9 +291,9 @@ export default function Reports() {
                     </td>
                     <td className="hidden md:table-cell p-4">
                       {report.receipt_url ? (
-                        <a href={report.receipt_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1 rounded-lg text-sm font-semibold">
+                        <button onClick={() => handleDownloadReceipt(report.receipt_url!)} className="inline-flex items-center gap-1 bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1 rounded-lg text-sm font-semibold">
                           <FileText size={14} /> צפה
-                        </a>
+                        </button>
                       ) : (
                         <span className="text-gray-400 text-sm">אין קבלה</span>
                       )}

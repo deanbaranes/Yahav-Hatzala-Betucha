@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from fastapi import Depends, HTTPException
 import os
 from app.database import engine, Base
 from app.models import user, client, trip, trip_assignment, trip_report, payroll_adjustment
@@ -10,6 +12,7 @@ from app.models import supplier             # register Supplier table
 from app.models import notification         # register Notification table
 from app.models import payslip              # register Payslip table
 from app.routers import auth, trips, reports, webhooks, clients, payroll, suppliers, notifications
+from app.dependencies import get_current_user_no_exception
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -85,5 +88,19 @@ def read_root():
     return {"message": "Welcome to Yahav Hatzala Betucha API"}
 
 os.makedirs("uploads", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+@app.get("/uploads/{file_path:path}")
+def get_upload_file(file_path: str, current_user = Depends(get_current_user_no_exception)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized access to files")
+        
+    file_location = os.path.join("uploads", file_path)
+    # Basic directory traversal protection
+    if not os.path.abspath(file_location).startswith(os.path.abspath("uploads")):
+        raise HTTPException(status_code=403, detail="Forbidden")
+        
+    if not os.path.exists(file_location) or not os.path.isfile(file_location):
+        raise HTTPException(status_code=404, detail="File not found")
+        
+    return FileResponse(file_location)
 
