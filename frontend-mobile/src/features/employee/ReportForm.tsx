@@ -280,6 +280,12 @@ export default function ReportForm() {
             ))}
           </div>
             
+          {errorMsg && (
+            <div className="bg-red-50 text-red-700 p-3 rounded-lg border border-red-200 mb-4 font-semibold text-center text-sm">
+              {errorMsg}
+            </div>
+          )}
+
           <div className="mb-4">
             <label className="block text-gray-700 font-bold mb-2 text-lg">מספר לינות (₪80 ללילה)</label>
             <input type="number" min="0" className="w-full p-4 border border-gray-300 rounded-xl bg-gray-50 text-lg font-bold" 
@@ -297,12 +303,6 @@ export default function ReportForm() {
             onUploadComplete={(url) => setFormData(prev => ({...prev, receipt_url: url}))} 
             onRemove={() => setFormData(prev => ({...prev, receipt_url: ''}))}
           />
-        </div>
-      )}
-
-      {errorMsg && (
-        <div className="bg-red-50 text-red-700 p-3 rounded-lg border border-red-200 mb-4 font-semibold text-center mt-4 text-sm">
-          {errorMsg}
         </div>
       )}
 
