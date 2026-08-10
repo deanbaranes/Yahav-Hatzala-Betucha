@@ -177,3 +177,50 @@ class PayrollService:
         report_text += f"סה\"כ ברוטו: {gross_total.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)} ₪"
 
         return report_text
+
+    def create_supplier_record_from_report(self, report: TripReport):
+        if report.manager_status != "approved" and report.assignment and report.assignment.user:
+            user = report.assignment.user
+            if user.employment_type == "עצמאי":
+                # Check if we already created it to avoid duplicates
+                from app.models.supplier import Supplier
+                existing = self.db.query(Supplier).filter(Supplier.details.like(f"%דוח: {report.id}%")).first()
+                if not existing:
+                    report_days_set = set()
+                    if report.daily_shifts and len(report.daily_shifts) > 0:
+                        for shift in report.daily_shifts:
+                            if "start_time" in shift:
+                                shift_date = datetime.fromisoformat(shift["start_time"].replace('Z', '+00:00')).date()
+                                report_days_set.add(shift_date)
+                    elif report.start_time:
+                        report_days_set.add(report.start_time.date())
+                    
+                    days_worked = Decimal(len(report_days_set))
+                    
+                    hourly_rate = Decimal(str(user.hourly_rate or 0))
+                    base_daily = Decimal(str(user.base_daily_hours or DEFAULT_BASE_DAILY_HOURS))
+                    
+                    base_salary = days_worked * base_daily * hourly_rate
+                    ot_hours = Decimal(str(report.overtime_decimal or 0))
+                    ot_total = ot_hours * hourly_rate * Decimal(str(OVERTIME_MULTIPLIER))
+                    
+                    recovery_pay = days_worked * Decimal(str(EMPLOYEE_RECOVERY_PAY_PER_DAY))
+                    travel_pay = days_worked * Decimal(str(EMPLOYEE_TRAVEL_PAY_PER_DAY))
+                    
+                    accom_nights = Decimal(str(report.sleeps or 0))
+                    accom_pay = accom_nights * Decimal(str(EMPLOYEE_ACCOMMODATION_PAY))
+                    
+                    expenses = Decimal(str(report.expenses or 0))
+                    
+                    total_amount = base_salary + ot_total + recovery_pay + travel_pay + accom_pay + expenses
+                    
+                    trip_loc = report.assignment.trip.location if report.assignment.trip else ""
+                    
+                    supplier_entry = Supplier(
+                        name=user.full_name,
+                        debt_date=date.today(),
+                        amount=total_amount,
+                        details=f"דיווח אוטומטי - טיול: {trip_loc} (דוח: {report.id})",
+                        is_invoiced=False
+                    )
+                    self.db.add(supplier_entry)
