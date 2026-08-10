@@ -9,7 +9,7 @@ export default function ReportForm() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ expenses: 0, expenses_notes: '', sleeps: 0, receipt_url: '', assignment_id: '' });
   const [daysCount, setDaysCount] = useState(1);
-  const [dailyShifts, setDailyShifts] = useState([{ start_time: '', end_time: '' }]);
+  const [dailyShifts, setDailyShifts] = useState<{start_time: string, end_time: string, is_absent?: boolean}[]>([{ start_time: '', end_time: '' }]);
   const [savedDays, setSavedDays] = useState<boolean[]>([]);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState(false);
@@ -41,20 +41,22 @@ export default function ReportForm() {
 
   const handleSaveDraft = (idx: number) => {
     const shift = dailyShifts[idx];
-    if (!shift.start_time || !shift.end_time) {
-      setErrorMsg(`אנא הזן שעת התחלה וסיום עבור יום ${idx + 1} לפני השמירה.`);
-      return;
-    }
-    const start = new Date(shift.start_time);
-    const end = new Date(shift.end_time);
-    if (end <= start) {
-      setErrorMsg(`שעת הסיום חייבת להיות אחרי שעת ההתחלה ביום ${idx + 1}.`);
-      return;
+    if (!shift.is_absent) {
+      if (!shift.start_time || !shift.end_time) {
+        setErrorMsg(`אנא הזן שעת התחלה וסיום עבור יום ${idx + 1} לפני השמירה.`);
+        return;
+      }
+      const start = new Date(shift.start_time);
+      const end = new Date(shift.end_time);
+      if (end <= start) {
+        setErrorMsg(`שעת הסיום חייבת להיות אחרי שעת ההתחלה ביום ${idx + 1}.`);
+        return;
+      }
     }
     
     // Filter only valid shifts for the draft: 
     // Only include shifts that are already saved, OR the current shift being saved.
-    const validShifts = dailyShifts.filter((s, i) => s.start_time && s.end_time && (savedDays[i] || i === idx));
+    const validShifts = dailyShifts.filter((s, i) => (s.start_time && s.end_time) && (savedDays[i] || i === idx));
     
     const payload = {
       assignment_id: formData.assignment_id,
@@ -65,7 +67,8 @@ export default function ReportForm() {
       is_draft: true,
       daily_shifts: validShifts.map(s => ({
         start_time: new Date(s.start_time).toISOString(),
-        end_time: new Date(s.end_time).toISOString()
+        end_time: new Date(s.is_absent ? s.start_time : s.end_time).toISOString(),
+        is_absent: !!s.is_absent
       }))
     };
     reportMutation.mutate(payload, {
@@ -130,7 +133,8 @@ export default function ReportForm() {
         if (i < draftShifts.length) {
             newShifts.push({
               start_time: toLocalISO(new Date(draftShifts[i].start_time)),
-              end_time: toLocalISO(new Date(draftShifts[i].end_time))
+              end_time: toLocalISO(new Date(draftShifts[i].end_time)),
+              is_absent: !!draftShifts[i].is_absent
             });
             newSavedDays.push(true);
         } else {
@@ -225,12 +229,26 @@ export default function ReportForm() {
 
           <div className="space-y-4 mb-4">
             {dailyShifts.map((shift, idx) => (
-              <div key={idx} className="p-4 border border-blue-200 rounded-xl bg-blue-50/30 shadow-sm relative">
+              <div key={idx} className={`p-4 border rounded-xl shadow-sm relative transition-colors ${shift.is_absent ? 'border-gray-200 bg-gray-50' : 'border-blue-200 bg-blue-50/30'}`}>
                 <div className="flex justify-between items-center mb-3">
-                  <h3 className="font-bold text-blue-800 text-sm">יום עבודה {idx + 1}</h3>
+                  <div className="flex items-center gap-3">
+                    <h3 className={`font-bold text-sm ${shift.is_absent ? 'text-gray-500 line-through' : 'text-blue-800'}`}>יום עבודה {idx + 1}</h3>
+                    {!savedDays[idx] && (
+                      <button 
+                        onClick={() => {
+                          const newShifts = [...dailyShifts];
+                          newShifts[idx].is_absent = !newShifts[idx].is_absent;
+                          setDailyShifts(newShifts);
+                        }}
+                        className={`text-xs px-2 py-1 rounded-md font-bold transition-colors ${shift.is_absent ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}
+                      >
+                        {shift.is_absent ? 'ביטול היעדרות' : '🚫 לא עבדתי ביום זה'}
+                      </button>
+                    )}
+                  </div>
                   {savedDays[idx] ? (
                     <div className="flex gap-2 items-center">
-                      <span className="text-green-600 font-bold text-xs">✅ בוצע דיווח</span>
+                      <span className="text-green-600 font-bold text-xs">✅ נשמר</span>
                       <button 
                         onClick={() => {
                           const newSaved = [...savedDays];
@@ -245,37 +263,43 @@ export default function ReportForm() {
                   ) : (
                     <button 
                       onClick={() => handleSaveDraft(idx)}
-                      disabled={reportMutation.isPending || !shift.start_time || !shift.end_time}
+                      disabled={reportMutation.isPending || (!shift.is_absent && (!shift.start_time || !shift.end_time))}
                       className="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-3 py-1 rounded-lg text-xs font-bold transition-colors shadow-sm disabled:opacity-50"
                     >
                       💾 שמור יום זה
                     </button>
                   )}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-gray-600 font-bold mb-1 text-sm">התחלה</label>
-                    <input type="datetime-local" className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200" 
-                      disabled={savedDays[idx]}
-                      value={shift.start_time} 
-                      onChange={e => {
-                        const newShifts = [...dailyShifts];
-                        newShifts[idx].start_time = e.target.value;
-                        setDailyShifts(newShifts);
-                      }} />
+                {!shift.is_absent ? (
+                  <div className="grid grid-cols-2 gap-4 animate-fade-in">
+                    <div>
+                      <label className="block text-gray-600 font-bold mb-1 text-sm">התחלה</label>
+                      <input type="datetime-local" className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200" 
+                        disabled={savedDays[idx]}
+                        value={shift.start_time} 
+                        onChange={e => {
+                          const newShifts = [...dailyShifts];
+                          newShifts[idx].start_time = e.target.value;
+                          setDailyShifts(newShifts);
+                        }} />
+                    </div>
+                    <div>
+                      <label className="block text-gray-600 font-bold mb-1 text-sm">סיום</label>
+                      <input type="datetime-local" className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200" 
+                        disabled={savedDays[idx]}
+                        value={shift.end_time} 
+                        onChange={e => {
+                          const newShifts = [...dailyShifts];
+                          newShifts[idx].end_time = e.target.value;
+                          setDailyShifts(newShifts);
+                        }} />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-gray-600 font-bold mb-1 text-sm">סיום</label>
-                    <input type="datetime-local" className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200" 
-                      disabled={savedDays[idx]}
-                      value={shift.end_time} 
-                      onChange={e => {
-                        const newShifts = [...dailyShifts];
-                        newShifts[idx].end_time = e.target.value;
-                        setDailyShifts(newShifts);
-                      }} />
+                ) : (
+                  <div className="text-gray-500 text-sm font-semibold text-center py-2 animate-fade-in bg-white rounded-lg border border-gray-200">
+                    יום זה סומן כיום ללא עבודה.
                   </div>
-                </div>
+                )}
               </div>
             ))}
           </div>
@@ -309,7 +333,15 @@ export default function ReportForm() {
       <button 
         onClick={() => {
           // Validation
+          const activeShifts = dailyShifts.filter(s => !s.is_absent);
+          if (activeShifts.length === 0) {
+            setErrorMsg('חובה לדווח לפחות על יום עבודה אחד.');
+            return;
+          }
+
           for (let i = 0; i < dailyShifts.length; i++) {
+            if (dailyShifts[i].is_absent) continue;
+            
             const start = new Date(dailyShifts[i].start_time);
             const end = new Date(dailyShifts[i].end_time);
             if (end <= start) {
@@ -317,10 +349,16 @@ export default function ReportForm() {
               return;
             }
             if (i > 0) {
-              const prevEnd = new Date(dailyShifts[i-1].end_time);
-              if (start < prevEnd) {
-                setErrorMsg(`שגיאה בין יום ${i} ליום ${i + 1}: לא ניתן להתחיל יום עבודה לפני שהסתיים היום הקודם.`);
-                return;
+              // Find the previous active shift
+              let prevIdx = i - 1;
+              while (prevIdx >= 0 && dailyShifts[prevIdx].is_absent) prevIdx--;
+              
+              if (prevIdx >= 0) {
+                const prevEnd = new Date(dailyShifts[prevIdx].end_time);
+                if (start < prevEnd) {
+                  setErrorMsg(`שגיאה בין יום ${prevIdx + 1} ליום ${i + 1}: לא ניתן להתחיל יום עבודה לפני שהסתיים היום הקודם.`);
+                  return;
+                }
               }
             }
           }
@@ -334,12 +372,13 @@ export default function ReportForm() {
             is_draft: false,
             daily_shifts: dailyShifts.map(s => ({
               start_time: new Date(s.start_time).toISOString(),
-              end_time: new Date(s.end_time).toISOString()
+              end_time: new Date(s.is_absent ? s.start_time : s.end_time).toISOString(),
+              is_absent: !!s.is_absent
             }))
           };
           reportMutation.mutate(payload);
         }}
-        disabled={reportMutation.isPending || dailyShifts.length < daysCount || dailyShifts.some(s => !s.start_time || !s.end_time) || !formData.assignment_id}
+        disabled={reportMutation.isPending || dailyShifts.length < daysCount || dailyShifts.some(s => !s.is_absent && (!s.start_time || !s.end_time)) || !formData.assignment_id}
         className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-xl shadow-md transition-colors disabled:bg-gray-400 mt-4"
       >
         {reportMutation.isPending ? 'שולח...' : 'שלח דו"ח כולל (סופי)'}

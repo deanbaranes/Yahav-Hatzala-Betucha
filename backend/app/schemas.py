@@ -116,6 +116,7 @@ class IcalImportRequest(BaseModel):
 class DailyShift(BaseModel):
     start_time: datetime
     end_time: datetime
+    is_absent: Optional[bool] = False
 
 class TripReportCreate(BaseModel):
     assignment_id: uuid.UUID

@@ -56,13 +56,17 @@ def process_and_save_report(
     shifts_json = None
 
     if report_data.daily_shifts and len(report_data.daily_shifts) > 0:
+        active_shifts = [s for s in report_data.daily_shifts if not s.is_absent]
+        if not active_shifts:
+            raise HTTPException(status_code=400, detail="Must have at least one active shift")
+            
         shifts_json = [
-            {"start_time": s.start_time.isoformat(), "end_time": s.end_time.isoformat()}
+            {"start_time": s.start_time.isoformat(), "end_time": s.end_time.isoformat(), "is_absent": s.is_absent}
             for s in report_data.daily_shifts
         ]
-        final_start = min(s.start_time for s in report_data.daily_shifts)
-        final_end = max(s.end_time for s in report_data.daily_shifts)
-        for shift in report_data.daily_shifts:
+        final_start = min(s.start_time for s in active_shifts)
+        final_end = max(s.end_time for s in active_shifts)
+        for shift in active_shifts:
             total_overtime += calculate_overtime_decimal(shift.start_time, shift.end_time)
     else:
         if not report_data.start_time or not report_data.end_time:
