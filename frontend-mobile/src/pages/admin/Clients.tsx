@@ -10,6 +10,8 @@ export default function Clients() {
   const [editForm, setEditForm] = useState({ balance: '', notes: '', debt_start_date: '', payment_terms: '' });
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
   const [mobileViewMode, setMobileViewMode] = useState<'cards' | 'table'>('cards');
+  const [page, setPage] = useState(0);
+  const limit = 50;
 
   const PAYMENT_TERMS_OPTIONS = [
     { value: '', label: 'ללא תנאים מיוחדים' },
@@ -33,13 +35,20 @@ export default function Clients() {
   
   const queryClient = useQueryClient();
 
-  const { data: clients, isLoading } = useQuery<any[]>({
-    queryKey: ['clients'],
+  const { data: clientsData, isLoading } = useQuery<any>({
+    queryKey: ['clients', page, searchTerm],
     queryFn: async () => {
-      const res = await axiosClient.get('/clients/');
+      const res = await axiosClient.get(`/clients/?skip=${page * limit}&limit=${limit}&q=${searchTerm}`);
       return res.data;
-    }
+    },
+    placeholderData: (prev: any) => prev // keep old data while fetching new
   });
+
+  const filteredClients = clientsData?.data || [];
+  const totalPositive = clientsData?.totalPositive || 0;
+  const totalNegative = clientsData?.totalNegative || 0;
+  const totalClients = clientsData?.total || 0;
+  const totalPages = Math.ceil(totalClients / limit);
 
   const updateClient = useMutation({
     mutationFn: async ({ id, data }: { id: string, data: any }) => {
@@ -90,25 +99,16 @@ export default function Clients() {
     return parseFloat(numMatch[0]);
   };
 
-  const totalPositive = useMemo(() => clients?.reduce((acc: number, c: any) => {
-    const val = parseBalance(c.balance);
-    return val > 0 ? acc + val : acc;
-  }, 0) || 0, [clients]);
-
-  const totalNegative = useMemo(() => clients?.reduce((acc: number, c: any) => {
-    const val = parseBalance(c.balance);
-    return val < 0 ? acc + val : acc;
-  }, 0) || 0, [clients]);
-
-  const filteredClients = useMemo(() => clients?.filter(c => 
-    (c.name || '').includes(searchTerm) || 
-    (c.contact_person && c.contact_person.includes(searchTerm))
-  ).sort((a, b) => {
-    if (sortOrder === 'none') return 0;
-    const valA = parseBalance(a.balance);
-    const valB = parseBalance(b.balance);
-    return sortOrder === 'asc' ? valA - valB : valB - valA;
-  }) || [], [clients, searchTerm, sortOrder]);
+  // Client-side sort ONLY on the current page for now. 
+  // True global sort would require backend sort params.
+  const sortedClients = useMemo(() => {
+    if (sortOrder === 'none') return filteredClients;
+    return [...filteredClients].sort((a, b) => {
+      const valA = parseBalance(a.balance);
+      const valB = parseBalance(b.balance);
+      return sortOrder === 'asc' ? valA - valB : valB - valA;
+    });
+  }, [filteredClients, sortOrder]);
 
   if (isLoading) return <div className="p-8 text-center">טוען לקוחות...</div>;
 
@@ -197,8 +197,10 @@ export default function Clients() {
             <input 
               type="text" 
               placeholder="חיפוש לפי שם לקוח או איש קשר..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setPage(0); // reset page on search
+              }}
               className="w-full bg-transparent border-none focus:ring-0 text-gray-700"
             />
           </div>
@@ -234,7 +236,7 @@ export default function Clients() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
-              {filteredClients.map((client, idx) => (
+              {sortedClients.map((client: any, idx: number) => (
                 <tr key={client.id} className={`${getRowStyle(client, idx)} transition-all duration-200 group`}>
                   <td className="px-2 py-1.5 font-bold text-gray-800 break-words group-hover:text-blue-700 transition-colors">{client.name}</td>
                   <td className="px-2 py-1.5 text-slate-600 font-medium whitespace-nowrap max-w-[100px] truncate" title={client.contact_person}>{client.contact_person || '-'}</td>
@@ -387,14 +389,14 @@ export default function Clients() {
               ))}
             </tbody>
           </table>
-          {filteredClients.length === 0 && (
+          {sortedClients.length === 0 && (
             <div className="p-8 text-center text-gray-500">לא נמצאו לקוחות מתאימים לחיפוש.</div>
           )}
         </div>
 
         {/* Mobile View: Cards */}
         <div className={`${mobileViewMode === 'cards' ? 'flex md:hidden' : 'hidden'} flex-col divide-y divide-gray-100 border-t-0 rounded-b-2xl bg-white shadow-inner`}>
-          {filteredClients.map((client) => (
+          {sortedClients.map((client: any) => (
             <div key={client.id} className={`p-5 flex flex-col gap-4 ${editingId === client.id ? 'bg-blue-50/30' : ''}`}>
               <div className="flex justify-between items-start gap-4">
                 <div className="flex-1">
@@ -531,6 +533,29 @@ export default function Clients() {
           )}
         </div>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-4 mt-6">
+          <button 
+            disabled={page === 0} 
+            onClick={() => setPage(p => Math.max(0, p - 1))}
+            className="px-4 py-2 bg-white border border-gray-200 rounded shadow-sm disabled:opacity-50 font-bold"
+          >
+            הקודם
+          </button>
+          <div className="text-gray-700 font-bold">
+            עמוד {page + 1} מתוך {totalPages}
+          </div>
+          <button 
+            disabled={page >= totalPages - 1} 
+            onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+            className="px-4 py-2 bg-white border border-gray-200 rounded shadow-sm disabled:opacity-50 font-bold"
+          >
+            הבא
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -17,6 +17,7 @@ from app.dependencies import get_employee_user, get_admin_user
 from app.services.report_service import (
     calculate_overtime_decimal,
     process_and_save_report,
+    update_report_data
 )
 from app.services.storage_service import StorageService
 from app.services.payroll_service import PayrollService
@@ -225,31 +226,7 @@ def update_report(report_id: str, data: ReportUpdate, db: Session = Depends(get_
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
         
-    report.start_time = data.start_time
-    report.end_time = data.end_time
-    
-    new_overtime = 0.0
-    if data.daily_shifts and len(data.daily_shifts) > 0:
-        report.daily_shifts = data.daily_shifts
-        report.start_time = min([datetime.fromisoformat(s['start_time'].replace('Z', '+00:00')) for s in data.daily_shifts])
-        report.end_time = max([datetime.fromisoformat(s['end_time'].replace('Z', '+00:00')) for s in data.daily_shifts])
-        for s in data.daily_shifts:
-            st = datetime.fromisoformat(s['start_time'].replace('Z', '+00:00'))
-            et = datetime.fromisoformat(s['end_time'].replace('Z', '+00:00'))
-            new_overtime += calculate_overtime_decimal(st, et)
-    else:
-        report.daily_shifts = None
-        new_overtime = calculate_overtime_decimal(data.start_time, data.end_time)
-    
-    # Allow manual override if they changed it specifically
-    if abs(float(report.overtime_decimal) - float(data.overtime_decimal)) > 0.01:
-        report.overtime_decimal = Decimal(str(data.overtime_decimal))
-    else:
-        report.overtime_decimal = Decimal(str(new_overtime))
-    
-    report.expenses = Decimal(str(data.expenses))
-    report.sleeps = data.sleeps
-    db.commit()
+    update_report_data(db, report, data)
     return {"message": "Report updated"}
 
 @router.delete("/{report_id}")

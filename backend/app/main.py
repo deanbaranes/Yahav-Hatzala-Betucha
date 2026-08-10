@@ -51,10 +51,16 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
 # כתובות מותרות ל-CORS — מוגדרות ב-.env כ-ALLOWED_ORIGINS (מופרדות בפסיק)
-ALLOWED_ORIGINS = os.getenv(
-    "ALLOWED_ORIGINS",
-    "http://localhost:5173,http://localhost:3000"
-).split(",")
+is_prod = os.getenv("ENVIRONMENT", "development").lower() == "production"
+raw_origins = os.getenv("ALLOWED_ORIGINS")
+
+if raw_origins:
+    ALLOWED_ORIGINS = raw_origins.split(",")
+elif is_prod:
+    # Fail safely in production if CORS is not configured
+    raise RuntimeError("CRITICAL SECURITY ERROR: ALLOWED_ORIGINS environment variable is missing in production.")
+else:
+    ALLOWED_ORIGINS = ["http://localhost:5173", "http://localhost:3000"]
 
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):

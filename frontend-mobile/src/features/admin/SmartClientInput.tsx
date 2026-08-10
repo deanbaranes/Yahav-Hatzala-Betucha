@@ -26,8 +26,8 @@ export default function SmartClientInput({ value, onChange }: { value: string, o
 
     const timer = setTimeout(async () => {
       try {
-        const res = await axiosClient.get(`/clients/search?q=${query}`);
-        setResults(res.data);
+        const res = await axiosClient.get(`/clients/?q=${query}&limit=10`);
+        setResults(res.data.data || []);
       } catch (err) {
         console.error('Error fetching clients', err);
       }

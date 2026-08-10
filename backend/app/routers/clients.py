@@ -9,44 +9,52 @@ from dateutil import parser
 
 router = APIRouter(prefix="/clients", tags=["clients"])
 
-@router.get("/")
-def get_clients(skip: int = 0, limit: int = 1000, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
-    clients = db.query(Client).offset(skip).limit(limit).all()
-    return [
-        {
-            "id": str(c.id),
-            "name": c.name,
-            "contact_person": c.contact_person,
-            "email": c.email,
-            "phone": c.phone,
-            "balance": c.balance,
-            "debt_start_date": c.debt_start_date.isoformat() if c.debt_start_date else None,
-            "notes": c.notes,
-            "payment_terms": c.payment_terms
-        } for c in clients
-    ]
+import re
 
-@router.get("/search")
-def search_clients(q: str = "", db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
-    # Returns clients matching query
+def parse_balance(bal_str):
+    if not bal_str: return 0.0
+    cleaned = str(bal_str).replace(',', '')
+    match = re.search(r'-?\d+(\.\d+)?', cleaned)
+    if not match: return 0.0
+    return float(match.group())
+
+@router.get("/")
+def get_clients(skip: int = 0, limit: int = 50, q: str = "", db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     query = db.query(Client)
-    if q:
-        query = query.filter(Client.name.ilike(f"%{q}%"))
-    clients = query.limit(10).all()
     
-    return [
-        {
-            "id": str(c.id),
-            "name": c.name,
-            "contact_person": c.contact_person,
-            "email": c.email,
-            "phone": c.phone,
-            "balance": c.balance,
-            "debt_start_date": c.debt_start_date.isoformat() if c.debt_start_date else None,
-            "notes": c.notes,
-            "payment_terms": c.payment_terms
-        } for c in clients
-    ]
+    if q:
+        query = query.filter(
+            (Client.name.ilike(f"%{q}%")) | 
+            (Client.contact_person.ilike(f"%{q}%"))
+        )
+        
+    total = query.count()
+    
+    # Calculate totals
+    all_filtered = query.all()
+    total_positive = sum(parse_balance(c.balance) for c in all_filtered if parse_balance(c.balance) > 0)
+    total_negative = sum(parse_balance(c.balance) for c in all_filtered if parse_balance(c.balance) < 0)
+
+    clients = query.offset(skip).limit(limit).all()
+    
+    return {
+        "total": total,
+        "totalPositive": total_positive,
+        "totalNegative": total_negative,
+        "data": [
+            {
+                "id": str(c.id),
+                "name": c.name,
+                "contact_person": c.contact_person,
+                "email": c.email,
+                "phone": c.phone,
+                "balance": c.balance,
+                "debt_start_date": c.debt_start_date.isoformat() if c.debt_start_date else None,
+                "notes": c.notes,
+                "payment_terms": c.payment_terms
+            } for c in clients
+        ]
+    }
 
 @router.put("/{client_id}")
 def update_client(client_id: str, data: ClientUpdate, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):

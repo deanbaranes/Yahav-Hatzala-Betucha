@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from app.models.trip_report import TripReport
 from app.models.trip_assignment import TripAssignment
-from app.schemas import TripReportCreate
+from app.schemas import TripReportCreate, ReportUpdate
 from app.constants import CLIENT_ACCOMMODATION_CHARGE
 import os
 import logging
@@ -150,3 +150,40 @@ def process_and_save_report(
             logger.error(f"Failed to send notification for report submission: {e}")
 
     return new_report
+
+def update_report_data(db: Session, report: TripReport, data: ReportUpdate) -> TripReport:
+    from datetime import datetime
+    report.start_time = data.start_time
+    report.end_time = data.end_time
+    
+    new_overtime = 0.0
+    if data.daily_shifts and len(data.daily_shifts) > 0:
+        report.daily_shifts = data.daily_shifts
+        
+        # Determine if s is a dict or a Pydantic model
+        def get_time(s, key):
+            val = s[key] if isinstance(s, dict) else getattr(s, key)
+            if isinstance(val, str):
+                return datetime.fromisoformat(val.replace('Z', '+00:00'))
+            return val
+            
+        report.start_time = min([get_time(s, 'start_time') for s in data.daily_shifts])
+        report.end_time = max([get_time(s, 'end_time') for s in data.daily_shifts])
+        for s in data.daily_shifts:
+            st = get_time(s, 'start_time')
+            et = get_time(s, 'end_time')
+            new_overtime += calculate_overtime_decimal(st, et)
+    else:
+        report.daily_shifts = None
+        new_overtime = calculate_overtime_decimal(data.start_time, data.end_time)
+    
+    # Allow manual override if they changed it specifically
+    if abs(float(report.overtime_decimal) - float(data.overtime_decimal)) > 0.01:
+        report.overtime_decimal = Decimal(str(data.overtime_decimal))
+    else:
+        report.overtime_decimal = Decimal(str(new_overtime))
+    
+    report.expenses = Decimal(str(data.expenses))
+    report.sleeps = data.sleeps
+    db.commit()
+    return report

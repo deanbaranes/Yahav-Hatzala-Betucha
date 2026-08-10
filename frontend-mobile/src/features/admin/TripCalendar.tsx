@@ -3,6 +3,8 @@ import { ChevronRight, ChevronLeft, Calendar as CalendarIcon, CheckCircle2, Down
 import axiosClient from '../../api/axiosClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import SmartClientInput from './SmartClientInput';
+import AssignEmployeeForm from './AssignEmployeeForm';
+import CreateManualTripModal from './CreateManualTripModal';
 import { exportToCSV } from '../../utils/csvExport';
 
 const AVAILABLE_ROLES = ["מע\"ר", "חובש", "פראמדיק", "שומר לילה", "מע\"ר חמוש", "חובש חמוש", "מאבטח"];
@@ -145,87 +147,12 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
   const [reportDailyShifts, setReportDailyShifts] = useState([{ start_time: '', end_time: '' }]);
 
   const [quickEditMode, setQuickEditMode] = useState(false);
-  const [quickEditForm, setQuickEditForm] = useState({ client_name: '', location: '', start_date: '', end_date: '', capacity: 0, roles_requirements: {}, color: '', global_salary: '' as string | number, contact_phone: '' });
+  const [quickEditForm, setQuickEditForm] = useState({ client_name: '', location: '', start_date: '', end_date: '', capacity: 0, roles_requirements: {} as Record<string, number>, color: '', global_salary: '' as string | number, contact_phone: '' });
 
-  // Add Employee Assignment State
-  const [assignEmployeeName, setAssignEmployeeName] = useState('');
-  const [assignEmployeeRole, setAssignEmployeeRole] = useState('כללי');
-  const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
-  const [filteredEmployees, setFilteredEmployees] = useState<any[]>([]);
+  // Employee Assignment State and Mutation moved to AssignEmployeeForm.tsx
 
-  // Create Manual Trip State
+  // Create Manual Trip State and Mutation moved to CreateManualTripModal.tsx
   const [creatingTripDate, setCreatingTripDate] = useState<Date | null>(null);
-  const [newTripForm, setNewTripForm] = useState({ 
-    client_name: '', 
-    location: '', 
-    start_date: '', 
-    end_date: '', 
-    roles_requirements: {} as Record<string, number>,
-    color: '',
-    global_salary: '',
-    contact_phone: ''
-  });
-
-  const updateNewTripRoleCount = (role: string, count: number) => {
-    setNewTripForm(prev => {
-      const newRoles = { ...prev.roles_requirements };
-      if (count <= 0) {
-        delete newRoles[role];
-      } else {
-        newRoles[role] = count;
-      }
-      return { ...prev, roles_requirements: newRoles };
-    });
-  };
-
-  const newTripTotalCapacity = Object.values(newTripForm.roles_requirements).reduce((a, b) => a + b, 0);
-
-  useEffect(() => {
-    if (assignEmployeeName && employees) {
-      setFilteredEmployees(employees.filter(e => e.full_name.includes(assignEmployeeName)));
-    } else {
-      setFilteredEmployees([]);
-    }
-  }, [assignEmployeeName, employees]);
-
-
-  const assignEmployeeMutation = useMutation({
-    mutationFn: async (payload: { trip_id: string, user_id?: string, new_user_name?: string, role: string }) => {
-      // 1. If user_id is missing but new_user_name is provided, we need an endpoint to assign by name or create user.
-      // Since our assign logic might not support creating user on the fly, we will do it here.
-      let finalUserId = payload.user_id;
-      if (!finalUserId && payload.new_user_name) {
-         // Create the new employee
-         const res = await axiosClient.post('/payroll/employees', {
-           full_name: payload.new_user_name,
-           phone: `050${Math.floor(1000000 + Math.random() * 9000000)}`, // dummy
-           password: '123',
-           notes: 'יש לעדכן לעובד שכר שעתי'
-         });
-         finalUserId = res.data.id;
-         alert(`שים לב: הלקוח/עובד ${payload.new_user_name} לא היה קיים, לכן נוצר עובד חדש. יש לעדכן לו שכר שעתי!`);
-      }
-
-      await axiosClient.post(`/trips/${payload.trip_id}/assign`, {
-        user_id: finalUserId,
-        role: payload.role,
-        status: 'assigned',
-        is_confirmed: true
-      });
-    },
-    onSuccess: () => {
-      alert('עובד שובץ בהצלחה!');
-      setAssignEmployeeName('');
-      queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
-      queryClient.invalidateQueries({ queryKey: ['employees'] });
-      // update selected trip state manually or close
-      setSelectedTrip(null);
-    },
-    onError: (err: any) => {
-      alert('שגיאה בשיבוץ העובד: ' + (err.response?.data?.detail || ''));
-    }
-  });
 
   const removeAssignmentMutation = useMutation({
     mutationFn: async (payload: { trip_id: string, user_id: string }) => {
@@ -234,28 +161,11 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
-      setSelectedTrip(null);
+      // Keep modal open after removing an employee so they can see it updated, or just update the trip
+      // We will rely on invalidating queries to update the UI
     },
     onError: (err: any) => {
       alert('שגיאה בהסרת עובד: ' + (err.response?.data?.detail || ''));
-    }
-  });
-
-  const createManualTripMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const payload = { ...data };
-      if (!payload.global_salary || payload.global_salary === '') payload.global_salary = null;
-      if (!payload.end_date || payload.end_date === '') payload.end_date = payload.start_date;
-      await axiosClient.post('/trips/', payload);
-    },
-    onSuccess: () => {
-      alert('הטיול נוסף בהצלחה!');
-      queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
-      setCreatingTripDate(null);
-    },
-    onError: (err: any) => {
-      alert('שגיאה בהוספת טיול: ' + (err.response?.data?.detail || ''));
     }
   });
 
@@ -405,11 +315,7 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
               key={day} 
               className="min-h-[80px] md:min-h-[120px] p-0.5 md:p-1 border-l border-b border-gray-100 relative group hover:bg-blue-50/50 transition-colors cursor-pointer"
               onClick={() => {
-                const pad = (n: number) => n.toString().padStart(2, '0');
-                const sd = `${year}-${pad(month+1)}-${pad(day)}T08:00`;
-                const ed = `${year}-${pad(month+1)}-${pad(day)}T16:00`;
                 setCreatingTripDate(new Date(year, month, day));
-                setNewTripForm({ client_name: '', location: '', start_date: sd, end_date: ed, roles_requirements: {}, color: '', global_salary: '', contact_phone: '' });
               }}
             >
               <span className={`inline-block font-bold text-[10px] md:text-sm w-5 h-5 md:w-7 md:h-7 text-center leading-5 md:leading-7 rounded-full mb-1 ${
@@ -568,73 +474,12 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                 </div>
                 
                 {/* Employee Assignment inside Quick Edit */}
-                <div className="mt-6 pt-4 border-t border-blue-200">
-                  <h4 className="text-sm font-bold text-blue-900 mb-2">➕ הוסף עובד לטיול זה</h4>
-                  <div className="relative mb-2">
-                    <input 
-                      type="text" 
-                      placeholder="התחל להקליד שם עובד..."
-                      className="w-full p-2 text-sm border border-gray-300 rounded"
-                      value={assignEmployeeName}
-                      onChange={(e) => {
-                        setAssignEmployeeName(e.target.value);
-                        setShowEmployeeDropdown(true);
-                      }}
-                      onFocus={() => setShowEmployeeDropdown(true)}
-                    />
-                    {showEmployeeDropdown && assignEmployeeName && (
-                      <div className="absolute z-10 w-full bg-white border border-gray-200 mt-1 rounded-md shadow-lg max-h-40 overflow-y-auto">
-                        {filteredEmployees.map(emp => (
-                          <div 
-                            key={emp.id} 
-                            className="p-2 text-sm hover:bg-blue-50 cursor-pointer"
-                            onClick={() => {
-                              setAssignEmployeeName(emp.full_name);
-                              setShowEmployeeDropdown(false);
-                            }}
-                          >
-                            {emp.full_name}
-                          </div>
-                        ))}
-                        {filteredEmployees.length === 0 && (
-                          <div className="p-2 text-sm text-gray-500 italic">
-                            לא נמצא עובד כזה. לחיצה על "שבץ עובד" תיצור עובד חדש.
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <select
-                    className="w-full p-2 text-sm border border-gray-300 rounded mb-2 bg-white"
-                    value={assignEmployeeRole}
-                    onChange={e => setAssignEmployeeRole(e.target.value)}
-                  >
-                    <option value="כללי">כללי</option>
-                    <option value="חובש">חובש</option>
-                    <option value="מע״ר">מע״ר</option>
-                    <option value="מע״ר חמוש">מע״ר חמוש</option>
-                    <option value="פראמדיק">פראמדיק</option>
-                    <option value="רופא">רופא</option>
-                    <option value="מלווה נשק">מלווה נשק</option>
-                    <option value="שומר לילה">שומר לילה</option>
-                    <option value="נהג">נהג</option>
-                  </select>
-                  <button 
-                    disabled={!assignEmployeeName || assignEmployeeMutation.isPending}
-                    onClick={() => {
-                      const existing = employees?.find(e => e.full_name === assignEmployeeName);
-                      assignEmployeeMutation.mutate({
-                        trip_id: selectedTrip.id,
-                        user_id: existing?.id,
-                        new_user_name: !existing ? assignEmployeeName : undefined,
-                        role: assignEmployeeRole
-                      });
-                    }}
-                    className="mt-2 w-full px-3 py-2 text-sm bg-indigo-600 text-white hover:bg-indigo-700 rounded font-bold disabled:opacity-50"
-                  >
-                    {assignEmployeeMutation.isPending ? 'משבץ...' : 'שבץ עובד'}
-                  </button>
-                </div>
+                {/* Employee Assignment Form */}
+                <AssignEmployeeForm 
+                  tripId={selectedTrip.id} 
+                  employees={employees || []} 
+                  onAssignSuccess={() => setSelectedTrip(null)} 
+                />
                 
 
               </div>
@@ -712,73 +557,11 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                 </div>
 
                 {/* Employee Assignment moved out of Quick Edit */}
-                <div className="mt-6 pt-4 border-t border-gray-200">
-                  <h4 className="text-sm font-bold text-blue-900 mb-2">➕ הוסף עובד לטיול זה</h4>
-                  <div className="relative mb-2">
-                    <input 
-                      type="text" 
-                      placeholder="התחל להקליד שם עובד..."
-                      className="w-full p-2 text-sm border border-gray-300 rounded"
-                      value={assignEmployeeName}
-                      onChange={(e) => {
-                        setAssignEmployeeName(e.target.value);
-                        setShowEmployeeDropdown(true);
-                      }}
-                      onFocus={() => setShowEmployeeDropdown(true)}
-                    />
-                    {showEmployeeDropdown && assignEmployeeName && (
-                      <div className="absolute z-10 w-full bg-white border border-gray-200 mt-1 rounded-md shadow-lg max-h-40 overflow-y-auto">
-                        {filteredEmployees.map(emp => (
-                          <div 
-                            key={emp.id} 
-                            className="p-2 text-sm hover:bg-blue-50 cursor-pointer"
-                            onClick={() => {
-                              setAssignEmployeeName(emp.full_name);
-                              setShowEmployeeDropdown(false);
-                            }}
-                          >
-                            {emp.full_name}
-                          </div>
-                        ))}
-                        {filteredEmployees.length === 0 && (
-                          <div className="p-2 text-sm text-gray-500 italic">
-                            לא נמצא עובד כזה. לחיצה על "שבץ עובד" תיצור עובד חדש.
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <select
-                    className="w-full p-2 text-sm border border-gray-300 rounded mb-2 bg-white"
-                    value={assignEmployeeRole}
-                    onChange={e => setAssignEmployeeRole(e.target.value)}
-                  >
-                    <option value="כללי">כללי</option>
-                    <option value="חובש">חובש</option>
-                    <option value="מע״ר">מע״ר</option>
-                    <option value="מע״ר חמוש">מע״ר חמוש</option>
-                    <option value="פראמדיק">פראמדיק</option>
-                    <option value="רופא">רופא</option>
-                    <option value="מלווה נשק">מלווה נשק</option>
-                    <option value="שומר לילה">שומר לילה</option>
-                    <option value="נהג">נהג</option>
-                  </select>
-                  <button 
-                    disabled={!assignEmployeeName || assignEmployeeMutation.isPending}
-                    onClick={() => {
-                      const existing = employees?.find(e => e.full_name === assignEmployeeName);
-                      assignEmployeeMutation.mutate({
-                        trip_id: selectedTrip.id,
-                        user_id: existing?.id,
-                        new_user_name: !existing ? assignEmployeeName : undefined,
-                        role: assignEmployeeRole
-                      });
-                    }}
-                    className="mt-2 w-full px-3 py-2 text-sm bg-indigo-600 text-white hover:bg-indigo-700 rounded font-bold disabled:opacity-50"
-                  >
-                    {assignEmployeeMutation.isPending ? 'משבץ...' : 'שבץ עובד'}
-                  </button>
-                </div>
+                <AssignEmployeeForm 
+                  tripId={selectedTrip.id} 
+                  employees={employees || []} 
+                  onAssignSuccess={() => setSelectedTrip(null)} 
+                />
               </div>
 
             {reportingAssignment && (
@@ -893,157 +676,10 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
       )}
 
       {creatingTripDate && (
-        <div className="fixed inset-0 z-50 p-3 sm:p-6 bg-gray-900/60 backdrop-blur-sm overflow-y-auto" onClick={() => setCreatingTripDate(null)}>
-          <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-2xl max-w-lg w-full mx-auto animate-fade-in text-right my-4 sm:my-10" onClick={e => e.stopPropagation()}>
-            <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">
-              הוספת טיול חדש: {creatingTripDate.toLocaleDateString('he-IL')}
-            </h3>
-
-            <div className="space-y-4">
-              <SmartClientInput 
-                value={newTripForm.client_name} 
-                onChange={(v) => setNewTripForm({...newTripForm, client_name: v})} 
-              />
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">מיקום / שם היעד</label>
-                <input 
-                  type="text" 
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
-                  value={newTripForm.location}
-                  onChange={e => setNewTripForm({...newTripForm, location: e.target.value})}
-                  placeholder="כתובת יעד או תיאור הטיול"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">שעת התחלה</label>
-                  <input 
-                    type="datetime-local" 
-                    className="w-full p-2 border border-gray-300 rounded text-sm"
-                    value={newTripForm.start_date}
-                    onChange={e => setNewTripForm({...newTripForm, start_date: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">שעת סיום משוערת</label>
-                  <input 
-                    type="datetime-local" 
-                    className="w-full p-2 border border-gray-300 rounded text-sm"
-                    value={newTripForm.end_date}
-                    onChange={e => setNewTripForm({...newTripForm, end_date: e.target.value})}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">שכר גלובלי לטיול (₪)</label>
-                <input 
-                  type="number" 
-                  min="0"
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
-                  value={newTripForm.global_salary}
-                  onChange={e => setNewTripForm({...newTripForm, global_salary: e.target.value})}
-                  placeholder="הזן סכום גלובלי (אופציונלי)"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">פרטי איש קשר (אופציונלי - שם/טלפון, לא יוצג לצוות טרם אישור)</label>
-                <input 
-                  type="text" 
-                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
-                  value={newTripForm.contact_phone}
-                  onChange={e => setNewTripForm({...newTripForm, contact_phone: e.target.value})}
-                  placeholder="לדוגמה: דוד 050-1234567"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">צבע הטיול ביומן</label>
-                <div className="flex flex-wrap gap-2 items-center">
-                  {[
-                    { color: '', label: 'אוטומטי (לפי סטטוס)' },
-                    { color: '#039BE5', label: 'ציאן' },
-                    { color: '#D50000', label: 'אדום' },
-                    { color: '#0B8043', label: 'ירוק' },
-                    { color: '#F4511E', label: 'כתום' },
-                    { color: '#8E24AA', label: 'סגול' },
-                    { color: '#F6BF26', label: 'צהוב' },
-                    { color: '#3F51B5', label: 'כחול' },
-                    { color: '#616161', label: 'אפור' },
-                  ].map(({ color, label }) => (
-                    <button
-                      key={label}
-                      type="button"
-                      title={label}
-                      onClick={() => setNewTripForm({ ...newTripForm, color })}
-                      className={`w-7 h-7 rounded-full border-2 transition-all ${
-                        newTripForm.color === color
-                          ? 'border-gray-900 scale-125'
-                          : 'border-gray-200 hover:scale-110'
-                      }`}
-                      style={{ backgroundColor: color || '#e5e7eb' }}
-                    >
-                      {color === '' && <span className="text-gray-400 text-xs font-bold flex items-center justify-center w-full h-full">א</span>}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2 border-b pb-1">
-                  דרישות צוות (סה"כ: {newTripTotalCapacity})
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                  {AVAILABLE_ROLES.map(role => (
-                    <div key={role} className="flex items-center justify-between bg-gray-50 p-2 rounded border border-gray-200 text-xs">
-                      <span className="font-semibold text-gray-700 truncate">{role}</span>
-                      <input 
-                        type="number" 
-                        min="0" 
-                        className="w-12 p-1 border border-gray-300 rounded text-center text-xs" 
-                        value={newTripForm.roles_requirements[role] || ''} 
-                        placeholder="0"
-                        onChange={e => updateNewTripRoleCount(role, parseInt(e.target.value) || 0)} 
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 mt-6 pt-3 border-t border-gray-100">
-              <button 
-                onClick={() => setCreatingTripDate(null)} 
-                className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 transition-colors text-sm"
-              >
-                ביטול
-              </button>
-              <button 
-                disabled={!newTripForm.client_name || newTripTotalCapacity === 0 || createManualTripMutation.isPending}
-                onClick={() => {
-                  createManualTripMutation.mutate({
-                    client_name: newTripForm.client_name,
-                    location: newTripForm.location,
-                    start_date: newTripForm.start_date,
-                    end_date: newTripForm.end_date || null,
-                    capacity: newTripTotalCapacity,
-                    roles_requirements: newTripForm.roles_requirements,
-                    color: newTripForm.color,
-                    global_salary: newTripForm.global_salary ? parseFloat(newTripForm.global_salary as string) : null,
-                    contact_phone: newTripForm.contact_phone || null
-                  });
-                }}
-                className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm"
-                title={newTripTotalCapacity === 0 ? "חובה להגדיר לפחות תפקיד אחד לטיול" : ""}
-              >
-                {createManualTripMutation.isPending ? 'יוצר...' : 'שמור אירוע'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <CreateManualTripModal 
+          initialDate={creatingTripDate} 
+          onClose={() => setCreatingTripDate(null)} 
+        />
       )}
     </div>
   );
