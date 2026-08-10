@@ -23,6 +23,7 @@ export default function ReportForm() {
       
       if (variables.is_draft) {
         alert("הטיוטה נשמרה בהצלחה! תוכל להמשיך לדווח במועד מאוחר יותר.");
+        navigate('/');
       } else {
         setSuccessMsg(true);
         setTimeout(() => {
