@@ -21,12 +21,7 @@ export default function ReportForm() {
       queryClient.invalidateQueries({ queryKey: ['pending-reports'] });
       queryClient.invalidateQueries({ queryKey: ['report-draft', formData.assignment_id] });
       
-      if (variables.is_draft) {
-        alert("הטיוטה נשמרה בהצלחה! תוכל להמשיך לדווח במועד מאוחר יותר.");
-        setFormData({ expenses: 0, expenses_notes: '', sleeps: 0, receipt_url: '', assignment_id: '' });
-        setDaysCount(1);
-        setDailyShifts([{ start_time: '', end_time: '' }]);
-      } else {
+      if (!variables.is_draft) {
         setSuccessMsg(true);
         setTimeout(() => {
           setSuccessMsg(false);
@@ -107,15 +102,10 @@ export default function ReportForm() {
     };
     reportMutation.mutate(payload, {
       onSuccess: () => {
-        setSavedDays(prev => {
-          const next = [...prev];
-          dailyShifts.forEach((s, idx) => {
-            if (s.is_absent || (s.start_time && s.end_time)) {
-              next[idx] = true;
-            }
-          });
-          return next;
-        });
+        alert("הטיוטה נשמרה בהצלחה! תוכל להמשיך לדווח במועד מאוחר יותר.");
+        setFormData({ expenses: 0, expenses_notes: '', sleeps: 0, receipt_url: '', assignment_id: '' });
+        setDaysCount(1);
+        setDailyShifts([{ start_time: '', end_time: '' }]);
       }
     });
   };
@@ -214,6 +204,10 @@ export default function ReportForm() {
       setSavedDays(new Array(expectedDays).fill(false));
     }
   }, [draftReport, formData.assignment_id, isDraftLoading, pendingAssignments]);
+
+  const currentAssignment = pendingAssignments?.find(a => a.assignment_id === formData.assignment_id);
+  const isLastDayReached = currentAssignment ? new Date().setHours(0,0,0,0) >= new Date(currentAssignment.end_date || currentAssignment.start_date).setHours(0,0,0,0) : false;
+  const allDaysCompleted = dailyShifts.length > 0 && dailyShifts.length === daysCount && dailyShifts.every(s => s.is_absent || (s.start_time && s.end_time));
 
   if (successMsg) {
     return (
@@ -377,7 +371,7 @@ export default function ReportForm() {
         💾 שמירת טיוטה
       </button>
 
-      {(dailyShifts.length > 0 && dailyShifts.length === daysCount && dailyShifts.every(s => s.is_absent || (s.start_time && s.end_time))) && (
+      {allDaysCompleted && isLastDayReached && (
         <button 
           onClick={() => {
             // Validation
@@ -431,6 +425,12 @@ export default function ReportForm() {
         >
           {reportMutation.isPending ? 'שולח...' : 'שלח דו"ח כולל (סופי)'}
         </button>
+      )}
+
+      {allDaysCompleted && !isLastDayReached && (
+        <div className="bg-blue-50 text-blue-800 p-4 rounded-xl border border-blue-200 text-center font-bold text-sm shadow-sm mt-4">
+          ניתן לשלוח דו"ח סופי רק ביום האחרון של הטיול או לאחריו. בינתיים אפשר לשמור כטיוטה.
+        </div>
       )}
     </div>
   );
