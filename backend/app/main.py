@@ -12,7 +12,7 @@ from app.models import supplier             # register Supplier table
 from app.models import notification         # register Notification table
 from app.models import payslip              # register Payslip table
 from app.routers import auth, trips, reports, webhooks, clients, payroll, suppliers, notifications
-from app.dependencies import get_current_user_no_exception
+from app.dependencies import get_current_user
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -90,7 +90,7 @@ def read_root():
 os.makedirs("uploads", exist_ok=True)
 
 @app.get("/uploads/{file_path:path}")
-def get_upload_file(file_path: str, current_user = Depends(get_current_user_no_exception)):
+def get_upload_file(file_path: str, current_user = Depends(get_current_user)):
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized access to files")
         
