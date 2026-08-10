@@ -52,8 +52,9 @@ export default function ReportForm() {
       return;
     }
     
-    // Filter only valid shifts for the draft
-    const validShifts = dailyShifts.filter(s => s.start_time && s.end_time);
+    // Filter only valid shifts for the draft: 
+    // Only include shifts that are already saved, OR the current shift being saved.
+    const validShifts = dailyShifts.filter((s, i) => s.start_time && s.end_time && (savedDays[i] || i === idx));
     
     const payload = {
       assignment_id: formData.assignment_id,
@@ -96,9 +97,18 @@ export default function ReportForm() {
   });
 
   useEffect(() => {
-    // Filter only valid shifts for the draft
-    const validShifts = dailyShifts.filter(s => s.start_time && s.end_time);
-    
+    let expectedDays = 1;
+    const selectedAssignment = pendingAssignments?.find(a => a.assignment_id === formData.assignment_id);
+    if (selectedAssignment?.start_date && selectedAssignment?.end_date) {
+        const start = new Date(selectedAssignment.start_date);
+        const end = new Date(selectedAssignment.end_date);
+        start.setHours(0,0,0,0);
+        end.setHours(0,0,0,0);
+        expectedDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+    } else if (selectedAssignment?.start_date) {
+        expectedDays = 1; // Default to 1 if no end_date
+    }
+
     if (draftReport) {
       setFormData(prev => ({
         ...prev,
@@ -107,29 +117,61 @@ export default function ReportForm() {
         sleeps: draftReport.sleeps || 0,
         receipt_url: draftReport.receipt_url || ''
       }));
-      if (draftReport.daily_shifts && draftReport.daily_shifts.length > 0) {
-        setDailyShifts(draftReport.daily_shifts.map((s:any) => ({
-          start_time: s.start_time.substring(0, 16),
-          end_time: s.end_time.substring(0, 16)
-        })));
-        setDaysCount(draftReport.daily_shifts.length);
-        setSavedDays(new Array(draftReport.daily_shifts.length).fill(true));
-      } else if (draftReport.start_time && draftReport.end_time) {
-        setDailyShifts([{
-          start_time: draftReport.start_time.substring(0, 16),
-          end_time: draftReport.end_time.substring(0, 16)
-        }]);
-        setDaysCount(1);
-        setSavedDays([true]);
+      
+      const newShifts = [];
+      const newSavedDays = [];
+      const draftShifts = draftReport.daily_shifts && draftReport.daily_shifts.length > 0 ? draftReport.daily_shifts : (draftReport.start_time ? [draftReport] : []);
+      
+      const firstDayStart = draftShifts[0]?.start_time ? new Date(draftShifts[0].start_time) : (selectedAssignment ? new Date(selectedAssignment.start_date) : new Date());
+      
+      for (let i = 0; i < expectedDays; i++) {
+        if (i < draftShifts.length) {
+            newShifts.push({
+              start_time: draftShifts[i].start_time.substring(0, 16),
+              end_time: draftShifts[i].end_time.substring(0, 16)
+            });
+            newSavedDays.push(true);
+        } else {
+            const nextDay = new Date(firstDayStart);
+            nextDay.setDate(nextDay.getDate() + i);
+            nextDay.setHours(8, 0, 0, 0);
+            const nextEnd = new Date(nextDay);
+            nextEnd.setHours(17, 0, 0, 0);
+            const toLocalISO = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            newShifts.push({
+                start_time: toLocalISO(nextDay),
+                end_time: toLocalISO(nextEnd)
+            });
+            newSavedDays.push(false);
+        }
       }
+      setDailyShifts(newShifts);
+      setDaysCount(expectedDays);
+      setSavedDays(newSavedDays);
+      setFormData(prev => ({...prev, sleeps: Math.max(0, expectedDays - 1)}));
     } else if (formData.assignment_id && !isDraftLoading) {
       // Reset if no draft
-      setFormData(prev => ({ ...prev, expenses: 0, expenses_notes: '', sleeps: 0, receipt_url: '' }));
-      setDaysCount(1);
-      setDailyShifts([{ start_time: '', end_time: '' }]);
-      setSavedDays([]);
+      setFormData(prev => ({ ...prev, expenses: 0, expenses_notes: '', sleeps: Math.max(0, expectedDays - 1), receipt_url: '' }));
+      
+      const newShifts = [];
+      const firstDayStart = selectedAssignment ? new Date(selectedAssignment.start_date) : new Date();
+      for (let i = 0; i < expectedDays; i++) {
+            const nextDay = new Date(firstDayStart);
+            nextDay.setDate(nextDay.getDate() + i);
+            nextDay.setHours(8, 0, 0, 0);
+            const nextEnd = new Date(nextDay);
+            nextEnd.setHours(17, 0, 0, 0);
+            const toLocalISO = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            newShifts.push({
+                start_time: toLocalISO(nextDay),
+                end_time: toLocalISO(nextEnd)
+            });
+      }
+      setDaysCount(expectedDays);
+      setDailyShifts(newShifts);
+      setSavedDays(new Array(expectedDays).fill(false));
     }
-  }, [draftReport, formData.assignment_id, isDraftLoading]);
+  }, [draftReport, formData.assignment_id, isDraftLoading, pendingAssignments]);
 
   if (successMsg) {
     return (
@@ -174,43 +216,11 @@ export default function ReportForm() {
       {formData.assignment_id && (
         <div className="animate-fade-in space-y-6">
           <div className="mb-4">
-            <label className="block text-gray-700 font-bold mb-2 text-lg">מספר ימי עבודה / משך הטיול</label>
-            <select 
-              className="w-full p-4 border border-gray-300 rounded-xl bg-gray-50 text-lg font-bold"
-              value={daysCount}
-              onChange={e => {
-                const count = parseInt(e.target.value) || 1;
-                setDaysCount(count);
-                setFormData(prev => ({...prev, sleeps: Math.max(0, count - 1)}));
-                const newShifts = [...dailyShifts];
-                const firstDayStart = newShifts[0]?.start_time ? new Date(newShifts[0].start_time) : new Date();
-                if (count > newShifts.length) {
-                  for (let i = newShifts.length; i < count; i++) {
-                    const nextDay = new Date(firstDayStart);
-                    nextDay.setDate(nextDay.getDate() + i);
-                    nextDay.setHours(8, 0, 0, 0);
-                    
-                    const nextEnd = new Date(nextDay);
-                    nextEnd.setHours(17, 0, 0, 0);
-
-                    // Adjust for local timezone ISO format
-                    const toLocalISO = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-                    
-                    newShifts.push({ 
-                      start_time: toLocalISO(nextDay), 
-                      end_time: toLocalISO(nextEnd)
-                    });
-                  }
-                } else {
-                  newShifts.splice(count);
-                }
-                setDailyShifts(newShifts);
-              }}
-            >
-              {[1, 2, 3, 4, 5, 6, 7].map(num => (
-                <option key={num} value={num}>{num} ימים</option>
-              ))}
-            </select>
+            <label className="block text-gray-700 font-bold mb-2 text-lg">משך הטיול</label>
+            <div className="w-full p-4 border border-blue-200 rounded-xl bg-blue-50 text-blue-800 text-lg font-bold shadow-sm flex items-center justify-between">
+              <span>{daysCount} ימים</span>
+              <span className="text-sm bg-blue-100 px-3 py-1 rounded-full">מחושב אוטומטית לפי יומן הטיולים</span>
+            </div>
           </div>
 
           <div className="space-y-4 mb-4">
@@ -220,7 +230,7 @@ export default function ReportForm() {
                   <h3 className="font-bold text-blue-800 text-sm">יום עבודה {idx + 1}</h3>
                   {savedDays[idx] ? (
                     <div className="flex gap-2 items-center">
-                      <span className="text-green-600 font-bold text-xs">✅ בוצע דיווח (טיוטה)</span>
+                      <span className="text-green-600 font-bold text-xs">✅ בוצע דיווח</span>
                       <button 
                         onClick={() => {
                           const newSaved = [...savedDays];
@@ -238,7 +248,7 @@ export default function ReportForm() {
                       disabled={reportMutation.isPending || !shift.start_time || !shift.end_time}
                       className="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-3 py-1 rounded-lg text-xs font-bold transition-colors shadow-sm disabled:opacity-50"
                     >
-                      💾 שמור יום זה בטיוטה
+                      💾 שמור יום זה
                     </button>
                   )}
                 </div>

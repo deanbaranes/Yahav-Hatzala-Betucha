@@ -80,6 +80,7 @@ def get_my_pending_reports(db: Session = Depends(get_db), current_user: User = D
             "trip_id": str(a.trip_id),
             "location": a.trip.location,
             "start_date": a.trip.start_date.isoformat(),
+            "end_date": a.trip.end_date.isoformat() if a.trip.end_date else None,
             "role": a.role
         } for a in pending_assignments
     ]
