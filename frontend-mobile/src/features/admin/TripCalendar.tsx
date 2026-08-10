@@ -516,15 +516,35 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                   <label className="block text-xs font-bold text-gray-600 mb-1">איש קשר לטיול (אופציונלי - שם/טלפון)</label>
                   <input type="text" placeholder="לדוגמה: דוד 050-1234567" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.contact_phone} onChange={e => setQuickEditForm({...quickEditForm, contact_phone: e.target.value})} />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">סה״כ עובדים דרושים</label>
-                  <input 
-                    type="number" 
-                    min="0"
-                    className="w-full p-2 text-sm border border-gray-300 rounded" 
-                    value={quickEditForm.capacity} 
-                    onChange={e => setQuickEditForm({...quickEditForm, capacity: parseInt(e.target.value) || 0})} 
-                  />
+                <div className="mb-4 md:col-span-2">
+                  <label className="block text-xs font-bold text-gray-600 mb-2 border-b pb-1">
+                    דרישות צוות (סה"כ: {Object.values(quickEditForm.roles_requirements || {}).reduce((a, b) => a + b, 0)})
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {AVAILABLE_ROLES.map(role => (
+                      <div key={role} className="flex items-center justify-between bg-white p-2 rounded border border-gray-200">
+                        <span className="text-xs font-semibold text-gray-700">{role}</span>
+                        <input 
+                          type="number" 
+                          min="0" 
+                          className="w-12 p-1 border border-gray-300 rounded text-center text-xs" 
+                          value={quickEditForm.roles_requirements?.[role] || ''} 
+                          placeholder="0"
+                          onChange={e => {
+                            const count = parseInt(e.target.value) || 0;
+                            const newRoles = { ...(quickEditForm.roles_requirements || {}) };
+                            if (count <= 0) {
+                              delete newRoles[role];
+                            } else {
+                              newRoles[role] = count;
+                            }
+                            const newCapacity = Object.values(newRoles).reduce((a, b) => a + b, 0);
+                            setQuickEditForm({...quickEditForm, roles_requirements: newRoles, capacity: newCapacity});
+                          }} 
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-600 mb-1">שכר גלובלי לטיול</label>
