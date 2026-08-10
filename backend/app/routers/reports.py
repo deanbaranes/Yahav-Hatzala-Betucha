@@ -4,7 +4,8 @@ from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import not_, extract
+from sqlalchemy import not_, extract, or_, func
+
 
 from app.database import get_db
 from app.models.trip_report import TripReport
@@ -62,17 +63,27 @@ def get_all_pending_reports(db: Session = Depends(get_db), current_user: User = 
 
 @router.get("/my-pending-reports")
 def get_my_pending_reports(db: Session = Depends(get_db), current_user: User = Depends(get_employee_user)):
-    # Find all assignments for this user that are confirmed
-    # AND do not have a report already
+    now = datetime.now()
     
-    # Subquery: get assignment IDs that already have a report
-    reported_assignment_ids = db.query(TripReport.assignment_id).subquery()
+    # Hide assignment if:
+    # 1. Report is approved
+    # 2. Report exists AND trip is over (end_date < now or start_date < now if no end_date)
+    hidden_assignment_ids = db.query(TripReport.assignment_id).join(
+        TripAssignment, TripReport.assignment_id == TripAssignment.id
+    ).join(
+        Trip, TripAssignment.trip_id == Trip.id
+    ).filter(
+        or_(
+            TripReport.manager_status == "approved",
+            func.coalesce(Trip.end_date, Trip.start_date) < now
+        )
+    ).subquery()
     
     pending_assignments = db.query(TripAssignment).join(Trip).filter(
         TripAssignment.user_id == current_user.id,
         TripAssignment.status == "assigned",
         TripAssignment.is_confirmed == True,
-        not_(TripAssignment.id.in_(reported_assignment_ids))
+        not_(TripAssignment.id.in_(hidden_assignment_ids))
     ).order_by(Trip.start_date.desc()).all()
     
     return [
@@ -84,6 +95,22 @@ def get_my_pending_reports(db: Session = Depends(get_db), current_user: User = D
             "role": a.role
         } for a in pending_assignments
     ]
+
+@router.get("/my-draft/{assignment_id}")
+def get_my_draft(assignment_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_employee_user)):
+    report = db.query(TripReport).filter(TripReport.assignment_id == assignment_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Draft not found")
+        
+    return {
+        "start_time": report.start_time.isoformat() if report.start_time else None,
+        "end_time": report.end_time.isoformat() if report.end_time else None,
+        "daily_shifts": report.daily_shifts or [],
+        "expenses": float(report.expenses or 0),
+        "expenses_notes": report.expenses_notes,
+        "sleeps": report.sleeps or 0,
+        "receipt_url": report.receipt_url
+    }
 
 
 # ── File Upload ───────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import axiosClient from '../../api/axiosClient';
@@ -39,6 +39,50 @@ export default function ReportForm() {
       return res.data;
     }
   });
+
+  const { data: draftReport, isLoading: isDraftLoading } = useQuery<any>({
+    queryKey: ['report-draft', formData.assignment_id],
+    queryFn: async () => {
+      if (!formData.assignment_id) return null;
+      try {
+        const res = await axiosClient.get(`/reports/my-draft/${formData.assignment_id}`);
+        return res.data;
+      } catch (err) {
+        return null;
+      }
+    },
+    enabled: !!formData.assignment_id,
+  });
+
+  useEffect(() => {
+    if (draftReport) {
+      setFormData(prev => ({
+        ...prev,
+        expenses: draftReport.expenses || 0,
+        expenses_notes: draftReport.expenses_notes || '',
+        sleeps: draftReport.sleeps || 0,
+        receipt_url: draftReport.receipt_url || ''
+      }));
+      if (draftReport.daily_shifts && draftReport.daily_shifts.length > 0) {
+        setDailyShifts(draftReport.daily_shifts.map((s:any) => ({
+          start_time: s.start_time.substring(0, 16),
+          end_time: s.end_time.substring(0, 16)
+        })));
+        setDaysCount(draftReport.daily_shifts.length);
+      } else if (draftReport.start_time && draftReport.end_time) {
+        setDailyShifts([{
+          start_time: draftReport.start_time.substring(0, 16),
+          end_time: draftReport.end_time.substring(0, 16)
+        }]);
+        setDaysCount(1);
+      }
+    } else if (formData.assignment_id && !isDraftLoading) {
+      // Reset if no draft
+      setFormData(prev => ({ ...prev, expenses: 0, expenses_notes: '', sleeps: 0, receipt_url: '' }));
+      setDaysCount(1);
+      setDailyShifts([{ start_time: '', end_time: '' }]);
+    }
+  }, [draftReport, formData.assignment_id, isDraftLoading]);
 
   if (successMsg) {
     return (
@@ -82,6 +126,10 @@ export default function ReportForm() {
 
       {formData.assignment_id && (
         <div className="animate-fade-in space-y-6">
+          {isDraftLoading && <div className="text-blue-500 font-bold mb-4 animate-pulse">טוען נתוני דיווח קודמים...</div>}
+          {draftReport && <div className="bg-blue-50 text-blue-700 p-3 rounded-lg text-sm font-bold border border-blue-200 mb-4">
+            📌 מצאנו דיווח חלקי/קודם לטיול זה. הנתונים מולאו אוטומטית, באפשרותך להוסיף ימים חדשים או לתקן.
+          </div>}
           <div className="mb-4">
             <label className="block text-gray-700 font-bold mb-2 text-lg">מספר ימי עבודה / משך הטיול</label>
             <select 
