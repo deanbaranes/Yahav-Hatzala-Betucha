@@ -208,25 +208,25 @@ export default function Clients() {
           <table className="w-full text-right text-sm min-w-[800px]">
             <thead>
               <tr className="bg-gradient-to-l from-blue-700 to-cyan-500 text-white shadow-md">
-                <th className="px-2 py-4 font-extrabold rounded-tr-lg whitespace-nowrap">שם לקוח</th>
-                <th className="px-2 py-4 font-bold whitespace-nowrap">איש קשר</th>
-                <th className="px-2 py-4 font-bold whitespace-nowrap">אימייל</th>
-                <th className="px-2 py-4 font-bold whitespace-nowrap">טלפון</th>
-                <th className="px-2 py-4 font-bold cursor-pointer hover:bg-white/20 transition-colors whitespace-nowrap" onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')} title="לחץ לשינוי סדר המיון">
+                <th className="px-2 py-2 font-extrabold rounded-tr-lg whitespace-nowrap">שם לקוח</th>
+                <th className="px-2 py-2 font-bold whitespace-nowrap">איש קשר</th>
+                <th className="px-2 py-2 font-bold whitespace-nowrap">אימייל</th>
+                <th className="px-2 py-2 font-bold whitespace-nowrap">טלפון</th>
+                <th className="px-2 py-2 font-bold cursor-pointer hover:bg-white/20 transition-colors whitespace-nowrap" onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')} title="לחץ לשינוי סדר המיון">
                   <div className="flex items-center gap-1">יתרה/חוב {sortOrder === 'asc' ? '↓' : sortOrder === 'desc' ? '↑' : ''}</div>
                 </th>
-                <th className="px-2 py-4 font-bold whitespace-nowrap">תאריך עדכון</th>
-                <th className="px-2 py-4 font-bold whitespace-nowrap">תנאי תשלום</th>
-                <th className="px-2 py-4 font-bold whitespace-nowrap">הערות</th>
-                <th className="px-2 py-4 font-bold text-center rounded-tl-lg whitespace-nowrap">פעולות</th>
+                <th className="px-2 py-2 font-bold whitespace-nowrap">תאריך עדכון</th>
+                <th className="px-2 py-2 font-bold whitespace-nowrap">תנאי תשלום</th>
+                <th className="px-2 py-2 font-bold whitespace-nowrap">הערות</th>
+                <th className="px-2 py-2 font-bold text-center rounded-tl-lg whitespace-nowrap">פעולות</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
               {filteredClients.map((client, idx) => (
                 <tr key={client.id} className={`${getRowStyle(client, idx)} transition-all duration-200 group`}>
-                  <td className="px-2 py-3 font-bold text-gray-800 break-words group-hover:text-blue-700 transition-colors">{client.name}</td>
-                  <td className="px-2 py-3 text-slate-600 font-medium whitespace-nowrap">{client.contact_person || '-'}</td>
-                  <td className="px-2 py-3 text-slate-500 break-words">
+                  <td className="px-2 py-1.5 font-bold text-gray-800 break-words group-hover:text-blue-700 transition-colors">{client.name}</td>
+                  <td className="px-2 py-1.5 text-slate-600 font-medium whitespace-nowrap">{client.contact_person || '-'}</td>
+                  <td className="px-2 py-1.5 text-slate-500 break-words">
                     {client.email ? (
                       <div className="flex items-center gap-1.5">
                         <a href={`mailto:${client.email}`} className="hover:text-blue-600 hover:underline break-words">{client.email}</a>
@@ -246,7 +246,7 @@ export default function Clients() {
                       </div>
                     ) : '-'}
                   </td>
-                  <td className="px-2 py-3 text-slate-600 font-medium" dir="ltr" style={{textAlign: 'right'}}>
+                  <td className="px-2 py-1.5 text-slate-600 font-medium" dir="ltr" style={{textAlign: 'right'}}>
                     {client.phone ? (
                       <div className="flex items-center justify-end gap-1.5">
                         <button
@@ -267,7 +267,7 @@ export default function Clients() {
                     ) : '-'}
                   </td>
                   
-                  <td className="px-2 py-3">
+                  <td className="px-2 py-1.5">
                     {editingId === client.id ? (
                       <input 
                         type="text" 
@@ -284,7 +284,7 @@ export default function Clients() {
                     )}
                   </td>
                   
-                  <td className="px-2 py-3">
+                  <td className="px-2 py-1.5">
                     {editingId === client.id ? (
                       <input 
                         type="date" 
@@ -303,7 +303,7 @@ export default function Clients() {
                     )}
                   </td>
                   
-                  <td className="px-2 py-3">
+                  <td className="px-2 py-1.5">
                     {editingId === client.id ? (
                       <select
                         value={editForm.payment_terms}
@@ -324,7 +324,7 @@ export default function Clients() {
                     )}
                   </td>
                   
-                  <td className="px-2 py-3">
+                  <td className="px-2 py-1.5">
                     {editingId === client.id ? (
                       <textarea
                         value={editForm.notes}
@@ -338,7 +338,7 @@ export default function Clients() {
                       </div>
                     )}
                   </td>
-                  <td className="px-2 py-3 text-center">
+                  <td className="px-2 py-1.5 text-center">
                     {editingId === client.id ? (
                       <button 
                         onClick={() => handleSaveClick(client.id)}
