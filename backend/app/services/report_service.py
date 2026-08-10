@@ -49,6 +49,16 @@ def process_and_save_report(
     Core logic shared by both employee and admin report submission.
     Calculates overtime, creates the TripReport, and auto-charges the client.
     """
+    # Check if report already exists
+    existing_report = db.query(TripReport).filter(
+        TripReport.assignment_id == assignment.id
+    ).first()
+    if existing_report:
+        raise HTTPException(
+            status_code=400,
+            detail="Report already submitted for this assignment"
+        )
+
     # Calculate overtime and total span
     total_overtime = 0.0
     final_start = report_data.start_time
@@ -72,45 +82,22 @@ def process_and_save_report(
             )
         total_overtime = calculate_overtime_decimal(report_data.start_time, report_data.end_time)
 
-    # Check if report already exists for rolling updates
-    existing_report = db.query(TripReport).filter(
-        TripReport.assignment_id == assignment.id
-    ).first()
+    new_report = TripReport(
+        assignment_id=assignment.id,
+        start_time=final_start,
+        end_time=final_end,
+        daily_shifts=shifts_json,
+        overtime_decimal=Decimal(str(total_overtime)),
+        expenses=report_data.expenses,
+        expenses_notes=report_data.expenses_notes,
+        sleeps=report_data.sleeps,
+        receipt_url=report_data.receipt_url
+    )
+    db.add(new_report)
 
-    if existing_report:
-        if existing_report.manager_status == "approved":
-            raise HTTPException(
-                status_code=400,
-                detail="Cannot update an already approved report"
-            )
-        # Update existing report
-        existing_report.start_time = final_start
-        existing_report.end_time = final_end
-        existing_report.daily_shifts = shifts_json
-        existing_report.overtime_decimal = Decimal(str(total_overtime))
-        existing_report.expenses = report_data.expenses
-        existing_report.expenses_notes = report_data.expenses_notes
-        existing_report.sleeps = report_data.sleeps
-        if report_data.receipt_url:
-            existing_report.receipt_url = report_data.receipt_url
-        new_report = existing_report
-    else:
-        new_report = TripReport(
-            assignment_id=assignment.id,
-            start_time=final_start,
-            end_time=final_end,
-            daily_shifts=shifts_json,
-            overtime_decimal=Decimal(str(total_overtime)),
-            expenses=report_data.expenses,
-            expenses_notes=report_data.expenses_notes,
-            sleeps=report_data.sleeps,
-            receipt_url=report_data.receipt_url
-        )
-        db.add(new_report)
-
-    # Auto-charge client for accommodation (only on first creation to avoid double charge)
+    # Auto-charge client for accommodation
     trip = assignment.trip
-    if not existing_report and trip.start_date and trip.end_date:
+    if trip.start_date and trip.end_date:
         nights = (trip.end_date.date() - trip.start_date.date()).days
         if nights > 0:
             client = trip.client
