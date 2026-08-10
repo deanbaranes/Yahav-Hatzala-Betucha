@@ -243,7 +243,10 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
 
   const createManualTripMutation = useMutation({
     mutationFn: async (data: any) => {
-      await axiosClient.post('/trips/', data);
+      const payload = { ...data };
+      if (!payload.global_salary || payload.global_salary === '') payload.global_salary = null;
+      if (!payload.end_date || payload.end_date === '') payload.end_date = payload.start_date;
+      await axiosClient.post('/trips/', payload);
     },
     onSuccess: () => {
       alert('הטיול נוסף בהצלחה!');
@@ -258,7 +261,10 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
 
   const updateTripMutation = useMutation({
     mutationFn: async (data: any) => {
-      await axiosClient.put(`/trips/${selectedTrip.id}`, data);
+      const payload = { ...data };
+      if (!payload.global_salary || payload.global_salary === '') payload.global_salary = null;
+      if (!payload.end_date || payload.end_date === '') payload.end_date = payload.start_date;
+      await axiosClient.put(`/trips/${selectedTrip.id}`, payload);
     },
     onSuccess: () => {
       alert('הטיול עודכן בהצלחה!');
