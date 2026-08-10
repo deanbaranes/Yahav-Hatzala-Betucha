@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import { Search, Save, Edit2, Trash2, Copy, Check, Users, Download } from 'lucide-react';
@@ -92,17 +92,17 @@ export default function Clients() {
     return parseFloat(numMatch[0]);
   };
 
-  const totalPositive = clients?.reduce((acc: number, c: any) => {
+  const totalPositive = useMemo(() => clients?.reduce((acc: number, c: any) => {
     const val = parseBalance(c.balance);
     return val > 0 ? acc + val : acc;
-  }, 0) || 0;
+  }, 0) || 0, [clients]);
 
-  const totalNegative = clients?.reduce((acc: number, c: any) => {
+  const totalNegative = useMemo(() => clients?.reduce((acc: number, c: any) => {
     const val = parseBalance(c.balance);
     return val < 0 ? acc + val : acc;
-  }, 0) || 0;
+  }, 0) || 0, [clients]);
 
-  const filteredClients = clients?.filter(c => 
+  const filteredClients = useMemo(() => clients?.filter(c => 
     (c.name || '').includes(searchTerm) || 
     (c.contact_person && c.contact_person.includes(searchTerm))
   ).sort((a, b) => {
@@ -110,7 +110,7 @@ export default function Clients() {
     const valA = parseBalance(a.balance);
     const valB = parseBalance(b.balance);
     return sortOrder === 'asc' ? valA - valB : valB - valA;
-  }) || [];
+  }) || [], [clients, searchTerm, sortOrder]);
 
   const getDebtAgeMonths = (dateStr: string) => {
     if (!dateStr) return 0;
