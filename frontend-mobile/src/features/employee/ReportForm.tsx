@@ -277,6 +277,7 @@ export default function ReportForm() {
                           const newShifts = [...dailyShifts];
                           newShifts[idx].is_absent = !newShifts[idx].is_absent;
                           setDailyShifts(newShifts);
+                          setFormData(prev => ({...prev, sleeps: Math.max(0, newShifts.filter(s => !s.is_absent).length - 1)}));
                         }}
                         className={`text-xs px-2 py-1 rounded-md font-bold transition-colors ${shift.is_absent ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-red-50 text-red-600 hover:bg-red-100'}`}
                       >
