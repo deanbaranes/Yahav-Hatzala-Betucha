@@ -166,14 +166,24 @@ export default function Clients() {
             <span className="sm:hidden">ייצוא</span>
           </button>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch gap-4 w-full border-t border-gray-100 pt-4">
-          <div className="bg-red-50 px-4 py-3 rounded-xl border border-red-100 text-center w-full sm:w-auto flex flex-col justify-center shadow-sm">
-            <div className="text-sm font-bold text-red-500 mb-1 whitespace-nowrap">סה"כ חובות (-)</div>
-            <div className="text-xl md:text-2xl font-black text-red-700 whitespace-nowrap" dir="ltr">{totalNegative.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₪</div>
+        <div className="flex flex-col md:flex-row items-stretch gap-4 w-full border-t border-gray-100 pt-4">
+          <div className="flex gap-4 w-full md:w-auto">
+            <div className="bg-red-50 px-4 py-3 rounded-xl border border-red-100 text-center flex-1 md:flex-none flex-col justify-center shadow-sm">
+              <div className="text-sm font-bold text-red-500 mb-1 whitespace-nowrap">סה"כ חובות (-)</div>
+              <div className="text-xl md:text-2xl font-black text-red-700 whitespace-nowrap" dir="ltr">{totalNegative.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₪</div>
+            </div>
+            <div className="bg-green-50 px-4 py-3 rounded-xl border border-green-100 text-center flex-1 md:flex-none flex-col justify-center shadow-sm">
+              <div className="text-sm font-bold text-green-600 mb-1 whitespace-nowrap">סה"כ זכות (+)</div>
+              <div className="text-xl md:text-2xl font-black text-green-700 whitespace-nowrap" dir="ltr">+{totalPositive.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₪</div>
+            </div>
           </div>
-          <div className="bg-green-50 px-4 py-3 rounded-xl border border-green-100 text-center w-full sm:w-auto flex flex-col justify-center shadow-sm">
-            <div className="text-sm font-bold text-green-600 mb-1 whitespace-nowrap">סה"כ זכות (+)</div>
-            <div className="text-xl md:text-2xl font-black text-green-700 whitespace-nowrap" dir="ltr">+{totalPositive.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} ₪</div>
+          
+          <div className="bg-white px-4 py-2.5 rounded-xl border border-gray-200 text-right w-full md:w-auto flex flex-col justify-center shadow-sm md:mr-auto">
+             <div className="font-bold text-gray-700 mb-1 text-xs sm:text-sm">מקרא חובות (לפי תאריך עדכון):</div>
+             <div className="flex items-center gap-4 text-xs sm:text-sm font-medium text-gray-600">
+               <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-red-100 border border-red-300"></span> חוב ישן (מעל 3 חודשים)</span>
+               <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded bg-amber-100 border border-amber-300"></span> חוב מתעכב (מעל חודשיים)</span>
+             </div>
           </div>
         </div>
       </header>
