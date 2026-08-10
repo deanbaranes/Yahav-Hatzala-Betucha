@@ -82,6 +82,41 @@ export default function ReportForm() {
     });
   };
 
+  const handleSaveGlobalDraft = () => {
+    const validShifts = dailyShifts.filter((s) => s.is_absent || (s.start_time && s.end_time));
+    if (validShifts.length === 0) {
+      setErrorMsg('אין נתונים לשמירה בטיוטה.');
+      return;
+    }
+
+    const payload = {
+      assignment_id: formData.assignment_id,
+      expenses: formData.expenses,
+      expenses_notes: formData.expenses_notes,
+      sleeps: formData.sleeps,
+      receipt_url: formData.receipt_url,
+      is_draft: true,
+      daily_shifts: validShifts.map(s => ({
+        start_time: new Date(s.start_time).toISOString(),
+        end_time: new Date(s.is_absent ? s.start_time : s.end_time).toISOString(),
+        is_absent: !!s.is_absent
+      }))
+    };
+    reportMutation.mutate(payload, {
+      onSuccess: () => {
+        setSavedDays(prev => {
+          const next = [...prev];
+          dailyShifts.forEach((s, idx) => {
+            if (s.is_absent || (s.start_time && s.end_time)) {
+              next[idx] = true;
+            }
+          });
+          return next;
+        });
+      }
+    });
+  };
+
   const { data: pendingAssignments, isLoading } = useQuery<any[]>({
     queryKey: ['pending-reports'],
     queryFn: async () => {
@@ -331,58 +366,68 @@ export default function ReportForm() {
       )}
 
       <button 
-        onClick={() => {
-          // Validation
-          const activeShifts = dailyShifts.filter(s => !s.is_absent);
-          if (activeShifts.length === 0) {
-            setErrorMsg('חובה לדווח לפחות על יום עבודה אחד.');
-            return;
-          }
+        onClick={handleSaveGlobalDraft}
+        disabled={reportMutation.isPending || !formData.assignment_id}
+        className="w-full bg-yellow-400 hover:bg-yellow-500 text-yellow-900 py-4 rounded-xl font-bold text-xl shadow-md transition-colors disabled:opacity-50 mt-4 mb-2"
+      >
+        💾 שמירת טיוטה (המשך דיווח במועד מאוחר יותר)
+      </button>
 
-          for (let i = 0; i < dailyShifts.length; i++) {
-            if (dailyShifts[i].is_absent) continue;
-            
-            const start = new Date(dailyShifts[i].start_time);
-            const end = new Date(dailyShifts[i].end_time);
-            if (end <= start) {
-              setErrorMsg(`שגיאה ביום ${i + 1}: שעת הסיום חייבת להיות אחרי שעת ההתחלה.`);
+      {(dailyShifts.length > 0 && dailyShifts.length === daysCount && dailyShifts.every(s => s.is_absent || (s.start_time && s.end_time))) && (
+        <button 
+          onClick={() => {
+            // Validation
+            const activeShifts = dailyShifts.filter(s => !s.is_absent);
+            if (activeShifts.length === 0) {
+              setErrorMsg('חובה לדווח לפחות על יום עבודה אחד.');
               return;
             }
-            if (i > 0) {
-              // Find the previous active shift
-              let prevIdx = i - 1;
-              while (prevIdx >= 0 && dailyShifts[prevIdx].is_absent) prevIdx--;
+
+            for (let i = 0; i < dailyShifts.length; i++) {
+              if (dailyShifts[i].is_absent) continue;
               
-              if (prevIdx >= 0) {
-                const prevEnd = new Date(dailyShifts[prevIdx].end_time);
-                if (start < prevEnd) {
-                  setErrorMsg(`שגיאה בין יום ${prevIdx + 1} ליום ${i + 1}: לא ניתן להתחיל יום עבודה לפני שהסתיים היום הקודם.`);
-                  return;
+              const start = new Date(dailyShifts[i].start_time);
+              const end = new Date(dailyShifts[i].end_time);
+              if (end <= start) {
+                setErrorMsg(`שגיאה ביום ${i + 1}: שעת הסיום חייבת להיות אחרי שעת ההתחלה.`);
+                return;
+              }
+              if (i > 0) {
+                // Find the previous active shift
+                let prevIdx = i - 1;
+                while (prevIdx >= 0 && dailyShifts[prevIdx].is_absent) prevIdx--;
+                
+                if (prevIdx >= 0) {
+                  const prevEnd = new Date(dailyShifts[prevIdx].end_time);
+                  if (start < prevEnd) {
+                    setErrorMsg(`שגיאה בין יום ${prevIdx + 1} ליום ${i + 1}: לא ניתן להתחיל יום עבודה לפני שהסתיים היום הקודם.`);
+                    return;
+                  }
                 }
               }
             }
-          }
-          
-          const payload = {
-            assignment_id: formData.assignment_id,
-            expenses: formData.expenses,
-            expenses_notes: formData.expenses_notes,
-            sleeps: formData.sleeps,
-            receipt_url: formData.receipt_url,
-            is_draft: false,
-            daily_shifts: dailyShifts.map(s => ({
-              start_time: new Date(s.start_time).toISOString(),
-              end_time: new Date(s.is_absent ? s.start_time : s.end_time).toISOString(),
-              is_absent: !!s.is_absent
-            }))
-          };
-          reportMutation.mutate(payload);
-        }}
-        disabled={reportMutation.isPending || dailyShifts.length < daysCount || dailyShifts.some(s => !s.is_absent && (!s.start_time || !s.end_time)) || !formData.assignment_id}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-xl shadow-md transition-colors disabled:bg-gray-400 mt-4"
-      >
-        {reportMutation.isPending ? 'שולח...' : 'שלח דו"ח כולל (סופי)'}
-      </button>
+            
+            const payload = {
+              assignment_id: formData.assignment_id,
+              expenses: formData.expenses,
+              expenses_notes: formData.expenses_notes,
+              sleeps: formData.sleeps,
+              receipt_url: formData.receipt_url,
+              is_draft: false,
+              daily_shifts: dailyShifts.map(s => ({
+                start_time: new Date(s.start_time).toISOString(),
+                end_time: new Date(s.is_absent ? s.start_time : s.end_time).toISOString(),
+                is_absent: !!s.is_absent
+              }))
+            };
+            reportMutation.mutate(payload);
+          }}
+          disabled={reportMutation.isPending}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-xl shadow-md transition-colors disabled:bg-gray-400 mt-2"
+        >
+          {reportMutation.isPending ? 'שולח...' : 'שלח דו"ח כולל (סופי)'}
+        </button>
+      )}
     </div>
   );
 }
