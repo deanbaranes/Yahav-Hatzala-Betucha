@@ -209,9 +209,9 @@ export default function Clients() {
             <thead>
               <tr className="bg-gradient-to-l from-blue-700 to-cyan-500 text-white shadow-md">
                 <th className="px-2 py-2 font-extrabold rounded-tr-lg whitespace-nowrap">שם לקוח</th>
-                <th className="px-2 py-2 font-bold whitespace-nowrap">איש קשר</th>
-                <th className="px-2 py-2 font-bold whitespace-nowrap">אימייל</th>
-                <th className="px-2 py-2 font-bold whitespace-nowrap">טלפון</th>
+                <th className="px-2 py-2 font-bold whitespace-nowrap w-[100px]">איש קשר</th>
+                <th className="px-2 py-2 font-bold whitespace-nowrap w-[140px]">אימייל</th>
+                <th className="px-2 py-2 font-bold whitespace-nowrap w-[110px]">טלפון</th>
                 <th className="px-2 py-2 font-bold cursor-pointer hover:bg-white/20 transition-colors whitespace-nowrap" onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')} title="לחץ לשינוי סדר המיון">
                   <div className="flex items-center gap-1">יתרה/חוב {sortOrder === 'asc' ? '↓' : sortOrder === 'desc' ? '↑' : ''}</div>
                 </th>
@@ -225,11 +225,11 @@ export default function Clients() {
               {filteredClients.map((client, idx) => (
                 <tr key={client.id} className={`${getRowStyle(client, idx)} transition-all duration-200 group`}>
                   <td className="px-2 py-1.5 font-bold text-gray-800 break-words group-hover:text-blue-700 transition-colors">{client.name}</td>
-                  <td className="px-2 py-1.5 text-slate-600 font-medium whitespace-nowrap">{client.contact_person || '-'}</td>
-                  <td className="px-2 py-1.5 text-slate-500 break-words">
+                  <td className="px-2 py-1.5 text-slate-600 font-medium whitespace-nowrap max-w-[100px] truncate" title={client.contact_person}>{client.contact_person || '-'}</td>
+                  <td className="px-2 py-1.5 text-slate-500 max-w-[140px]">
                     {client.email ? (
                       <div className="flex items-center gap-1.5">
-                        <a href={`mailto:${client.email}`} className="hover:text-blue-600 hover:underline break-words">{client.email}</a>
+                        <a href={`mailto:${client.email}`} className="hover:text-blue-600 hover:underline truncate" title={client.email}>{client.email}</a>
                         <button
                           onClick={() => copyEmail(client.email)}
                           className={`flex-shrink-0 p-1 rounded transition-all duration-200 ${
@@ -246,7 +246,7 @@ export default function Clients() {
                       </div>
                     ) : '-'}
                   </td>
-                  <td className="px-2 py-1.5 text-slate-600 font-medium" dir="ltr" style={{textAlign: 'right'}}>
+                  <td className="px-2 py-1.5 text-slate-600 font-medium max-w-[110px]" dir="ltr" style={{textAlign: 'right'}}>
                     {client.phone ? (
                       <div className="flex items-center justify-end gap-1.5">
                         <button
