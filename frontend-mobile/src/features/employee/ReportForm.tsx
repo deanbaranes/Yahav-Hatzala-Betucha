@@ -10,6 +10,7 @@ export default function ReportForm() {
   const [formData, setFormData] = useState({ expenses: 0, expenses_notes: '', sleeps: 0, receipt_url: '', assignment_id: '' });
   const [daysCount, setDaysCount] = useState(1);
   const [dailyShifts, setDailyShifts] = useState([{ start_time: '', end_time: '' }]);
+  const [savedDays, setSavedDays] = useState<boolean[]>([]);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState(false);
 
@@ -66,7 +67,15 @@ export default function ReportForm() {
         end_time: new Date(s.end_time).toISOString()
       }))
     };
-    reportMutation.mutate(payload);
+    reportMutation.mutate(payload, {
+      onSuccess: () => {
+        setSavedDays(prev => {
+          const next = [...prev];
+          next[idx] = true;
+          return next;
+        });
+      }
+    });
   };
 
   const { data: pendingAssignments, isLoading } = useQuery<any[]>({
@@ -76,6 +85,51 @@ export default function ReportForm() {
       return res.data;
     }
   });
+
+  const { data: draftReport, isLoading: isDraftLoading } = useQuery({
+    queryKey: ['report-draft', formData.assignment_id],
+    queryFn: async () => {
+      const res = await axiosClient.get(`/reports/my-draft/${formData.assignment_id}`);
+      return res.data;
+    },
+    enabled: !!formData.assignment_id
+  });
+
+  useEffect(() => {
+    // Filter only valid shifts for the draft
+    const validShifts = dailyShifts.filter(s => s.start_time && s.end_time);
+    
+    if (draftReport) {
+      setFormData(prev => ({
+        ...prev,
+        expenses: draftReport.expenses || 0,
+        expenses_notes: draftReport.expenses_notes || '',
+        sleeps: draftReport.sleeps || 0,
+        receipt_url: draftReport.receipt_url || ''
+      }));
+      if (draftReport.daily_shifts && draftReport.daily_shifts.length > 0) {
+        setDailyShifts(draftReport.daily_shifts.map((s:any) => ({
+          start_time: s.start_time.substring(0, 16),
+          end_time: s.end_time.substring(0, 16)
+        })));
+        setDaysCount(draftReport.daily_shifts.length);
+        setSavedDays(new Array(draftReport.daily_shifts.length).fill(true));
+      } else if (draftReport.start_time && draftReport.end_time) {
+        setDailyShifts([{
+          start_time: draftReport.start_time.substring(0, 16),
+          end_time: draftReport.end_time.substring(0, 16)
+        }]);
+        setDaysCount(1);
+        setSavedDays([true]);
+      }
+    } else if (formData.assignment_id && !isDraftLoading) {
+      // Reset if no draft
+      setFormData(prev => ({ ...prev, expenses: 0, expenses_notes: '', sleeps: 0, receipt_url: '' }));
+      setDaysCount(1);
+      setDailyShifts([{ start_time: '', end_time: '' }]);
+      setSavedDays([]);
+    }
+  }, [draftReport, formData.assignment_id, isDraftLoading]);
 
   if (successMsg) {
     return (
@@ -164,18 +218,35 @@ export default function ReportForm() {
               <div key={idx} className="p-4 border border-blue-200 rounded-xl bg-blue-50/30 shadow-sm relative">
                 <div className="flex justify-between items-center mb-3">
                   <h3 className="font-bold text-blue-800 text-sm">יום עבודה {idx + 1}</h3>
-                  <button 
-                    onClick={() => handleSaveDraft(idx)}
-                    disabled={reportMutation.isPending || !shift.start_time || !shift.end_time}
-                    className="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-3 py-1 rounded-lg text-xs font-bold transition-colors shadow-sm disabled:opacity-50"
-                  >
-                    💾 שמור יום זה בטיוטה
-                  </button>
+                  {savedDays[idx] ? (
+                    <div className="flex gap-2 items-center">
+                      <span className="text-green-600 font-bold text-xs">✅ בוצע דיווח (טיוטה)</span>
+                      <button 
+                        onClick={() => {
+                          const newSaved = [...savedDays];
+                          newSaved[idx] = false;
+                          setSavedDays(newSaved);
+                        }}
+                        className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded-lg text-xs font-bold"
+                      >
+                        ✏️ עריכה
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => handleSaveDraft(idx)}
+                      disabled={reportMutation.isPending || !shift.start_time || !shift.end_time}
+                      className="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-3 py-1 rounded-lg text-xs font-bold transition-colors shadow-sm disabled:opacity-50"
+                    >
+                      💾 שמור יום זה בטיוטה
+                    </button>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-gray-600 font-bold mb-1 text-sm">התחלה</label>
-                    <input type="datetime-local" className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-white" 
+                    <input type="datetime-local" className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200" 
+                      disabled={savedDays[idx]}
                       value={shift.start_time} 
                       onChange={e => {
                         const newShifts = [...dailyShifts];
@@ -185,7 +256,8 @@ export default function ReportForm() {
                   </div>
                   <div>
                     <label className="block text-gray-600 font-bold mb-1 text-sm">סיום</label>
-                    <input type="datetime-local" className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-white" 
+                    <input type="datetime-local" className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200" 
+                      disabled={savedDays[idx]}
                       value={shift.end_time} 
                       onChange={e => {
                         const newShifts = [...dailyShifts];
