@@ -541,6 +541,75 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                   </button>
                 </div>
                 
+                {/* Employee Assignment inside Quick Edit */}
+                <div className="mt-6 pt-4 border-t border-blue-200">
+                  <h4 className="text-sm font-bold text-blue-900 mb-2">➕ הוסף עובד לטיול זה</h4>
+                  <div className="relative mb-2">
+                    <input 
+                      type="text" 
+                      placeholder="התחל להקליד שם עובד..."
+                      className="w-full p-2 text-sm border border-gray-300 rounded"
+                      value={assignEmployeeName}
+                      onChange={(e) => {
+                        setAssignEmployeeName(e.target.value);
+                        setShowEmployeeDropdown(true);
+                      }}
+                      onFocus={() => setShowEmployeeDropdown(true)}
+                    />
+                    {showEmployeeDropdown && assignEmployeeName && (
+                      <div className="absolute z-10 w-full bg-white border border-gray-200 mt-1 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                        {filteredEmployees.map(emp => (
+                          <div 
+                            key={emp.id} 
+                            className="p-2 text-sm hover:bg-blue-50 cursor-pointer"
+                            onClick={() => {
+                              setAssignEmployeeName(emp.full_name);
+                              setShowEmployeeDropdown(false);
+                            }}
+                          >
+                            {emp.full_name}
+                          </div>
+                        ))}
+                        {filteredEmployees.length === 0 && (
+                          <div className="p-2 text-sm text-gray-500 italic">
+                            לא נמצא עובד כזה. לחיצה על "שבץ עובד" תיצור עובד חדש.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <select
+                    className="w-full p-2 text-sm border border-gray-300 rounded mb-2 bg-white"
+                    value={assignEmployeeRole}
+                    onChange={e => setAssignEmployeeRole(e.target.value)}
+                  >
+                    <option value="כללי">כללי</option>
+                    <option value="חובש">חובש</option>
+                    <option value="מע״ר">מע״ר</option>
+                    <option value="מע״ר חמוש">מע״ר חמוש</option>
+                    <option value="פראמדיק">פראמדיק</option>
+                    <option value="רופא">רופא</option>
+                    <option value="מלווה נשק">מלווה נשק</option>
+                    <option value="שומר לילה">שומר לילה</option>
+                    <option value="נהג">נהג</option>
+                  </select>
+                  <button 
+                    disabled={!assignEmployeeName || assignEmployeeMutation.isPending}
+                    onClick={() => {
+                      const existing = employees?.find(e => e.full_name === assignEmployeeName);
+                      assignEmployeeMutation.mutate({
+                        trip_id: selectedTrip.id,
+                        user_id: existing?.id,
+                        new_user_name: !existing ? assignEmployeeName : undefined,
+                        role: assignEmployeeRole
+                      });
+                    }}
+                    className="mt-2 w-full px-3 py-2 text-sm bg-indigo-600 text-white hover:bg-indigo-700 rounded font-bold disabled:opacity-50"
+                  >
+                    {assignEmployeeMutation.isPending ? 'משבץ...' : 'שבץ עובד'}
+                  </button>
+                </div>
+                
 
               </div>
             ) : (
