@@ -127,13 +127,11 @@ export default function Reports() {
     setEditingReport(report);
   };
 
-  const handleDownloadReceipt = async (url: string) => {
+  const handleDownloadReceipt = (url: string) => {
     try {
-      const res = await axiosClient.get(url, { responseType: 'blob' });
-      const objectUrl = window.URL.createObjectURL(new Blob([res.data]));
-      window.open(objectUrl, '_blank');
+      window.open(url, '_blank', 'noopener,noreferrer');
     } catch (err) {
-      alert("שגיאה בהורדת הקבלה. ייתכן שאין לך הרשאה.");
+      alert("שגיאה בפתיחת הקבלה.");
     }
   };
 
