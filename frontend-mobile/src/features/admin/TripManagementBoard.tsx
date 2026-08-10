@@ -4,15 +4,59 @@ import axiosClient from '../../api/axiosClient';
 import SmartClientInput from './SmartClientInput';
 import GoogleCalendarImport from './GoogleCalendarImport';
 
-const AVAILABLE_ROLES = ["מע\"ר", "חובש", "פראמדיק", "שומר לילה", "מע\"ר חמוש", "חובש חמוש", "מאבטח"];
+const AVAILABLE_ROLES = ["מע\"ר", "חובש", "פראמדיק", "שומר לילה", "מע\"ר חמוש", "חובש חמוש", "מאבטח", "כללי"];
 
 export default function TripManagementBoard() {
   const queryClient = useQueryClient();
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {} as Record<string, number>, color: '' as string, global_salary: '' as string | number, contact_phone: '' as string });
   const [searchTerm, setSearchTerm] = useState('');
+  
+  const [assignEmployeeName, setAssignEmployeeName] = useState('');
+  const [assignEmployeeRole, setAssignEmployeeRole] = useState('כללי');
+  const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
 
   const totalCapacity = Object.values(formData.roles_requirements).reduce((a, b) => a + b, 0);
+
+  const { data: employees } = useQuery<any[]>({
+    queryKey: ['employees'],
+    queryFn: async () => {
+      const res = await axiosClient.get('/payroll/employees');
+      return res.data;
+    }
+  });
+
+  const filteredEmployees = useMemo(() => {
+    if (!employees) return [];
+    return employees.filter(e => e.full_name.includes(assignEmployeeName) && e.status === 'active');
+  }, [employees, assignEmployeeName]);
+
+  const assignEmployeeMutation = useMutation({
+    mutationFn: (data: { trip_id: string; employee_id: string | null; full_name: string; role: string; overwrite: boolean }) => 
+      axiosClient.post(`/trips/${data.trip_id}/assign`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
+      alert('העובד שובץ בהצלחה!');
+      setAssignEmployeeName('');
+    },
+    onError: (error: any) => {
+      if (error.response?.status === 400 && error.response.data.detail.includes('already has an active assignment')) {
+        if (confirm('לעובד כבר יש שיבוץ פעיל באותו זמן. האם לדרוס את השיבוץ הקיים ולהעביר אותו לטיול זה?')) {
+           const existing = employees?.find(e => e.full_name === assignEmployeeName);
+           assignEmployeeMutation.mutate({
+             trip_id: editingTripId!,
+             employee_id: existing ? existing.id : null,
+             full_name: assignEmployeeName,
+             role: assignEmployeeRole,
+             overwrite: true
+           });
+        }
+      } else {
+        alert('שגיאה בשיבוץ העובד: ' + (error.response?.data?.detail || ''));
+      }
+    }
+  });
 
   const createTrip = useMutation({
     mutationFn: (data: any) => axiosClient.post('/trips/', { ...data, capacity: totalCapacity }), // Include capacity for backward compatibility
@@ -228,6 +272,79 @@ export default function TripManagementBoard() {
           </button>
         )}
       </div>
+
+      {editingTripId && (
+        <div className="mt-8 p-6 bg-blue-50/50 rounded-lg border border-blue-100">
+          <h4 className="text-lg font-bold text-blue-900 mb-4">➕ הוסף עובד לטיול זה (שיבוץ ידני)</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <div className="relative">
+              <label className="block text-gray-700 font-bold mb-2">שם העובד</label>
+              <input 
+                type="text" 
+                placeholder="התחל להקליד שם עובד..."
+                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                value={assignEmployeeName}
+                onChange={(e) => {
+                  setAssignEmployeeName(e.target.value);
+                  setShowEmployeeDropdown(true);
+                }}
+                onFocus={() => setShowEmployeeDropdown(true)}
+              />
+              {showEmployeeDropdown && assignEmployeeName && (
+                <div className="absolute z-10 w-full bg-white border border-gray-200 mt-1 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                  {filteredEmployees.map(emp => (
+                    <div 
+                      key={emp.id} 
+                      className="p-2 text-sm hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
+                      onClick={() => {
+                        setAssignEmployeeName(emp.full_name);
+                        setShowEmployeeDropdown(false);
+                      }}
+                    >
+                      {emp.full_name}
+                    </div>
+                  ))}
+                  {filteredEmployees.length === 0 && (
+                    <div className="p-2 text-sm text-gray-500 italic">
+                      לא נמצא עובד כזה. לחיצה על "שבץ עובד" תיצור רישום זמני למערכת.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block text-gray-700 font-bold mb-2">תפקיד בטיול</label>
+              <select
+                className="w-full p-2 border border-gray-300 rounded bg-white focus:ring-2 focus:ring-blue-500"
+                value={assignEmployeeRole}
+                onChange={e => setAssignEmployeeRole(e.target.value)}
+              >
+                {AVAILABLE_ROLES.map(role => (
+                  <option key={role} value={role}>{role}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <button 
+                disabled={!assignEmployeeName || assignEmployeeMutation.isPending}
+                onClick={() => {
+                  const existing = employees?.find(e => e.full_name === assignEmployeeName);
+                  assignEmployeeMutation.mutate({
+                    trip_id: editingTripId,
+                    employee_id: existing ? existing.id : null,
+                    full_name: assignEmployeeName,
+                    role: assignEmployeeRole,
+                    overwrite: false
+                  });
+                }}
+                className="w-full px-6 py-2.5 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg font-bold shadow transition-colors disabled:opacity-50"
+              >
+                {assignEmployeeMutation.isPending ? 'משבץ...' : 'שבץ עובד כעת'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Trips List */}
       <div className="mt-12 border-t pt-8">
