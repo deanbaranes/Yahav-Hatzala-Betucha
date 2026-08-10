@@ -132,13 +132,15 @@ export default function Clients() {
 
   const handleExport = () => {
     if (!filteredClients || filteredClients.length === 0) return;
-    const headers = ['שם הלקוח', 'איש קשר', 'טלפון', 'אימייל', 'יתרה (₪)', 'הערות'];
+    const headers = ['שם הלקוח', 'איש קשר', 'טלפון', 'אימייל', 'יתרה (₪)', 'תאריך עדכון', 'תנאי תשלום', 'הערות'];
     const rows = filteredClients.map((c: any) => [
       c.name || '',
       c.contact_person || '',
-      c.contact_phone || '',
-      c.contact_email || '',
+      c.phone || '',
+      c.email || '',
       c.balance || '0',
+      c.debt_start_date ? new Date(c.debt_start_date).toLocaleDateString('he-IL') : '',
+      c.payment_terms || '',
       c.notes || ''
     ]);
     exportToCSV(`לקוחות_וחובות_${new Date().toISOString().split('T')[0]}`, headers, rows);
