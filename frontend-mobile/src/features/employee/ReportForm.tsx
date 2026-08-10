@@ -109,6 +109,8 @@ export default function ReportForm() {
         expectedDays = 1; // Default to 1 if no end_date
     }
 
+    const toLocalISO = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+
     if (draftReport) {
       setFormData(prev => ({
         ...prev,
@@ -127,8 +129,8 @@ export default function ReportForm() {
       for (let i = 0; i < expectedDays; i++) {
         if (i < draftShifts.length) {
             newShifts.push({
-              start_time: draftShifts[i].start_time.substring(0, 16),
-              end_time: draftShifts[i].end_time.substring(0, 16)
+              start_time: toLocalISO(new Date(draftShifts[i].start_time)),
+              end_time: toLocalISO(new Date(draftShifts[i].end_time))
             });
             newSavedDays.push(true);
         } else {
@@ -137,7 +139,6 @@ export default function ReportForm() {
             nextDay.setHours(8, 0, 0, 0);
             const nextEnd = new Date(nextDay);
             nextEnd.setHours(17, 0, 0, 0);
-            const toLocalISO = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
             newShifts.push({
                 start_time: toLocalISO(nextDay),
                 end_time: toLocalISO(nextEnd)
@@ -161,7 +162,6 @@ export default function ReportForm() {
             nextDay.setHours(8, 0, 0, 0);
             const nextEnd = new Date(nextDay);
             nextEnd.setHours(17, 0, 0, 0);
-            const toLocalISO = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
             newShifts.push({
                 start_time: toLocalISO(nextDay),
                 end_time: toLocalISO(nextEnd)
