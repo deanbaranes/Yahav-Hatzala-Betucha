@@ -15,22 +15,59 @@ export default function ReportForm() {
 
   const reportMutation = useMutation({
     mutationFn: (data: any) => axiosClient.post('/reports/', data),
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['reports'] });
       queryClient.invalidateQueries({ queryKey: ['pending-reports'] });
-      setSuccessMsg(true);
-      setTimeout(() => {
-        setSuccessMsg(false);
-        setFormData({ expenses: 0, expenses_notes: '', sleeps: 0, receipt_url: '', assignment_id: '' });
-        setDaysCount(1);
-        setDailyShifts([{ start_time: '', end_time: '' }]);
-        navigate('/');
-      }, 2000);
+      queryClient.invalidateQueries({ queryKey: ['report-draft', formData.assignment_id] });
+      
+      if (variables.is_draft) {
+        alert("הטיוטה נשמרה בהצלחה! תוכל להמשיך לדווח במועד מאוחר יותר.");
+      } else {
+        setSuccessMsg(true);
+        setTimeout(() => {
+          setSuccessMsg(false);
+          setFormData({ expenses: 0, expenses_notes: '', sleeps: 0, receipt_url: '', assignment_id: '' });
+          setDaysCount(1);
+          setDailyShifts([{ start_time: '', end_time: '' }]);
+          navigate('/');
+        }, 2000);
+      }
     },
     onError: (err: any) => {
       setErrorMsg(err.response?.data?.detail || 'שגיאה בשליחת הדו"ח. אנא נסה שנית.');
     }
   });
+
+  const handleSaveDraft = (idx: number) => {
+    const shift = dailyShifts[idx];
+    if (!shift.start_time || !shift.end_time) {
+      setErrorMsg(`אנא הזן שעת התחלה וסיום עבור יום ${idx + 1} לפני השמירה.`);
+      return;
+    }
+    const start = new Date(shift.start_time);
+    const end = new Date(shift.end_time);
+    if (end <= start) {
+      setErrorMsg(`שעת הסיום חייבת להיות אחרי שעת ההתחלה ביום ${idx + 1}.`);
+      return;
+    }
+    
+    // Filter only valid shifts for the draft
+    const validShifts = dailyShifts.filter(s => s.start_time && s.end_time);
+    
+    const payload = {
+      assignment_id: formData.assignment_id,
+      expenses: formData.expenses,
+      expenses_notes: formData.expenses_notes,
+      sleeps: formData.sleeps,
+      receipt_url: formData.receipt_url,
+      is_draft: true,
+      daily_shifts: validShifts.map(s => ({
+        start_time: new Date(s.start_time).toISOString(),
+        end_time: new Date(s.end_time).toISOString()
+      }))
+    };
+    reportMutation.mutate(payload);
+  };
 
   const { data: pendingAssignments, isLoading } = useQuery<any[]>({
     queryKey: ['pending-reports'],
@@ -124,8 +161,17 @@ export default function ReportForm() {
 
           <div className="space-y-4 mb-4">
             {dailyShifts.map((shift, idx) => (
-              <div key={idx} className="p-4 border border-blue-200 rounded-xl bg-blue-50/30 shadow-sm">
-                <h3 className="font-bold text-blue-800 mb-3 text-sm">יום עבודה {idx + 1}</h3>
+              <div key={idx} className="p-4 border border-blue-200 rounded-xl bg-blue-50/30 shadow-sm relative">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="font-bold text-blue-800 text-sm">יום עבודה {idx + 1}</h3>
+                  <button 
+                    onClick={() => handleSaveDraft(idx)}
+                    disabled={reportMutation.isPending || !shift.start_time || !shift.end_time}
+                    className="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-3 py-1 rounded-lg text-xs font-bold transition-colors shadow-sm disabled:opacity-50"
+                  >
+                    💾 שמור יום זה בטיוטה
+                  </button>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-gray-600 font-bold mb-1 text-sm">התחלה</label>
@@ -203,6 +249,7 @@ export default function ReportForm() {
             expenses_notes: formData.expenses_notes,
             sleeps: formData.sleeps,
             receipt_url: formData.receipt_url,
+            is_draft: false,
             daily_shifts: dailyShifts.map(s => ({
               start_time: new Date(s.start_time).toISOString(),
               end_time: new Date(s.end_time).toISOString()
@@ -210,10 +257,10 @@ export default function ReportForm() {
           };
           reportMutation.mutate(payload);
         }}
-        disabled={reportMutation.isPending || dailyShifts.some(s => !s.start_time || !s.end_time) || !formData.assignment_id}
+        disabled={reportMutation.isPending || dailyShifts.length < daysCount || dailyShifts.some(s => !s.start_time || !s.end_time) || !formData.assignment_id}
         className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold text-xl shadow-md transition-colors disabled:bg-gray-400 mt-4"
       >
-        {reportMutation.isPending ? 'שולח...' : 'שלח דו"ח'}
+        {reportMutation.isPending ? 'שולח...' : 'שלח דו"ח כולל (סופי)'}
       </button>
     </div>
   );

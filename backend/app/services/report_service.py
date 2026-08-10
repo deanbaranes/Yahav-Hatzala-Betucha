@@ -49,16 +49,6 @@ def process_and_save_report(
     Core logic shared by both employee and admin report submission.
     Calculates overtime, creates the TripReport, and auto-charges the client.
     """
-    # Check if report already exists
-    existing_report = db.query(TripReport).filter(
-        TripReport.assignment_id == assignment.id
-    ).first()
-    if existing_report:
-        raise HTTPException(
-            status_code=400,
-            detail="Report already submitted for this assignment"
-        )
-
     # Calculate overtime and total span
     total_overtime = 0.0
     final_start = report_data.start_time
@@ -82,22 +72,47 @@ def process_and_save_report(
             )
         total_overtime = calculate_overtime_decimal(report_data.start_time, report_data.end_time)
 
-    new_report = TripReport(
-        assignment_id=assignment.id,
-        start_time=final_start,
-        end_time=final_end,
-        daily_shifts=shifts_json,
-        overtime_decimal=Decimal(str(total_overtime)),
-        expenses=report_data.expenses,
-        expenses_notes=report_data.expenses_notes,
-        sleeps=report_data.sleeps,
-        receipt_url=report_data.receipt_url
-    )
-    db.add(new_report)
+    # Check if report already exists for draft upsert
+    existing_report = db.query(TripReport).filter(
+        TripReport.assignment_id == assignment.id
+    ).first()
 
-    # Auto-charge client for accommodation
+    if existing_report:
+        if not existing_report.is_draft:
+            raise HTTPException(
+                status_code=400,
+                detail="Report already fully submitted for this assignment"
+            )
+        # Update existing draft
+        existing_report.start_time = final_start
+        existing_report.end_time = final_end
+        existing_report.daily_shifts = shifts_json
+        existing_report.overtime_decimal = Decimal(str(total_overtime))
+        existing_report.expenses = report_data.expenses
+        existing_report.expenses_notes = report_data.expenses_notes
+        existing_report.sleeps = report_data.sleeps
+        existing_report.is_draft = report_data.is_draft
+        if report_data.receipt_url:
+            existing_report.receipt_url = report_data.receipt_url
+        new_report = existing_report
+    else:
+        new_report = TripReport(
+            assignment_id=assignment.id,
+            start_time=final_start,
+            end_time=final_end,
+            daily_shifts=shifts_json,
+            overtime_decimal=Decimal(str(total_overtime)),
+            expenses=report_data.expenses,
+            expenses_notes=report_data.expenses_notes,
+            sleeps=report_data.sleeps,
+            receipt_url=report_data.receipt_url,
+            is_draft=report_data.is_draft
+        )
+        db.add(new_report)
+
+    # Auto-charge client for accommodation (only if it's the final submission and wasn't charged yet)
     trip = assignment.trip
-    if trip.start_date and trip.end_date:
+    if not new_report.is_draft and not existing_report and trip.start_date and trip.end_date:
         nights = (trip.end_date.date() - trip.start_date.date()).days
         if nights > 0:
             client = trip.client
@@ -119,14 +134,15 @@ def process_and_save_report(
     db.commit()
     db.refresh(new_report)
 
-    # Send Notification to Admin
-    try:
-        worker_name = assignment.user.full_name if assignment.user else "עובד"
-        location = trip.location if trip else "לא ידוע"
-        msg = f"העובד/ת {worker_name} הגיש/ה דיווח עבור הטיול ב-{location} וממתין לאישור."
-        admin_phone = os.getenv("ADMIN_PHONE", "0533210777")
-        NotificationService.send_sms(admin_phone, msg, db=db)
-    except Exception as e:
-        logger.error(f"Failed to send notification for report submission: {e}")
+    # Send Notification to Admin only on final submit
+    if not new_report.is_draft:
+        try:
+            worker_name = assignment.user.full_name if assignment.user else "עובד"
+            location = trip.location if trip else "לא ידוע"
+            msg = f"העובד/ת {worker_name} הגיש/ה דיווח עבור הטיול ב-{location} וממתין לאישור."
+            admin_phone = os.getenv("ADMIN_PHONE", "0533210777")
+            NotificationService.send_sms(admin_phone, msg, db=db)
+        except Exception as e:
+            logger.error(f"Failed to send notification for report submission: {e}")
 
     return new_report

@@ -1,6 +1,6 @@
 import enum
 import uuid
-from sqlalchemy import Column, String, DateTime, Numeric, Enum, ForeignKey, JSON, Integer
+from sqlalchemy import Column, String, DateTime, Numeric, Enum, ForeignKey, JSON, Integer, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -29,5 +29,6 @@ class TripReport(Base):
     receipt_url = Column(String, nullable=True)
     manager_status = Column(Enum(ManagerStatus), nullable=False, default=ManagerStatus.pending, index=True)
     billing_status = Column(Enum(BillingStatus), nullable=False, default=BillingStatus.unbilled, index=True)
+    is_draft = Column(Boolean, nullable=False, default=False)
 
     assignment = relationship("TripAssignment", back_populates="report")

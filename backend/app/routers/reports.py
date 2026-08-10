@@ -62,17 +62,16 @@ def get_all_pending_reports(db: Session = Depends(get_db), current_user: User = 
 
 @router.get("/my-pending-reports")
 def get_my_pending_reports(db: Session = Depends(get_db), current_user: User = Depends(get_employee_user)):
-    # Find all assignments for this user that are confirmed
-    # AND do not have a report already
-    
-    # Subquery: get assignment IDs that already have a report
-    reported_assignment_ids = db.query(TripReport.assignment_id).subquery()
+    # Subquery: get assignment IDs that have a fully submitted (non-draft) report
+    submitted_assignment_ids = db.query(TripReport.assignment_id).filter(
+        TripReport.is_draft == False
+    ).subquery()
     
     pending_assignments = db.query(TripAssignment).join(Trip).filter(
         TripAssignment.user_id == current_user.id,
         TripAssignment.status == "assigned",
         TripAssignment.is_confirmed == True,
-        not_(TripAssignment.id.in_(reported_assignment_ids))
+        not_(TripAssignment.id.in_(submitted_assignment_ids))
     ).order_by(Trip.start_date.desc()).all()
     
     return [
@@ -84,6 +83,25 @@ def get_my_pending_reports(db: Session = Depends(get_db), current_user: User = D
             "role": a.role
         } for a in pending_assignments
     ]
+
+@router.get("/my-draft/{assignment_id}")
+def get_my_draft(assignment_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_employee_user)):
+    report = db.query(TripReport).filter(
+        TripReport.assignment_id == assignment_id,
+        TripReport.is_draft == True
+    ).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Draft not found")
+        
+    return {
+        "start_time": report.start_time.isoformat() if report.start_time else None,
+        "end_time": report.end_time.isoformat() if report.end_time else None,
+        "daily_shifts": report.daily_shifts or [],
+        "expenses": float(report.expenses or 0),
+        "expenses_notes": report.expenses_notes,
+        "sleeps": report.sleeps or 0,
+        "receipt_url": report.receipt_url
+    }
 
 
 # ── File Upload ───────────────────────────────────────────────────────────────
@@ -156,6 +174,7 @@ def get_all_reports(skip: int = 0, limit: int = 100, db: Session = Depends(get_d
         .join(TripAssignment)
         .join(Trip)
         .join(User)
+        .filter(TripReport.is_draft == False)
         .order_by(TripReport.start_time.desc())
         .offset(skip)
         .limit(limit)

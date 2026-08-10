@@ -126,6 +126,7 @@ class TripReportCreate(BaseModel):
     expenses_notes: Optional[str] = None
     sleeps: Optional[int] = 0
     receipt_url: Optional[str] = None
+    is_draft: bool = False
 
 class TripReportOut(BaseModel):
     id: uuid.UUID
