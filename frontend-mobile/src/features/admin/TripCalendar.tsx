@@ -927,7 +927,7 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                 ביטול
               </button>
               <button 
-                disabled={!newTripForm.client_name || !newTripForm.location || newTripTotalCapacity === 0 || createManualTripMutation.isPending}
+                disabled={!newTripForm.client_name || newTripTotalCapacity === 0 || createManualTripMutation.isPending}
                 onClick={() => {
                   createManualTripMutation.mutate({
                     client_name: newTripForm.client_name,
