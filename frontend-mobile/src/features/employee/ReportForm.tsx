@@ -181,7 +181,6 @@ export default function ReportForm() {
       setDailyShifts(newShifts);
       setDaysCount(expectedDays);
       setSavedDays(newSavedDays);
-      setFormData(prev => ({...prev, sleeps: Math.max(0, expectedDays - 1)}));
     } else if (formData.assignment_id && !isDraftLoading) {
       // Reset if no draft
       setFormData(prev => ({ ...prev, expenses: 0, expenses_notes: '', sleeps: Math.max(0, expectedDays - 1), receipt_url: '' }));
