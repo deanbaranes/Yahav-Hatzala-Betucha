@@ -82,8 +82,6 @@ export default function Clients() {
 
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'none'>('asc'); // Default sort: highest debt first
 
-  if (isLoading) return <div className="p-8 text-center">טוען לקוחות...</div>;
-
   const parseBalance = (balStr: any) => {
     if (!balStr) return 0;
     const cleaned = String(balStr).replace(/,/g, '');
@@ -111,6 +109,8 @@ export default function Clients() {
     const valB = parseBalance(b.balance);
     return sortOrder === 'asc' ? valA - valB : valB - valA;
   }) || [], [clients, searchTerm, sortOrder]);
+
+  if (isLoading) return <div className="p-8 text-center">טוען לקוחות...</div>;
 
   const getDebtAgeMonths = (dateStr: string) => {
     if (!dateStr) return 0;
