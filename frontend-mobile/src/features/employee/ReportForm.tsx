@@ -23,7 +23,9 @@ export default function ReportForm() {
       
       if (variables.is_draft) {
         alert("הטיוטה נשמרה בהצלחה! תוכל להמשיך לדווח במועד מאוחר יותר.");
-        navigate('/');
+        setFormData({ expenses: 0, expenses_notes: '', sleeps: 0, receipt_url: '', assignment_id: '' });
+        setDaysCount(1);
+        setDailyShifts([{ start_time: '', end_time: '' }]);
       } else {
         setSuccessMsg(true);
         setTimeout(() => {
