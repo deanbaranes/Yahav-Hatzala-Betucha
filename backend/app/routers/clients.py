@@ -10,7 +10,7 @@ from dateutil import parser
 router = APIRouter(prefix="/clients", tags=["clients"])
 
 @router.get("/")
-def get_clients(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
+def get_clients(skip: int = 0, limit: int = 1000, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     clients = db.query(Client).offset(skip).limit(limit).all()
     return [
         {
