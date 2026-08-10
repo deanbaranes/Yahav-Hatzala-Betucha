@@ -3,7 +3,7 @@ from datetime import datetime, date
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import not_, extract
 
 from app.database import get_db
@@ -146,7 +146,20 @@ def submit_trip_report_admin(report_data: TripReportCreate, db: Session = Depend
 
 @router.get("/")
 def get_all_reports(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
-    reports = db.query(TripReport).join(TripAssignment).join(Trip).join(User).order_by(TripReport.start_time.desc()).offset(skip).limit(limit).all()
+    reports = (
+        db.query(TripReport)
+        .options(
+            joinedload(TripReport.assignment).joinedload(TripAssignment.trip).joinedload(Trip.client),
+            joinedload(TripReport.assignment).joinedload(TripAssignment.user)
+        )
+        .join(TripAssignment)
+        .join(Trip)
+        .join(User)
+        .order_by(TripReport.start_time.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
     
     result = []
     for r in reports:
