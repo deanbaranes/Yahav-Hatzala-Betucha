@@ -59,7 +59,12 @@ export default function TripManagementBoard() {
   });
 
   const createTrip = useMutation({
-    mutationFn: (data: any) => axiosClient.post('/trips/', { ...data, capacity: totalCapacity }), // Include capacity for backward compatibility
+    mutationFn: (data: any) => {
+      const payload = { ...data, capacity: totalCapacity };
+      if (!payload.global_salary || payload.global_salary === '') payload.global_salary = null;
+      if (!payload.end_date || payload.end_date === '') payload.end_date = payload.start_date;
+      return axiosClient.post('/trips/', payload);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
@@ -72,7 +77,12 @@ export default function TripManagementBoard() {
   });
 
   const updateTrip = useMutation({
-    mutationFn: (data: any) => axiosClient.put(`/trips/${editingTripId}`, { ...data, capacity: totalCapacity }),
+    mutationFn: (data: any) => {
+      const payload = { ...data, capacity: totalCapacity };
+      if (!payload.global_salary || payload.global_salary === '') payload.global_salary = null;
+      if (!payload.end_date || payload.end_date === '') payload.end_date = payload.start_date;
+      return axiosClient.put(`/trips/${editingTripId}`, payload);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
