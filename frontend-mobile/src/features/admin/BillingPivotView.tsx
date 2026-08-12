@@ -97,21 +97,28 @@ export default function BillingPivotView() {
                       <span>הוצאה חשבונית:</span>
                       <span className="font-bold text-blue-600">{client.invoiced_trips}</span>
                     </div>
-                    {(client.total_overtime > 0 || client.total_expenses > 0) && (
+                    <div className="pt-2 mt-2 border-t border-gray-200">
+                      <div className="text-xs font-bold text-gray-800 mb-1">תוספות לחיוב (מדיווחי עובדים מאושרים):</div>
+                      <div className="flex justify-between text-gray-600">
+                        <span>שעות נוספות:</span>
+                        <span className={`font-bold ${client.total_overtime > 0 ? 'text-red-600' : 'text-gray-500'}`}>{client.total_overtime} שעות</span>
+                      </div>
+                      <div className="flex justify-between text-gray-600">
+                        <span>הוצאות / נסיעות:</span>
+                        <span className={`font-bold ${client.total_expenses > 0 ? 'text-red-600' : 'text-gray-500'}`}>₪{client.total_expenses}</span>
+                      </div>
+                    </div>
+
+                    {client.roles_summary && Object.keys(client.roles_summary).length > 0 && (
                       <div className="pt-2 mt-2 border-t border-gray-200">
-                        <div className="text-xs font-bold text-gray-800 mb-1">תוספות לחיוב (מדיווחי עובדים מאושרים):</div>
-                        {client.total_overtime > 0 && (
-                          <div className="flex justify-between text-gray-600">
-                            <span>שעות נוספות:</span>
-                            <span className="font-bold text-red-600">{client.total_overtime} שעות</span>
-                          </div>
-                        )}
-                        {client.total_expenses > 0 && (
-                          <div className="flex justify-between text-gray-600">
-                            <span>הוצאות / נסיעות:</span>
-                            <span className="font-bold text-red-600">₪{client.total_expenses}</span>
-                          </div>
-                        )}
+                        <div className="text-xs font-bold text-gray-800 mb-2">פירוט כוח אדם לחיוב:</div>
+                        <div className="flex flex-wrap gap-2">
+                          {Object.entries(client.roles_summary).map(([role, count]) => (
+                            <span key={role} className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-1 rounded-md font-bold">
+                              {role}: {String(count)}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>

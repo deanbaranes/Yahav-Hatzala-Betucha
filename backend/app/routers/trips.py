@@ -177,6 +177,7 @@ def get_billing_status(year: int, month: int, db: Session = Depends(get_db), cur
                 "invoiced_trips": 0,
                 "total_overtime": 0.0,
                 "total_expenses": 0.0,
+                "roles_summary": {}
             }
 
         stats = client_stats[c_id]
@@ -190,6 +191,11 @@ def get_billing_status(year: int, month: int, db: Session = Depends(get_db), cur
             stats["invoiced_trips"] += 1
 
         for a in t.assignments:
+            role = a.role or "לא הוגדר תפקיד"
+            if role not in stats["roles_summary"]:
+                stats["roles_summary"][role] = 0
+            stats["roles_summary"][role] += 1
+
             if a.report and a.report.manager_status == "approved":
                 stats["total_overtime"] += float(a.report.overtime_decimal or 0)
                 stats["total_expenses"] += float(a.report.expenses or 0)
