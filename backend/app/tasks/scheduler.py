@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.models.client import Client
 from app.models.trip import Trip
+from app.models.notification import Notification
 from app.services.notification_service import NotificationService
 from app.services.storage_service import StorageService
 import os
@@ -153,6 +154,46 @@ def delete_old_receipts():
     db.commit()
     logger.info(f"Deleted {deleted_count} old receipts.")
 
+def check_ended_trips_for_reports():
+    """
+    Check for trips that ended recently (within the last 3 days).
+    For each confirmed assignment without a report, send an SMS and notification if not already sent.
+    """
+    logger.info("Running check_ended_trips_for_reports task...")
+    db: Session = next(get_db())
+    now = datetime.now()
+    three_days_ago = now - timedelta(days=3)
+    
+    # Check trips from the last 3 days
+    recent_trips = db.query(Trip).filter(Trip.start_date >= three_days_ago).all()
+    
+    for trip in recent_trips:
+        end_dt = trip.end_date or trip.start_date
+        if end_dt and hasattr(end_dt, 'tzinfo') and end_dt.tzinfo is not None:
+            end_dt = end_dt.replace(tzinfo=None)
+            
+        # If trip has ended
+        if end_dt and end_dt <= now:
+            for assignment in trip.assignments:
+                if assignment.is_confirmed and assignment.status == "assigned":
+                    if not assignment.report:
+                        if assignment.user and assignment.user.phone:
+                            msg = f"היי {assignment.user.full_name}, הטיול ב-{trip.location} הסתיים. אנא היכנס לאזור האישי באפליקציה למלא דוח משמרת והוצאות."
+                            
+                            # Check if we already notified them
+                            existing_notif = db.query(Notification).filter(
+                                Notification.user_id == assignment.user_id,
+                                Notification.message == msg
+                            ).first()
+                            
+                            if not existing_notif:
+                                NotificationService.send_sms(
+                                    phone_number=assignment.user.phone,
+                                    message=msg,
+                                    db=db,
+                                    user_id=assignment.user_id
+                                )
+
 def start_scheduler():
     scheduler = BackgroundScheduler()
     
@@ -160,6 +201,8 @@ def start_scheduler():
     scheduler.add_job(check_client_debts, 'cron', hour=9, minute=0)
     scheduler.add_job(check_unassigned_trips, 'cron', hour=9, minute=30)
     scheduler.add_job(check_uninvoiced_trips, 'cron', day='last', hour=17, minute=0)
+    # Check ended trips every hour
+    scheduler.add_job(check_ended_trips_for_reports, 'cron', minute=0)
     # Run deletion task every night at 3 AM
     scheduler.add_job(delete_old_receipts, 'cron', hour=3, minute=0)
     

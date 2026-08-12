@@ -77,10 +77,11 @@ export default function Clients() {
 
   const handleEditClick = (client: any) => {
     setEditingId(client.id);
+    const todayStr = new Date().toISOString().split('T')[0];
     setEditForm({ 
       balance: client.balance || '', 
       notes: client.notes || '',
-      debt_start_date: client.debt_start_date ? client.debt_start_date.split('T')[0] : '',
+      debt_start_date: client.debt_start_date ? client.debt_start_date.split('T')[0] : todayStr,
       payment_terms: client.payment_terms || ''
     });
   };

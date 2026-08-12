@@ -35,7 +35,11 @@ def get_clients(skip: int = 0, limit: int = 50, q: str = "", db: Session = Depen
     total_positive = sum(parse_balance(c.balance) for c in all_filtered if parse_balance(c.balance) > 0)
     total_negative = sum(parse_balance(c.balance) for c in all_filtered if parse_balance(c.balance) < 0)
 
-    clients = query.offset(skip).limit(limit).all()
+    # Sort by balance ascending (most negative / highest debt comes first)
+    all_filtered.sort(key=lambda c: parse_balance(c.balance))
+
+    # Apply pagination in Python
+    clients = all_filtered[skip : skip + limit]
     
     return {
         "total": total,
