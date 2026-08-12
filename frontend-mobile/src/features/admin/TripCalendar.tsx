@@ -110,12 +110,17 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
   });
 
   const getTripColor = (trip: any): { className: string; style?: React.CSSProperties } => {
-    // If trip has a custom color, use it directly
     const baseClasses = "text-[9px] md:text-xs px-0.5 py-0.5 md:px-1.5 md:py-1 rounded-sm shadow-sm font-semibold cursor-pointer transition-all flex justify-between items-center leading-tight overflow-hidden";
+    
+    // 1. Highest Priority: Billed (Invoice Produced) -> RED
+    if (trip.is_billed) return { className: `bg-red-500 text-white hover:bg-red-600 border border-red-600 ${baseClasses}` };
+    
+    // 2. Second Priority: Manual Color Override
     if (trip.color) {
       return { className: `text-white ${baseClasses}`, style: { backgroundColor: trip.color, borderColor: trip.color } };
     }
-    if (trip.is_billed) return { className: `bg-red-500 text-white hover:bg-red-600 border border-red-600 ${baseClasses}` };
+    
+    // 3. Auto Colors based on staffing
     const confirmedCount = trip.assignments?.filter((a: any) => a.is_confirmed && a.status === 'assigned').length || 0;
     const isFullyStaffed = trip.capacity > 0 && confirmedCount >= trip.capacity;
     if (isFullyStaffed) return { className: `bg-blue-500 text-white hover:bg-blue-600 border border-blue-600 ${baseClasses}` };
@@ -461,6 +466,37 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                     value={quickEditForm.global_salary} 
                     onChange={e => setQuickEditForm({...quickEditForm, global_salary: e.target.value})} 
                   />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">צבע הטיול ביומן</label>
+                  <div className="flex flex-wrap gap-2 items-center">
+                    {[
+                      { color: '', label: 'אוטומטי (לפי סטטוס)' },
+                      { color: '#039BE5', label: 'ציאן' },
+                      { color: '#D50000', label: 'אדום' },
+                      { color: '#0B8043', label: 'ירוק' },
+                      { color: '#F4511E', label: 'כתום' },
+                      { color: '#8E24AA', label: 'סגול' },
+                      { color: '#F6BF26', label: 'צהוב' },
+                      { color: '#3F51B5', label: 'כחול' },
+                      { color: '#616161', label: 'אפור' },
+                    ].map(({ color, label }) => (
+                      <button
+                        key={label}
+                        type="button"
+                        title={label}
+                        onClick={() => setQuickEditForm({ ...quickEditForm, color })}
+                        className={`w-7 h-7 rounded-full border-2 transition-all ${
+                          quickEditForm.color === color
+                            ? 'border-gray-900 scale-125'
+                            : 'border-gray-200 hover:scale-110'
+                        }`}
+                        style={{ backgroundColor: color || '#e5e7eb' }}
+                      >
+                        {color === '' && <span className="text-gray-400 text-xs font-bold flex items-center justify-center w-full h-full">א</span>}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div className="flex justify-end gap-2 mt-4 pt-2 border-t border-blue-100">
                   <button onClick={() => setQuickEditMode(false)} className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200 rounded">ביטול</button>
