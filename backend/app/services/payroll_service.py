@@ -197,30 +197,18 @@ class PayrollService:
                     
                     days_worked = Decimal(len(report_days_set))
                     
-                    hourly_rate = Decimal(str(user.hourly_rate or 0))
-                    base_daily = Decimal(str(user.base_daily_hours or DEFAULT_BASE_DAILY_HOURS))
-                    
-                    base_salary = days_worked * base_daily * hourly_rate
                     ot_hours = Decimal(str(report.overtime_decimal or 0))
-                    ot_total = ot_hours * hourly_rate * Decimal(str(OVERTIME_MULTIPLIER))
-                    
-                    recovery_pay = days_worked * Decimal(str(EMPLOYEE_RECOVERY_PAY_PER_DAY))
-                    travel_pay = days_worked * Decimal(str(EMPLOYEE_TRAVEL_PAY_PER_DAY))
-                    
-                    accom_nights = Decimal(str(report.sleeps or 0))
-                    accom_pay = accom_nights * Decimal(str(EMPLOYEE_ACCOMMODATION_PAY))
-                    
-                    expenses = Decimal(str(report.expenses or 0))
-                    
-                    total_amount = base_salary + ot_total + recovery_pay + travel_pay + accom_pay + expenses
-                    
                     trip_loc = report.assignment.trip.location if report.assignment.trip else ""
+                    
+                    details_text = f"טיול: {trip_loc}"
+                    if ot_hours > 0:
+                        details_text += f" | {ot_hours} שעות נוספות"
                     
                     supplier_entry = Supplier(
                         name=user.full_name,
                         debt_date=date.today(),
-                        amount=total_amount,
-                        details=f"דיווח אוטומטי - טיול: {trip_loc} (דוח: {report.id})",
+                        amount=0,
+                        details=details_text,
                         is_invoiced=False
                     )
                     self.db.add(supplier_entry)
