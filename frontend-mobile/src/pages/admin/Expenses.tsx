@@ -266,7 +266,6 @@ export default function Expenses() {
               <p className="text-gray-400 mt-1">{activeTab === 'pending' ? 'הכל נקי! אין קבלות שממתינות לסריקה.' : 'טרם סומנו הוצאות כטופלו.'}</p>
             </div>
           ) : (
-          ) : (
             <div className="flex flex-col gap-3">
               {displayedExpenses.map((expense: any) => (
                 <div key={expense.id} className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all group flex flex-col sm:flex-row items-center p-3 gap-4">
