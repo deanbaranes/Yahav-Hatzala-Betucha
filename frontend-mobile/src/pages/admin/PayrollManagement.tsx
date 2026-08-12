@@ -383,7 +383,14 @@ export default function PayrollManagement() {
                       <label className="block text-xs font-bold text-gray-500">סוג עובד</label>
                       <select 
                         value={detailsForm.employment_type || 'שכיר'} 
-                        onChange={e => setDetailsForm({...detailsForm, employment_type: e.target.value})} 
+                        onChange={e => {
+                          const val = e.target.value;
+                          setDetailsForm({
+                            ...detailsForm, 
+                            employment_type: val,
+                            base_daily_hours: val === 'עצמאי' ? 9.0 : 8.6
+                          });
+                        }} 
                         className="p-2 border rounded-lg w-full text-sm font-bold bg-gray-50 text-gray-700"
                       >
                         <option value="שכיר">שכיר (תלוש שכר)</option>

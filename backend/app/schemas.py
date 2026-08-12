@@ -160,7 +160,7 @@ class ReportUpdate(BaseModel):
 class EmployeeRatesUpdate(BaseModel):
     hourly_rate: float
     base_daily_hours: float
-    employment_type: Optional[str] = "שכיר"
+    employment_type: Optional[str] = None
 
 class AdjustmentCreate(BaseModel):
     user_id: str
