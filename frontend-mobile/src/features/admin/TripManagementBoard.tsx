@@ -132,8 +132,8 @@ export default function TripManagementBoard() {
       (t.client?.name || '').includes(searchTerm) || (t.location || '').includes(searchTerm)
     );
     
-    // Sort descending by date (newest first)
-    filtered.sort((a: any, b: any) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
+    // Sort ascending by date (oldest first, chronological)
+    filtered.sort((a: any, b: any) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
 
     const groups: { month: string; weeks: { weekName: string; trips: any[] }[] }[] = [];
 
@@ -395,7 +395,7 @@ export default function TripManagementBoard() {
                         className="flex items-center gap-2 text-sm font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors cursor-pointer"
                       >
                         <span className="text-[10px] bg-blue-200 text-blue-800 w-5 h-5 flex items-center justify-center rounded-full">
-                          {expandedWeeks[weekGroup.weekName] ? '▼' : '▶'}
+                          {expandedWeeks[weekGroup.weekName] ? '▼' : '◀'}
                         </span>
                         {weekGroup.weekName}
                       </button>
