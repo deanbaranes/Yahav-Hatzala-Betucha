@@ -198,15 +198,19 @@ class PayrollService:
                     days_worked = Decimal(len(report_days_set))
                     
                     ot_hours = Decimal(str(report.overtime_decimal or 0))
+                    sleeps = report.sleeps or 0
                     trip_loc = report.assignment.trip.location if report.assignment.trip else ""
+                    role = report.assignment.role if report.assignment.role else "תפקיד כללי"
                     
-                    details_text = f"טיול: {trip_loc}"
+                    details_text = f"{role} בטיול: {trip_loc}"
+                    if sleeps > 0:
+                        details_text += f" | {sleeps} לילות"
                     if ot_hours > 0:
                         details_text += f" | {ot_hours} שעות נוספות"
                     
                     supplier_entry = Supplier(
                         name=user.full_name,
-                        debt_date=date.today(),
+                        debt_date=report.start_time.date() if report.start_time else date.today(),
                         amount=0,
                         details=details_text,
                         is_invoiced=False
