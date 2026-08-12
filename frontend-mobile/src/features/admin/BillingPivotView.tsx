@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Filter } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
+import { FileText, CheckCircle } from 'lucide-react';
 
 export default function BillingPivotView() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -9,6 +10,22 @@ export default function BillingPivotView() {
   
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth() + 1; // 1-indexed for backend
+  const queryClient = useQueryClient();
+
+  const bulkBillMutation = useMutation({
+    mutationFn: async ({ clientId, year, month }: { clientId: string, year: int, month: int }) => {
+      await axiosClient.put(`/trips/bulk-bill/${clientId}/${year}/${month}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['billing-status'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
+      alert('החיוב בוצע בהצלחה! כל הטיולים סומנו כ"הוצאה חשבונית".');
+    },
+    onError: (err: any) => {
+      alert('שגיאה: ' + (err.response?.data?.detail || 'לא ניתן לסמן חיוב.'));
+    }
+  });
 
   // Invoice real query
   const { data: billingStatus, isLoading: isLoadingBilling } = useQuery<any[]>({
@@ -83,10 +100,22 @@ export default function BillingPivotView() {
                   </div>
                   
                   {client.status === 'מוכן לחיוב' && (
-                    <div className="flex justify-end pt-3 border-t border-green-100">
+                    <div className="flex flex-col gap-2 pt-3 border-t border-green-100">
                       <div className="text-sm font-bold text-green-700 bg-green-100 px-3 py-1.5 rounded-lg flex items-center gap-2">
                         ✨ כל הטיולים לחודש זה הסתיימו. ניתן להוציא חשבונית.
                       </div>
+                      <button
+                        onClick={() => {
+                          if (confirm(`האם אתה בטוח שברצונך לסמן את כל הטיולים של ${client.client_name} לחודש זה כחויבו?`)) {
+                            bulkBillMutation.mutate({ clientId: client.client_id, year, month });
+                          }
+                        }}
+                        disabled={bulkBillMutation.isPending}
+                        className="w-full mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 shadow-sm"
+                      >
+                        <FileText size={16} />
+                        {bulkBillMutation.isPending ? 'מעדכן...' : 'סמן הכל כיצאה חשבונית'}
+                      </button>
                     </div>
                   )}
                   {client.status === 'פעיל' && (

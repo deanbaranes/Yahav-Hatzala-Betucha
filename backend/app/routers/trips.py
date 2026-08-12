@@ -418,6 +418,23 @@ def delete_assignment(assignment_id: str, db: Session = Depends(get_db), admin_u
     return {"message": "Assignment deleted"}
 
 
+@router.put("/bulk-bill/{client_id}/{year}/{month}")
+def bulk_bill_trips(client_id: str, year: int, month: int, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
+    trips = db.query(Trip).filter(
+        Trip.client_id == client_id,
+        extract('year', Trip.start_date) == year,
+        extract('month', Trip.start_date) == month,
+        Trip.is_billed == False
+    ).all()
+    
+    count = 0
+    for t in trips:
+        t.is_billed = True
+        count += 1
+        
+    db.commit()
+    return {"message": f"Successfully billed {count} trips", "count": count}
+
 # ── Dynamic routes (/{trip_id} as first segment) — MUST come after all static ──
 
 @router.put("/{trip_id}", response_model=TripOut)
