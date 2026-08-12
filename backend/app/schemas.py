@@ -48,6 +48,10 @@ class ResetPasswordRequest(BaseModel):
 class ClientBase(BaseModel):
     name: str
     contact_person: Optional[str] = None
+    
+class ClientCreate(ClientBase):
+    email: Optional[str] = None
+    phone: Optional[str] = None
 
 class ClientOut(ClientBase):
     id: uuid.UUID
