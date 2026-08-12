@@ -202,7 +202,7 @@ class PayrollService:
                     trip_loc = report.assignment.trip.location if report.assignment.trip else ""
                     role = report.assignment.role if report.assignment.role else "תפקיד כללי"
                     
-                    details_text = f"{role} בטיול: {trip_loc}"
+                    details_text = f"{role} בטיול: {trip_loc} (דוח: {report.id})"
                     if sleeps > 0:
                         details_text += f" | {sleeps} לילות"
                     if ot_hours > 0:
