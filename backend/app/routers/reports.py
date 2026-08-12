@@ -273,29 +273,36 @@ def get_reports_matrix(year: int, month: int, db: Session = Depends(get_db), cur
     assignments = db.query(TripAssignment).join(Trip).join(User, TripAssignment.user_id == User.id).filter(
         TripAssignment.status == "assigned",
         User.status != "inactive",
+        User.employment_type == "שכיר",
         extract('year', Trip.start_date) == year,
         extract('month', Trip.start_date) == month
     ).all()
     
     assignment_ids = [a.id for a in assignments]
-    # N+1 FIX: Fetch all relevant reports at once
-    reports = db.query(TripReport).filter(TripReport.assignment_id.in_(assignment_ids)).all() if assignment_ids else []
+    # N+1 FIX: Fetch all relevant reports at once, but only APPROVED ones
+    reports = db.query(TripReport).filter(
+        TripReport.assignment_id.in_(assignment_ids),
+        TripReport.manager_status == "approved"
+    ).all() if assignment_ids else []
+    
     reports_map = {r.assignment_id: r for r in reports}
     
     users_dict = {}
     for a in assignments:
+        report = reports_map.get(a.id)
+        if not report:
+            continue  # Only show approved reports in the matrix
+            
         u = a.user
         date_str = a.trip.start_date.date().isoformat()
         
         if str(u.id) not in users_dict:
             users_dict[str(u.id)] = {"id": str(u.id), "name": u.full_name, "shifts": {}}
             
-        report = reports_map.get(a.id)
-        
         users_dict[str(u.id)]["shifts"][date_str] = {
             "role": a.role,
-            "overtime": float(report.overtime_decimal) if report else 0.0,
-            "report_id": str(report.id) if report else None
+            "overtime": float(report.overtime_decimal),
+            "report_id": str(report.id)
         }
         
     return {"matrix": list(users_dict.values())}
