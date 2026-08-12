@@ -13,7 +13,7 @@ export default function BillingPivotView() {
   const queryClient = useQueryClient();
 
   const bulkBillMutation = useMutation({
-    mutationFn: async ({ clientId, year, month }: { clientId: string, year: int, month: int }) => {
+    mutationFn: async ({ clientId, year, month }: { clientId: string, year: number, month: number }) => {
       await axiosClient.put(`/trips/bulk-bill/${clientId}/${year}/${month}`);
     },
     onSuccess: () => {
