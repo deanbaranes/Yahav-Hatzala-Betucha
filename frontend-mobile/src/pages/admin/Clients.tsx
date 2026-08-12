@@ -7,7 +7,7 @@ import { exportToCSV } from '../../utils/csvExport';
 export default function Clients() {
   const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ balance: '', notes: '', debt_start_date: '', payment_terms: '' });
+  const [editForm, setEditForm] = useState({ balance: '', notes: '', debt_start_date: '', payment_terms: '', name: '', contact_person: '', email: '', phone: '' });
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
   const [mobileViewMode, setMobileViewMode] = useState<'cards' | 'table'>('cards');
   const [page, setPage] = useState(0);
@@ -100,7 +100,11 @@ export default function Clients() {
       balance: client.balance || '', 
       notes: client.notes || '',
       debt_start_date: client.debt_start_date ? client.debt_start_date.split('T')[0] : todayStr,
-      payment_terms: client.payment_terms || ''
+      payment_terms: client.payment_terms || '',
+      name: client.name || '',
+      contact_person: client.contact_person || '',
+      email: client.email || '',
+      phone: client.phone || ''
     });
   };
 
@@ -267,10 +271,36 @@ export default function Clients() {
             <tbody className="divide-y divide-gray-100 bg-white">
               {sortedClients.map((client: any, idx: number) => (
                 <tr key={client.id} className={`${getRowStyle(client, idx)} transition-all duration-200 group`}>
-                  <td className="px-2 py-1.5 font-bold text-gray-800 break-words group-hover:text-blue-700 transition-colors">{client.name}</td>
-                  <td className="px-2 py-1.5 text-slate-600 font-medium whitespace-nowrap max-w-[100px] truncate" title={client.contact_person}>{client.contact_person || '-'}</td>
+                  <td className="px-2 py-1.5 font-bold text-gray-800 break-words group-hover:text-blue-700 transition-colors">
+                    {editingId === client.id ? (
+                      <input 
+                        type="text" 
+                        value={editForm.name}
+                        onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                        className="w-full p-1 border-2 border-blue-400 rounded text-xs"
+                      />
+                    ) : client.name}
+                  </td>
+                  <td className="px-2 py-1.5 text-slate-600 font-medium whitespace-nowrap max-w-[100px] truncate" title={client.contact_person}>
+                    {editingId === client.id ? (
+                      <input 
+                        type="text" 
+                        value={editForm.contact_person}
+                        onChange={(e) => setEditForm({...editForm, contact_person: e.target.value})}
+                        className="w-full p-1 border-2 border-blue-400 rounded text-xs"
+                      />
+                    ) : (client.contact_person || '-')}
+                  </td>
                   <td className="px-2 py-1.5 text-slate-500 max-w-[140px]">
-                    {client.email ? (
+                    {editingId === client.id ? (
+                      <input 
+                        type="email" 
+                        value={editForm.email}
+                        onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+                        className="w-full p-1 border-2 border-blue-400 rounded text-xs"
+                        dir="ltr"
+                      />
+                    ) : (client.email ? (
                       <div className="flex items-center gap-1.5">
                         <a href={`mailto:${client.email}`} className="hover:text-blue-600 hover:underline truncate" title={client.email}>{client.email}</a>
                         <button
@@ -287,10 +317,18 @@ export default function Clients() {
                             : <Copy size={13} />}
                         </button>
                       </div>
-                    ) : '-'}
+                    ) : '-')}
                   </td>
                   <td className="px-2 py-1.5 text-slate-600 font-medium max-w-[110px]" dir="ltr" style={{textAlign: 'right'}}>
-                    {client.phone ? (
+                    {editingId === client.id ? (
+                      <input 
+                        type="tel" 
+                        value={editForm.phone}
+                        onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
+                        className="w-full p-1 border-2 border-blue-400 rounded text-xs text-right"
+                        dir="ltr"
+                      />
+                    ) : (client.phone ? (
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => copyPhone(client.phone)}
@@ -307,7 +345,7 @@ export default function Clients() {
                         </button>
                         <a href={`tel:${client.phone}`} className="hover:text-blue-600 hover:underline">{client.phone}</a>
                       </div>
-                    ) : '-'}
+                    ) : '-')}
                   </td>
                   
                   <td className="px-2 py-1.5">
@@ -428,27 +466,56 @@ export default function Clients() {
           {sortedClients.map((client: any) => (
             <div key={client.id} className={`p-5 flex flex-col gap-4 ${editingId === client.id ? 'bg-blue-50/30' : ''}`}>
               <div className="flex justify-between items-start gap-4">
-                <div className="flex-1">
-                  <h3 className="font-bold text-gray-800 text-lg mb-1">{client.name}</h3>
-                  <div className="text-sm text-gray-600 flex flex-wrap gap-x-2 gap-y-1 items-center">
-                    {client.contact_person && <span className="font-medium bg-gray-100 px-2 py-0.5 rounded text-gray-700">{client.contact_person}</span>}
-                    {client.phone && (
-                      <div className="flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded" dir="ltr">
-                        <a href={`tel:${client.phone}`} className="text-blue-600 hover:underline font-medium">{client.phone}</a>
-                        <button
-                          onClick={() => copyPhone(client.phone)}
-                          className={`flex-shrink-0 p-1 rounded transition-all duration-200 ${
-                            copiedPhone === client.phone
-                              ? 'text-green-600'
-                              : 'text-gray-400 hover:text-blue-600'
-                          }`}
-                          title="העתק טלפון"
-                        >
-                          {copiedPhone === client.phone ? <Check size={13} /> : <Copy size={13} />}
-                        </button>
+                <div className="flex-1 min-w-0">
+                  {editingId === client.id ? (
+                    <div className="space-y-2">
+                      <input 
+                        type="text" 
+                        value={editForm.name}
+                        onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                        className="w-full p-2 border-2 border-blue-400 rounded-lg text-sm font-bold mb-1"
+                        placeholder="שם לקוח"
+                      />
+                      <input 
+                        type="text" 
+                        value={editForm.contact_person}
+                        onChange={(e) => setEditForm({...editForm, contact_person: e.target.value})}
+                        className="w-full p-2 border border-gray-300 rounded text-sm"
+                        placeholder="איש קשר"
+                      />
+                      <input 
+                        type="tel" 
+                        value={editForm.phone}
+                        onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
+                        className="w-full p-2 border border-gray-300 rounded text-sm"
+                        placeholder="טלפון"
+                        dir="ltr"
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className="font-bold text-gray-800 text-lg mb-1 truncate">{client.name}</h3>
+                      <div className="text-sm text-gray-600 flex flex-wrap gap-x-2 gap-y-1 items-center">
+                        {client.contact_person && <span className="font-medium bg-gray-100 px-2 py-0.5 rounded text-gray-700">{client.contact_person}</span>}
+                        {client.phone && (
+                          <div className="flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded" dir="ltr">
+                            <a href={`tel:${client.phone}`} className="text-blue-600 hover:underline font-medium">{client.phone}</a>
+                            <button
+                              onClick={() => copyPhone(client.phone)}
+                              className={`flex-shrink-0 p-1 rounded transition-all duration-200 ${
+                                copiedPhone === client.phone
+                                  ? 'text-green-600'
+                                  : 'text-gray-400 hover:text-blue-600'
+                              }`}
+                              title="העתק טלפון"
+                            >
+                              {copiedPhone === client.phone ? <Check size={13} /> : <Copy size={13} />}
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </>
+                  )}
                 </div>
                 <div>
                   {editingId === client.id ? (
@@ -464,7 +531,18 @@ export default function Clients() {
                 </div>
               </div>
 
-              {client.email && (
+              {editingId === client.id ? (
+                <div className="text-sm bg-slate-50 p-2 rounded-lg">
+                  <input 
+                    type="email" 
+                    value={editForm.email}
+                    onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+                    className="w-full p-2 border border-gray-300 rounded text-sm"
+                    placeholder="אימייל"
+                    dir="ltr"
+                  />
+                </div>
+              ) : (client.email && (
                 <div className="text-sm flex items-center justify-between gap-2 bg-slate-50 p-2 rounded-lg">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <span className="text-slate-400">📧</span>
@@ -482,7 +560,7 @@ export default function Clients() {
                     {copiedEmail === client.email ? <Check size={14} /> : <Copy size={14} />}
                   </button>
                 </div>
-              )}
+              ))}
 
               <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm flex flex-col gap-3">
                 <div className="flex justify-between items-center">

@@ -467,7 +467,7 @@ export default function PayrollManagement() {
                     <option value="הבראה">הבראה</option>
                     <option value="נסיעות">נסיעות</option>
                     <option value="מענק התמדה">מענק התמדה</option>
-                    <option value="לינה">לינה (תעריף לילה: 80₪)</option>
+                    <option value="לינה">לינה (תעריף לילה: 100₪)</option>
                     <option value="שעות נוספות">השלמת שעות נוספות</option>
                     <option value="אחר">אחר</option>
                   </select>

@@ -6,7 +6,7 @@ from decimal import Decimal
 CLIENT_ACCOMMODATION_CHARGE = 180.0
 
 # Rate paid to the employee per accommodation night
-EMPLOYEE_ACCOMMODATION_PAY = Decimal('80.00')
+EMPLOYEE_ACCOMMODATION_PAY = Decimal('100.00')
 
 # Standard daily travel pay for employees
 EMPLOYEE_TRAVEL_PAY_PER_DAY = Decimal('22.60')
