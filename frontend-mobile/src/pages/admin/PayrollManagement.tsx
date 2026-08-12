@@ -335,8 +335,10 @@ export default function PayrollManagement() {
               >
                 <div className="flex justify-between items-center">
                   <span>{emp.full_name}</span>
-                  {emp.employment_type === 'עצמאי' && (
+                  {emp.employment_type === 'עצמאי' ? (
                     <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded border border-purple-200">עצמאי</span>
+                  ) : (
+                    <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200">שכיר</span>
                   )}
                 </div>
               </button>

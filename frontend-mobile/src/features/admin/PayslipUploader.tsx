@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
-import { UploadCloud, Check, X, File as FileIcon, Loader2 } from 'lucide-react';
+import { UploadCloud, Check, X, File as FileIcon, Loader2, Eye } from 'lucide-react';
 
 interface Employee {
   id: string;
@@ -156,6 +156,13 @@ export default function PayslipUploader() {
                 <div className="flex items-center gap-2 w-full md:w-auto md:flex-1 overflow-hidden">
                   <FileIcon size={20} className="text-red-400 flex-shrink-0" />
                   <p className="text-xs md:text-sm font-medium text-gray-800 truncate" dir="ltr">{f.file.name}</p>
+                  <button 
+                    onClick={() => window.open(URL.createObjectURL(f.file), '_blank')}
+                    className="mr-2 text-gray-400 hover:text-blue-500 transition-colors p-1"
+                    title="צפה במסמך"
+                  >
+                    <Eye size={18} />
+                  </button>
                 </div>
                 
                 <div className="flex items-center gap-2 w-full md:flex-1">
