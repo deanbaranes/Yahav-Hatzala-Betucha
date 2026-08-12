@@ -51,7 +51,7 @@ export default function Expenses() {
   const handleMarkAllProcessed = async () => {
     if (!pendingExpenses.length) return;
     if (!window.confirm(`האם לסמן את כל ${pendingExpenses.length} ההוצאות כטופלו?`)) return;
-    
+
     setIsMarkingAll(true);
     try {
       await Promise.all(
@@ -94,7 +94,7 @@ export default function Expenses() {
     e.preventDefault();
     setIsDragging(true);
   };
-  
+
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
@@ -122,14 +122,14 @@ export default function Expenses() {
     try {
       const zip = new JSZip();
       const folder = zip.folder("expenses_pending");
-      
+
       await Promise.all(pendingExpenses.map(async (exp, i) => {
         const response = await fetch(exp.file_url);
         const blob = await response.blob();
         const ext = exp.file_name?.split('.').pop() || 'jpg';
-        folder?.file(`receipt_${i+1}.${ext}`, blob);
+        folder?.file(`receipt_${i + 1}.${ext}`, blob);
       }));
-      
+
       const content = await zip.generateAsync({ type: "blob" });
       saveAs(content, `yahav_expenses_${currentYear}_${currentMonth}_pending.zip`);
     } catch (error) {
@@ -160,17 +160,17 @@ export default function Expenses() {
           </h1>
           <p className="text-gray-500 text-sm sm:text-base mt-2 font-medium">העלאה, סריקה ומעקב לפי חודשים.</p>
           <div className="mt-3 inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg text-sm font-bold border border-blue-100">
-            סה"כ בתיקייה (אמתין + טופל): {allExpenses?.length || 0}
+            סה"כ בתיקייה (ממתין + טופל): {allExpenses?.length || 0}
           </div>
         </div>
-        
+
         {/* Month Selector */}
         <div className="flex items-center gap-4 bg-slate-50 border border-gray-200 p-2 rounded-xl">
           <button onClick={handlePrevMonth} className="p-2 hover:bg-white rounded-lg transition-colors text-gray-600 hover:text-blue-600 shadow-sm border border-transparent hover:border-gray-200">
             <ChevronRight size={20} />
           </button>
           <div className="flex flex-col items-center justify-center min-w-[120px]">
-            <div className="text-xs text-gray-500 font-medium mb-0.5 flex items-center gap-1"><Calendar size={12}/> תיקיית חודש</div>
+            <div className="text-xs text-gray-500 font-medium mb-0.5 flex items-center gap-1"><Calendar size={12} /> תיקיית חודש</div>
             <div className="font-bold text-lg text-slate-800">{monthName} {currentYear}</div>
           </div>
           <button onClick={handleNextMonth} className="p-2 hover:bg-white rounded-lg transition-colors text-gray-600 hover:text-blue-600 shadow-sm border border-transparent hover:border-gray-200">
@@ -180,17 +180,17 @@ export default function Expenses() {
       </header>
 
       {/* Upload Zone */}
-      <div 
+      <div
         className={`bg-white border-2 border-dashed rounded-2xl p-8 text-center transition-all ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300'} ${isUploading ? 'opacity-70 pointer-events-none' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <input 
-          type="file" 
-          multiple 
-          className="hidden" 
-          ref={fileInputRef} 
+        <input
+          type="file"
+          multiple
+          className="hidden"
+          ref={fileInputRef}
           onChange={(e) => handleFileUpload(e.target.files)}
           accept="image/*,.pdf"
         />
@@ -202,7 +202,7 @@ export default function Expenses() {
             <h3 className="font-bold text-gray-800 text-lg mb-1">{isUploading ? 'מעלה קבצים...' : `גרור קבלות לתיקיית ${monthName}`}</h3>
             <p className="text-gray-500 text-sm">ניתן להעלות תמונות או קובצי PDF. אפשר לבחור מספר קבצים יחד.</p>
           </div>
-          <button 
+          <button
             onClick={() => fileInputRef.current?.click()}
             className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-colors"
           >
@@ -214,7 +214,7 @@ export default function Expenses() {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         {/* Tabs */}
         <div className="flex border-b border-gray-200">
-          <button 
+          <button
             className={`flex-1 py-4 font-bold text-lg transition-colors border-b-2 ${activeTab === 'pending' ? 'border-blue-600 text-blue-700 bg-blue-50/50' : 'border-transparent text-gray-500 hover:bg-gray-50'}`}
             onClick={() => setActiveTab('pending')}
           >
@@ -223,7 +223,7 @@ export default function Expenses() {
               ממתין לטיפול ({pendingExpenses.length})
             </div>
           </button>
-          <button 
+          <button
             className={`flex-1 py-4 font-bold text-lg transition-colors border-b-2 ${activeTab === 'processed' ? 'border-green-600 text-green-700 bg-green-50/50' : 'border-transparent text-gray-500 hover:bg-gray-50'}`}
             onClick={() => setActiveTab('processed')}
           >
@@ -237,7 +237,7 @@ export default function Expenses() {
         <div className="p-4 sm:p-6 bg-slate-50/50 min-h-[400px]">
           {activeTab === 'pending' && pendingExpenses.length > 0 && (
             <div className="flex flex-col sm:flex-row justify-end gap-3 mb-6">
-              <button 
+              <button
                 onClick={handleMarkAllProcessed}
                 disabled={isMarkingAll}
                 className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg font-bold text-sm shadow-sm transition-colors disabled:opacity-50"
@@ -245,7 +245,7 @@ export default function Expenses() {
                 {isMarkingAll ? <RefreshCw className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
                 סמן הכל כטופל
               </button>
-              <button 
+              <button
                 onClick={downloadAllPending}
                 className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg font-bold text-sm shadow-sm transition-colors"
               >
@@ -279,25 +279,25 @@ export default function Expenses() {
                     ) : (
                       <img src={expense.file_url} alt="Receipt" className="w-full h-full object-cover" />
                     )}
-                    
+
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                       <a href={expense.file_url} target="_blank" rel="noreferrer" className="bg-white/90 text-gray-800 p-1.5 rounded-full hover:bg-white hover:text-blue-600" title="צפה מוגדל">
                         <FileText size={16} />
                       </a>
                     </div>
                   </div>
-                  
+
                   {/* Details */}
                   <div className="flex-1 flex flex-col justify-center min-w-0 w-full">
                     <div className="text-xs text-gray-400 mb-0.5" dir="ltr">{new Date(expense.created_at).toLocaleString('he-IL')}</div>
                     <div className="text-sm font-bold text-gray-700 truncate" title={expense.file_name}>{expense.file_name || 'קבלה ללא שם'}</div>
                   </div>
-                  
+
                   {/* Actions */}
                   <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 border-t sm:border-t-0 border-gray-100 pt-3 sm:pt-0">
-                    <button 
-                      onClick={() => downloadFile(expense.file_url, expense.file_name)} 
-                      className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" 
+                    <button
+                      onClick={() => downloadFile(expense.file_url, expense.file_name)}
+                      className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
                       title="הורד"
                     >
                       <Download size={18} />
@@ -305,14 +305,14 @@ export default function Expenses() {
 
                     {activeTab === 'pending' ? (
                       <>
-                        <button 
+                        <button
                           onClick={() => updateStatus.mutate({ id: expense.id, status: 'processed' })}
                           className="flex-1 sm:flex-none bg-green-50 text-green-700 hover:bg-green-100 font-bold px-4 py-2 rounded-lg text-sm flex items-center justify-center gap-1.5 transition-colors"
                         >
                           <CheckCircle2 size={16} /> <span className="sm:hidden lg:inline">סמן כטופל</span>
                         </button>
-                        <button 
-                          onClick={() => { if(window.confirm('למחוק קבלה זו לחלוטין?')) deleteExpense.mutate(expense.id) }}
+                        <button
+                          onClick={() => { if (window.confirm('למחוק קבלה זו לחלוטין?')) deleteExpense.mutate(expense.id) }}
                           className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                         >
                           <Trash2 size={18} />
@@ -320,14 +320,14 @@ export default function Expenses() {
                       </>
                     ) : (
                       <>
-                        <button 
+                        <button
                           onClick={() => updateStatus.mutate({ id: expense.id, status: 'pending' })}
                           className="flex-1 sm:flex-none bg-gray-50 text-gray-600 hover:bg-gray-100 font-bold px-4 py-2 rounded-lg text-sm flex items-center justify-center gap-1.5 transition-colors"
                         >
                           <ArrowUpCircle size={16} /> <span className="sm:hidden lg:inline">החזר לממתין</span>
                         </button>
-                        <button 
-                          onClick={() => { if(window.confirm('למחוק קבלה זו לחלוטין מהארכיון?')) deleteExpense.mutate(expense.id) }}
+                        <button
+                          onClick={() => { if (window.confirm('למחוק קבלה זו לחלוטין מהארכיון?')) deleteExpense.mutate(expense.id) }}
                           className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                         >
                           <Trash2 size={18} />
