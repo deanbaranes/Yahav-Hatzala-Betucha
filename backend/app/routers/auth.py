@@ -98,6 +98,7 @@ def register(request: Request, user: UserCreate, db: Session = Depends(get_db)):
         full_name=user.full_name,
         phone=user.phone,
         email=user.email,
+        national_id=user.national_id,
         password_hash=hashed_password,
         role=user.role,
         status=UserStatus.pending
