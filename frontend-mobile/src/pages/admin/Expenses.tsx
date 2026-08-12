@@ -16,13 +16,19 @@ export default function Expenses() {
   const currentMonth = currentDate.getMonth() + 1;
   const currentYear = currentDate.getFullYear();
 
-  const { data: expenses, isLoading } = useQuery<any[]>({
-    queryKey: ['expenses', activeTab, currentMonth, currentYear],
+  const [isMarkingAll, setIsMarkingAll] = useState(false);
+
+  const { data: allExpenses, isLoading, refetch } = useQuery<any[]>({
+    queryKey: ['expenses', currentMonth, currentYear],
     queryFn: async () => {
-      const res = await axiosClient.get(`/expenses/?status=${activeTab}&expense_month=${currentMonth}&expense_year=${currentYear}`);
+      const res = await axiosClient.get(`/expenses/?expense_month=${currentMonth}&expense_year=${currentYear}`);
       return res.data;
     }
   });
+
+  const pendingExpenses = allExpenses?.filter(e => e.status === 'pending') || [];
+  const processedExpenses = allExpenses?.filter(e => e.status === 'processed') || [];
+  const displayedExpenses = activeTab === 'pending' ? pendingExpenses : processedExpenses;
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string, status: string }) => {
@@ -41,6 +47,23 @@ export default function Expenses() {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
     }
   });
+
+  const handleMarkAllProcessed = async () => {
+    if (!pendingExpenses.length) return;
+    if (!window.confirm(`האם לסמן את כל ${pendingExpenses.length} ההוצאות כטופלו?`)) return;
+    
+    setIsMarkingAll(true);
+    try {
+      await Promise.all(
+        pendingExpenses.map(exp => axiosClient.put(`/expenses/${exp.id}`, { status: 'processed' }))
+      );
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+    } catch (err) {
+      alert('שגיאה בעדכון הסטטוס');
+    } finally {
+      setIsMarkingAll(false);
+    }
+  };
 
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -95,12 +118,12 @@ export default function Expenses() {
   };
 
   const downloadAllPending = async () => {
-    if (!expenses || expenses.length === 0) return;
+    if (!pendingExpenses || pendingExpenses.length === 0) return;
     try {
       const zip = new JSZip();
       const folder = zip.folder("expenses_pending");
       
-      await Promise.all(expenses.map(async (exp, i) => {
+      await Promise.all(pendingExpenses.map(async (exp, i) => {
         const response = await fetch(exp.file_url);
         const blob = await response.blob();
         const ext = exp.file_name?.split('.').pop() || 'jpg';
@@ -136,6 +159,9 @@ export default function Expenses() {
             ניהול הוצאות עסק
           </h1>
           <p className="text-gray-500 text-sm sm:text-base mt-2 font-medium">העלאה, סריקה ומעקב לפי חודשים.</p>
+          <div className="mt-3 inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg text-sm font-bold border border-blue-100">
+            סה"כ בתיקייה (אמתין + טופל): {allExpenses?.length || 0}
+          </div>
         </div>
         
         {/* Month Selector */}
@@ -194,7 +220,7 @@ export default function Expenses() {
           >
             <div className="flex items-center justify-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-              ממתין לטיפול
+              ממתין לטיפול ({pendingExpenses.length})
             </div>
           </button>
           <button 
@@ -203,17 +229,25 @@ export default function Expenses() {
           >
             <div className="flex items-center justify-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>
-              הוצאות שטופלו
+              הוצאות שטופלו ({processedExpenses.length})
             </div>
           </button>
         </div>
 
         <div className="p-4 sm:p-6 bg-slate-50/50 min-h-[400px]">
-          {activeTab === 'pending' && expenses && expenses.length > 0 && (
-            <div className="flex justify-end mb-4">
+          {activeTab === 'pending' && pendingExpenses.length > 0 && (
+            <div className="flex flex-col sm:flex-row justify-end gap-3 mb-6">
+              <button 
+                onClick={handleMarkAllProcessed}
+                disabled={isMarkingAll}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg font-bold text-sm shadow-sm transition-colors disabled:opacity-50"
+              >
+                {isMarkingAll ? <RefreshCw className="animate-spin" size={16} /> : <CheckCircle2 size={16} />}
+                סמן הכל כטופל
+              </button>
               <button 
                 onClick={downloadAllPending}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg font-bold text-sm shadow-sm transition-colors"
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg font-bold text-sm shadow-sm transition-colors"
               >
                 <FolderDown size={16} />
                 הורד הכל כ-ZIP (לסריקה ב'יש חשבונית')
@@ -223,7 +257,7 @@ export default function Expenses() {
 
           {isLoading ? (
             <div className="text-center py-12 text-gray-500">טוען נתונים...</div>
-          ) : !expenses || expenses.length === 0 ? (
+          ) : displayedExpenses.length === 0 ? (
             <div className="text-center py-16 flex flex-col items-center">
               <div className="bg-white p-4 rounded-full shadow-sm mb-4">
                 <CheckCircle2 size={48} className="text-gray-300" />
@@ -232,68 +266,75 @@ export default function Expenses() {
               <p className="text-gray-400 mt-1">{activeTab === 'pending' ? 'הכל נקי! אין קבלות שממתינות לסריקה.' : 'טרם סומנו הוצאות כטופלו.'}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {expenses.map((expense: any) => (
-                <div key={expense.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex flex-col">
-                  <div className="h-40 bg-gray-100 relative overflow-hidden flex items-center justify-center">
+          ) : (
+            <div className="flex flex-col gap-3">
+              {displayedExpenses.map((expense: any) => (
+                <div key={expense.id} className="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all group flex flex-col sm:flex-row items-center p-3 gap-4">
+                  {/* Thumbnail */}
+                  <div className="w-full sm:w-24 h-32 sm:h-24 bg-gray-100 rounded-lg relative overflow-hidden flex-shrink-0 flex items-center justify-center group-hover:ring-2 ring-blue-500/30 transition-all">
                     {expense.file_name?.toLowerCase().endsWith('.pdf') ? (
-                      <div className="flex flex-col items-center justify-center text-red-500 gap-2">
-                        <FileText size={48} />
-                        <span className="font-bold text-sm">PDF</span>
+                      <div className="flex flex-col items-center justify-center text-red-500 gap-1">
+                        <FileText size={32} />
+                        <span className="font-bold text-[10px]">PDF</span>
                       </div>
                     ) : (
                       <img src={expense.file_url} alt="Receipt" className="w-full h-full object-cover" />
                     )}
                     
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                      <a href={expense.file_url} target="_blank" rel="noreferrer" className="bg-white/90 text-gray-800 p-2 rounded-full hover:bg-white hover:text-blue-600" title="צפה מוגדל">
-                        <FileText size={20} />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <a href={expense.file_url} target="_blank" rel="noreferrer" className="bg-white/90 text-gray-800 p-1.5 rounded-full hover:bg-white hover:text-blue-600" title="צפה מוגדל">
+                        <FileText size={16} />
                       </a>
-                      <button onClick={() => downloadFile(expense.file_url, expense.file_name)} className="bg-white/90 text-gray-800 p-2 rounded-full hover:bg-white hover:text-emerald-600" title="הורד">
-                        <Download size={20} />
-                      </button>
                     </div>
                   </div>
                   
-                  <div className="p-4 flex-1 flex flex-col justify-between gap-4">
-                    <div>
-                      <div className="text-xs text-gray-400 mb-1" dir="ltr">{new Date(expense.created_at).toLocaleString('he-IL')}</div>
-                      <div className="text-sm font-bold text-gray-700 truncate" title={expense.file_name}>{expense.file_name || 'קבלה ללא שם'}</div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-                      {activeTab === 'pending' ? (
-                        <>
-                          <button 
-                            onClick={() => updateStatus.mutate({ id: expense.id, status: 'processed' })}
-                            className="flex-1 bg-green-50 text-green-700 hover:bg-green-100 font-bold py-1.5 rounded-lg text-sm flex items-center justify-center gap-1.5 transition-colors"
-                          >
-                            <CheckCircle2 size={16} /> סמן כטופל
-                          </button>
-                          <button 
-                            onClick={() => { if(window.confirm('למחוק קבלה זו לחלוטין?')) deleteExpense.mutate(expense.id) }}
-                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button 
-                            onClick={() => updateStatus.mutate({ id: expense.id, status: 'pending' })}
-                            className="flex-1 bg-gray-50 text-gray-600 hover:bg-gray-100 font-bold py-1.5 rounded-lg text-sm flex items-center justify-center gap-1.5 transition-colors"
-                          >
-                            <ArrowUpCircle size={16} /> החזר לממתין
-                          </button>
-                          <button 
-                            onClick={() => { if(window.confirm('למחוק קבלה זו לחלוטין מהארכיון?')) deleteExpense.mutate(expense.id) }}
-                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </>
-                      )}
-                    </div>
+                  {/* Details */}
+                  <div className="flex-1 flex flex-col justify-center min-w-0 w-full">
+                    <div className="text-xs text-gray-400 mb-0.5" dir="ltr">{new Date(expense.created_at).toLocaleString('he-IL')}</div>
+                    <div className="text-sm font-bold text-gray-700 truncate" title={expense.file_name}>{expense.file_name || 'קבלה ללא שם'}</div>
+                  </div>
+                  
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 border-t sm:border-t-0 border-gray-100 pt-3 sm:pt-0">
+                    <button 
+                      onClick={() => downloadFile(expense.file_url, expense.file_name)} 
+                      className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" 
+                      title="הורד"
+                    >
+                      <Download size={18} />
+                    </button>
+
+                    {activeTab === 'pending' ? (
+                      <>
+                        <button 
+                          onClick={() => updateStatus.mutate({ id: expense.id, status: 'processed' })}
+                          className="flex-1 sm:flex-none bg-green-50 text-green-700 hover:bg-green-100 font-bold px-4 py-2 rounded-lg text-sm flex items-center justify-center gap-1.5 transition-colors"
+                        >
+                          <CheckCircle2 size={16} /> <span className="sm:hidden lg:inline">סמן כטופל</span>
+                        </button>
+                        <button 
+                          onClick={() => { if(window.confirm('למחוק קבלה זו לחלוטין?')) deleteExpense.mutate(expense.id) }}
+                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button 
+                          onClick={() => updateStatus.mutate({ id: expense.id, status: 'pending' })}
+                          className="flex-1 sm:flex-none bg-gray-50 text-gray-600 hover:bg-gray-100 font-bold px-4 py-2 rounded-lg text-sm flex items-center justify-center gap-1.5 transition-colors"
+                        >
+                          <ArrowUpCircle size={16} /> <span className="sm:hidden lg:inline">החזר לממתין</span>
+                        </button>
+                        <button 
+                          onClick={() => { if(window.confirm('למחוק קבלה זו לחלוטין מהארכיון?')) deleteExpense.mutate(expense.id) }}
+                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
