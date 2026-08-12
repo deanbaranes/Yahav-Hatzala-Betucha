@@ -79,7 +79,7 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
           />
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">מיקום / שם היעד</label>
+            <label className="block text-sm font-bold text-gray-700 mb-1">מיקום / שם היעד (אופציונלי)</label>
             <input 
               type="text" 
               className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"

@@ -11,6 +11,7 @@ export default function TripManagementBoard() {
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {} as Record<string, number>, color: '' as string, global_salary: '' as string | number, contact_phone: '' as string });
   const [searchTerm, setSearchTerm] = useState('');
+  const [expandedWeeks, setExpandedWeeks] = useState<Record<string, boolean>>({});
   
   const [assignEmployeeName, setAssignEmployeeName] = useState('');
   const [assignEmployeeRole, setAssignEmployeeRole] = useState('כללי');
@@ -169,7 +170,7 @@ export default function TripManagementBoard() {
         <GoogleCalendarImport />
       </div>
 
-      <div className="flex flex-col gap-3 mb-6 border-b pb-4">
+      <div id="edit-form-area" className="flex flex-col gap-3 mb-6 border-b pb-4">
         <h2 className="text-2xl font-bold text-gray-800">{editingTripId ? 'עריכת טיול' : 'יצירת טיול חדש'}</h2>
       </div>
       
@@ -177,7 +178,7 @@ export default function TripManagementBoard() {
         <SmartClientInput value={formData.client_name} onChange={(v) => setFormData({...formData, client_name: v})} />
         
         <div className="mb-4">
-          <label className="block text-gray-700 font-bold mb-2">מיקום</label>
+          <label className="block text-gray-700 font-bold mb-2">מיקום (אופציונלי)</label>
           <input type="text" placeholder="כתובת יעד" className="w-full p-2 border border-gray-300 rounded" 
             value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
         </div>
@@ -263,7 +264,7 @@ export default function TripManagementBoard() {
       <div className="flex gap-4 mt-6">
         <button 
           onClick={() => editingTripId ? updateTrip.mutate(formData) : createTrip.mutate(formData)} 
-          disabled={createTrip.isPending || updateTrip.isPending || !formData.client_name || !formData.start_date || !formData.location || (!editingTripId && totalCapacity === 0)}
+          disabled={createTrip.isPending || updateTrip.isPending || !formData.client_name || !formData.start_date || (!editingTripId && totalCapacity === 0)}
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold shadow transition-colors disabled:bg-gray-400"
           title={(!editingTripId && totalCapacity === 0) ? "חובה להגדיר לפחות תפקיד אחד לטיול" : ""}
         >
@@ -389,87 +390,97 @@ export default function TripManagementBoard() {
                 <div className="p-4 space-y-6">
                   {monthGroup.weeks.map(weekGroup => (
                     <div key={weekGroup.weekName} className="space-y-3">
-                      <h5 className="text-sm font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full inline-block">
+                      <button 
+                        onClick={() => setExpandedWeeks(prev => ({...prev, [weekGroup.weekName]: !prev[weekGroup.weekName]}))}
+                        className="flex items-center gap-2 text-sm font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors cursor-pointer"
+                      >
+                        <span className="text-[10px] bg-blue-200 text-blue-800 w-5 h-5 flex items-center justify-center rounded-full">
+                          {expandedWeeks[weekGroup.weekName] ? '▼' : '▶'}
+                        </span>
                         {weekGroup.weekName}
-                      </h5>
+                      </button>
                       
-                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                        {weekGroup.trips.map(trip => (
-                          <div key={trip.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50/50 hover:bg-gray-50 transition-colors">
-                            <div className="flex justify-between items-start mb-2">
-                              <div className="flex items-start gap-3">
-                                <button 
-                                  onClick={() => {
-                                    setEditingTripId(trip.id);
-                                    setFormData({
-                                      client_name: trip.client?.name || '',
-                                      location: trip.location || '',
-                                      start_date: trip.start_date ? trip.start_date.substring(0, 16) : '',
-                                      end_date: trip.end_date ? trip.end_date.substring(0, 16) : '',
-                                      roles_requirements: trip.roles_requirements || {},
-                                      color: trip.color || '',
-                                      global_salary: trip.global_salary || '',
-                                      contact_phone: trip.contact_phone || ''
-                                    });
-                                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                                  }}
-                                  className="text-gray-400 hover:text-blue-600 p-1 transition-colors bg-white border border-gray-200 rounded shadow-sm"
-                                  title="ערוך טיול"
-                                >
-                                  ✎
-                                </button>
-                                <button 
-                                  onClick={() => {
-                                    if (window.confirm('האם אתה בטוח שברצונך למחוק טיול זה לצמיתות?')) {
-                                      deleteTrip.mutate(trip.id);
-                                    }
-                                  }}
-                                  className="text-red-400 hover:text-red-600 p-1 transition-colors bg-white border border-gray-200 rounded shadow-sm"
-                                  title="מחק טיול"
-                                >
-                                  ✕
-                                </button>
-                                <div className="mt-0.5">
-                                  <span className="font-bold text-lg text-blue-800">{trip.client?.name === 'לקוח כללי' ? trip.location : trip.client?.name}</span>
-                                  <span className="mx-2 text-gray-400">|</span>
-                                  <span className="text-gray-700 font-medium">{trip.client?.name === 'לקוח כללי' ? 'מיובא מיומן גוגל' : trip.location}</span>
+                      {expandedWeeks[weekGroup.weekName] && (
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-3">
+                          {weekGroup.trips.map(trip => (
+                            <div key={trip.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                              <div className="flex justify-between items-start mb-2">
+                                <div className="flex items-start gap-3">
+                                  <button 
+                                    onClick={() => {
+                                      setEditingTripId(trip.id);
+                                      setFormData({
+                                        client_name: trip.client?.name || '',
+                                        location: trip.location || '',
+                                        start_date: trip.start_date ? trip.start_date.substring(0, 16) : '',
+                                        end_date: trip.end_date ? trip.end_date.substring(0, 16) : '',
+                                        roles_requirements: trip.roles_requirements || {},
+                                        color: trip.color || '',
+                                        global_salary: trip.global_salary || '',
+                                        contact_phone: trip.contact_phone || ''
+                                      });
+                                        setTimeout(() => {
+                                        document.getElementById('edit-form-area')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                      }, 50);
+                                    }}
+                                    className="text-gray-400 hover:text-blue-600 p-1 transition-colors bg-white border border-gray-200 rounded shadow-sm"
+                                    title="ערוך טיול"
+                                  >
+                                    ✎
+                                  </button>
+                                  <button 
+                                    onClick={() => {
+                                      if (window.confirm('האם אתה בטוח שברצונך למחוק טיול זה לצמיתות?')) {
+                                        deleteTrip.mutate(trip.id);
+                                      }
+                                    }}
+                                    className="text-red-400 hover:text-red-600 p-1 transition-colors bg-white border border-gray-200 rounded shadow-sm"
+                                    title="מחק טיול"
+                                  >
+                                    ✕
+                                  </button>
+                                  <div className="mt-0.5">
+                                    <span className="font-bold text-lg text-blue-800">{trip.client?.name === 'לקוח כללי' ? trip.location : trip.client?.name}</span>
+                                    <span className="mx-2 text-gray-400">|</span>
+                                    <span className="text-gray-700 font-medium">{trip.client?.name === 'לקוח כללי' ? 'מיובא מיומן גוגל' : trip.location}</span>
+                                  </div>
                                 </div>
+                                <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">
+                                  דרושים {trip.capacity} אנשי צוות
+                                </span>
                               </div>
-                              <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">
-                                דרושים {trip.capacity} אנשי צוות
-                              </span>
-                            </div>
-                            <div className="text-gray-500 text-sm mb-3 mt-1 flex items-center gap-2">
-                              <span className="bg-white border border-gray-200 px-2 py-1 rounded text-xs font-semibold">
-                                {new Date(trip.start_date).toLocaleString('he-IL', { weekday: 'long', hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
-                              </span>
-                              {trip.end_date && (
-                                <>
-                                  <span className="text-gray-400">-</span>
-                                  <span className="bg-white border border-gray-200 px-2 py-1 rounded text-xs font-semibold text-gray-500">
-                                    {new Date(trip.end_date).toLocaleString('he-IL', { hour: '2-digit', minute: '2-digit' })}
-                                  </span>
-                                </>
+                              <div className="text-gray-500 text-sm mb-3 mt-1 flex items-center gap-2">
+                                <span className="bg-white border border-gray-200 px-2 py-1 rounded text-xs font-semibold">
+                                  {new Date(trip.start_date).toLocaleString('he-IL', { weekday: 'long', hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
+                                </span>
+                                {trip.end_date && (
+                                  <>
+                                    <span className="text-gray-400">-</span>
+                                    <span className="bg-white border border-gray-200 px-2 py-1 rounded text-xs font-semibold text-gray-500">
+                                      {new Date(trip.end_date).toLocaleString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                              
+                              {/* Confirmed Employees */}
+                              {trip.assignments?.filter((a:any) => a.is_confirmed).length > 0 && (
+                                <div className="border-t border-gray-200 pt-3 mt-3">
+                                  <span className="text-[10px] font-bold text-gray-500 mb-2 block">עובדים ששובצו ואושרו:</span>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {trip.assignments.filter((a:any) => a.is_confirmed).map((a:any) => (
+                                      <span key={a.id} className="bg-white border border-gray-200 text-gray-800 px-2 py-1 rounded text-xs shadow-sm font-semibold flex items-center gap-1">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                                        {a.user?.full_name || 'עובד'} <span className="text-gray-400 font-normal">({a.role === 'general' || !a.role ? 'כללי' : a.role})</span>
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
                               )}
                             </div>
-                            
-                            {/* Confirmed Employees */}
-                            {trip.assignments?.filter((a:any) => a.is_confirmed).length > 0 && (
-                              <div className="border-t border-gray-200 pt-3 mt-3">
-                                <span className="text-[10px] font-bold text-gray-500 mb-2 block">עובדים ששובצו ואושרו:</span>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {trip.assignments.filter((a:any) => a.is_confirmed).map((a:any) => (
-                                    <span key={a.id} className="bg-white border border-gray-200 text-gray-800 px-2 py-1 rounded text-xs shadow-sm font-semibold flex items-center gap-1">
-                                      <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-                                      {a.user?.full_name || 'עובד'} <span className="text-gray-400 font-normal">({a.role === 'general' || !a.role ? 'כללי' : a.role})</span>
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

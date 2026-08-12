@@ -412,7 +412,7 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
             {quickEditMode ? (
               <div className="space-y-4 mb-6 p-4 bg-blue-50/30 rounded-lg border border-blue-100">
                 <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">מיקום</label>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">מיקום (אופציונלי)</label>
                   <input type="text" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.location} onChange={e => setQuickEditForm({...quickEditForm, location: e.target.value})} />
                 </div>
                 <div>
