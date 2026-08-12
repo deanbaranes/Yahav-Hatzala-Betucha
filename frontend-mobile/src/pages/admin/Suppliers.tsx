@@ -343,7 +343,6 @@ export default function Suppliers() {
                     placeholder="0"
                     onChange={e => setFormData({...formData, amount: parseFloat(e.target.value) || 0})}
                   />
-                </div>
               </div>
 
               <div>
