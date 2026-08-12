@@ -10,6 +10,7 @@ class Supplier(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, index=True, nullable=False)
     debt_date = Column(Date, nullable=False)
+    debt_end_date = Column(Date, nullable=True)
     amount = Column(Numeric(10, 2), nullable=False)
     details = Column(String, nullable=True)
     is_invoiced = Column(Boolean, default=False, nullable=False)

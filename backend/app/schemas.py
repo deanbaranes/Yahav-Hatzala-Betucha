@@ -195,6 +195,7 @@ class EmployeeUpdate(BaseModel):
 class SupplierBase(BaseModel):
     name: str
     debt_date: date
+    debt_end_date: Optional[date] = None
     amount: float
     details: Optional[str] = None
     is_invoiced: bool = False
@@ -206,6 +207,7 @@ class SupplierCreate(SupplierBase):
 class SupplierUpdate(BaseModel):
     name: Optional[str] = None
     debt_date: Optional[date] = None
+    debt_end_date: Optional[date] = None
     amount: Optional[float] = None
     details: Optional[str] = None
     is_invoiced: Optional[bool] = None

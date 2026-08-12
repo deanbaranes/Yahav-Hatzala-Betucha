@@ -40,6 +40,12 @@ try:
 except Exception:
     pass
 
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE suppliers ADD COLUMN debt_end_date DATE"))
+except Exception:
+    pass
+
 from contextlib import asynccontextmanager
 from app.tasks.scheduler import start_scheduler
 

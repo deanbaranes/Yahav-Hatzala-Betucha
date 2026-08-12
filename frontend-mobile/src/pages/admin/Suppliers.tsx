@@ -8,6 +8,7 @@ interface Supplier {
   id: string;
   name: string;
   debt_date: string;
+  debt_end_date?: string;
   amount: number;
   details?: string;
   is_invoiced: boolean;
@@ -23,6 +24,7 @@ export default function Suppliers() {
   const [formData, setFormData] = useState({
     name: '',
     debt_date: new Date().toISOString().split('T')[0],
+    debt_end_date: '',
     amount: 0,
     details: '',
   });
@@ -79,7 +81,7 @@ export default function Suppliers() {
   });
 
   const resetForm = () => {
-    setFormData({ name: '', debt_date: new Date().toISOString().split('T')[0], amount: 0, details: '' });
+    setFormData({ name: '', debt_date: new Date().toISOString().split('T')[0], debt_end_date: '', amount: 0, details: '' });
     setEditingId(null);
   };
 
@@ -87,6 +89,7 @@ export default function Suppliers() {
     setFormData({
       name: supplier.name,
       debt_date: supplier.debt_date,
+      debt_end_date: supplier.debt_end_date || '',
       amount: supplier.amount,
       details: supplier.details || ''
     });
@@ -96,10 +99,14 @@ export default function Suppliers() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const payload = {
+      ...formData,
+      debt_end_date: formData.debt_end_date ? formData.debt_end_date : null
+    };
     if (editingId) {
-      updateMutation.mutate({ id: editingId, data: formData });
+      updateMutation.mutate({ id: editingId, data: payload });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(payload);
     }
   };
 
@@ -115,10 +122,11 @@ export default function Suppliers() {
 
   const handleExport = () => {
     if (!filteredSuppliers || filteredSuppliers.length === 0) return;
-    const headers = ['שם ספק', 'תאריך חוב', 'פירוט', 'סכום (₪)', 'חשבונית יצאה?', 'תאריך חשבונית'];
+    const headers = ['שם ספק', 'תאריך התחלה', 'תאריך סיום', 'פירוט', 'סכום (₪)', 'חשבונית יצאה?', 'תאריך חשבונית'];
     const rows = filteredSuppliers.map((s: Supplier) => [
       s.name,
       new Date(s.debt_date).toLocaleDateString('he-IL'),
+      s.debt_end_date ? new Date(s.debt_end_date).toLocaleDateString('he-IL') : '',
       s.details || '',
       s.amount,
       s.is_invoiced ? 'כן' : 'לא',
@@ -191,7 +199,7 @@ export default function Suppliers() {
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
                 <th className="p-4 font-bold text-gray-600 text-sm">שם ספק</th>
-                <th className="p-4 font-bold text-gray-600 text-sm">תאריך חוב</th>
+                <th className="p-4 font-bold text-gray-600 text-sm">תאריכים</th>
                 <th className="p-4 font-bold text-gray-600 text-sm">פירוט</th>
                 <th className="p-4 font-bold text-gray-600 text-sm">סכום</th>
                 <th className="p-4 font-bold text-gray-600 text-sm text-center">חשבונית יצאה?</th>
@@ -204,6 +212,7 @@ export default function Suppliers() {
                   <td className="p-4 font-bold text-gray-900">{supplier.name}</td>
                   <td className="p-4 text-gray-600 text-sm">
                     {new Date(supplier.debt_date).toLocaleDateString('he-IL')}
+                    {supplier.debt_end_date && ` - ${new Date(supplier.debt_end_date).toLocaleDateString('he-IL')}`}
                   </td>
                   <td className="p-4 text-gray-600 text-sm max-w-[200px] truncate" title={supplier.details}>
                     {supplier.details || '-'}
@@ -303,7 +312,7 @@ export default function Suppliers() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">תאריך חוב <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">מתאריך <span className="text-red-500">*</span></label>
                   <input 
                     type="date" 
                     required
@@ -313,14 +322,25 @@ export default function Suppliers() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">סכום (₪) <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">עד תאריך <span className="text-gray-400 font-normal text-xs">(רשות)</span></label>
+                  <input 
+                    type="date" 
+                    className="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 transition-all font-medium text-left"
+                    value={formData.debt_end_date}
+                    onChange={e => setFormData({...formData, debt_end_date: e.target.value})}
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">סכום (₪)</label>
                   <input 
                     type="number" 
                     min="0"
                     step="0.01"
-                    required
                     className="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 transition-all font-medium text-left"
-                    value={formData.amount}
+                    value={formData.amount === 0 ? '' : formData.amount}
+                    placeholder="0"
                     onChange={e => setFormData({...formData, amount: parseFloat(e.target.value) || 0})}
                   />
                 </div>
