@@ -14,6 +14,7 @@ interface ReportEmployee {
   full_name: string;
   phone: string;
   role: string;
+  employment_type?: string;
 }
 
 interface ReportTrip {
@@ -193,6 +194,9 @@ export default function Reports() {
                     <td className="p-2 md:p-4 break-words">
                       <div className="font-bold text-gray-800">{report?.employee?.full_name || 'עובד לא ידוע'}</div>
                       <div className="text-[10px] md:text-sm text-gray-500">{report?.employee?.phone || ''}</div>
+                      <div className="text-xs text-blue-600 font-semibold mt-1">
+                        סוג עובד: {report?.employee?.employment_type || 'שכיר'}
+                      </div>
                       <span className="inline-block mt-1 bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">
                         {report?.employee?.role === 'general' || !report?.employee?.role ? 'כללי' : report.employee.role}
                       </span>

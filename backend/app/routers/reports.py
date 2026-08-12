@@ -205,7 +205,8 @@ def get_all_reports(skip: int = 0, limit: int = 100, db: Session = Depends(get_d
                 "id": str(u.id),
                 "full_name": u.full_name,
                 "phone": u.phone,
-                "role": a.role
+                "role": a.role,
+                "employment_type": getattr(u, 'employment_type', 'שכיר')
             },
             "trip": {
                 "id": str(t.id),

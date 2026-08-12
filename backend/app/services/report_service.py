@@ -16,7 +16,7 @@ from app.services.notification_service import NotificationService
 logger = logging.getLogger(__name__)
 
 
-def calculate_overtime_decimal(start_time, end_time) -> float:
+def calculate_overtime_decimal(start_time, end_time, is_supplier: bool = False) -> float:
     """
     Calculates overtime hours for a single shift.
     Any time beyond 9 hours is overtime, with a +0.4h bonus if > 0,
@@ -30,7 +30,7 @@ def calculate_overtime_decimal(start_time, end_time) -> float:
     # Use Decimal for strict financial precision rounding to nearest 0.05
     d_overtime = Decimal(str(overtime_hours))
 
-    if d_overtime > 0:
+    if d_overtime > 0 and not is_supplier:
         d_overtime += Decimal('0.4')
 
     d_scaled = d_overtime * Decimal('20')
@@ -54,6 +54,8 @@ def process_and_save_report(
     final_start = report_data.start_time
     final_end = report_data.end_time
     shifts_json = None
+    
+    is_supplier = assignment.user and assignment.user.employment_type in ["עצמאי", "ספק"]
 
     if report_data.daily_shifts and len(report_data.daily_shifts) > 0:
         active_shifts = [s for s in report_data.daily_shifts if not s.is_absent]
@@ -67,14 +69,14 @@ def process_and_save_report(
         final_start = min(s.start_time for s in active_shifts)
         final_end = max(s.end_time for s in active_shifts)
         for shift in active_shifts:
-            total_overtime += calculate_overtime_decimal(shift.start_time, shift.end_time)
+            total_overtime += calculate_overtime_decimal(shift.start_time, shift.end_time, is_supplier)
     else:
         if not report_data.start_time or not report_data.end_time:
             raise HTTPException(
                 status_code=400,
                 detail="Must provide start_time and end_time if no daily_shifts"
             )
-        total_overtime = calculate_overtime_decimal(report_data.start_time, report_data.end_time)
+        total_overtime = calculate_overtime_decimal(report_data.start_time, report_data.end_time, is_supplier)
 
     # Check if report already exists for draft upsert
     existing_report = db.query(TripReport).filter(
@@ -136,6 +138,8 @@ def update_report_data(db: Session, report: TripReport, data: ReportUpdate) -> T
     report.start_time = data.start_time
     report.end_time = data.end_time
     
+    is_supplier = report.assignment and report.assignment.user and report.assignment.user.employment_type in ["עצמאי", "ספק"]
+    
     new_overtime = 0.0
     if data.daily_shifts and len(data.daily_shifts) > 0:
         report.daily_shifts = data.daily_shifts
@@ -152,10 +156,10 @@ def update_report_data(db: Session, report: TripReport, data: ReportUpdate) -> T
         for s in data.daily_shifts:
             st = get_time(s, 'start_time')
             et = get_time(s, 'end_time')
-            new_overtime += calculate_overtime_decimal(st, et)
+            new_overtime += calculate_overtime_decimal(st, et, is_supplier)
     else:
         report.daily_shifts = None
-        new_overtime = calculate_overtime_decimal(data.start_time, data.end_time)
+        new_overtime = calculate_overtime_decimal(data.start_time, data.end_time, is_supplier)
     
     # Allow manual override if they changed it specifically
     if abs(float(report.overtime_decimal) - float(data.overtime_decimal)) > 0.01:
