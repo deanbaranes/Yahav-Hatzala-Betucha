@@ -224,6 +224,8 @@ class BusinessExpenseBase(BaseModel):
     notes: Optional[str] = None
     status: Optional[str] = "pending"
     file_name: Optional[str] = None
+    expense_month: int
+    expense_year: int
 
 class BusinessExpenseUpdate(BaseModel):
     status: Optional[str] = None

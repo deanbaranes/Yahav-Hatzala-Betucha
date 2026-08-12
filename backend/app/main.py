@@ -33,6 +33,13 @@ try:
 except Exception:
     pass # Column already exists or error
 
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE business_expenses ADD COLUMN expense_month INTEGER"))
+        conn.execute(text("ALTER TABLE business_expenses ADD COLUMN expense_year INTEGER"))
+except Exception:
+    pass
+
 from contextlib import asynccontextmanager
 from app.tasks.scheduler import start_scheduler
 

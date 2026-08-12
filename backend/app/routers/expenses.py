@@ -13,6 +13,8 @@ router = APIRouter(prefix="/expenses", tags=["expenses"])
 @router.post("/", response_model=BusinessExpenseOut)
 async def upload_expense(
     file: UploadFile = File(...),
+    expense_month: int = Form(...),
+    expense_year: int = Form(...),
     notes: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_user)
@@ -27,7 +29,9 @@ async def upload_expense(
         file_name=file.filename,
         notes=notes,
         uploaded_by_id=current_user.id,
-        status="pending"
+        status="pending",
+        expense_month=expense_month,
+        expense_year=expense_year
     )
     db.add(expense)
     db.commit()
@@ -35,10 +39,20 @@ async def upload_expense(
     return expense
 
 @router.get("/", response_model=List[BusinessExpenseOut])
-def list_expenses(status: Optional[str] = None, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
+def list_expenses(
+    status: Optional[str] = None, 
+    expense_month: Optional[int] = None,
+    expense_year: Optional[int] = None,
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_admin_user)
+):
     query = db.query(BusinessExpense)
     if status:
         query = query.filter(BusinessExpense.status == status)
+    if expense_month is not None:
+        query = query.filter(BusinessExpense.expense_month == expense_month)
+    if expense_year is not None:
+        query = query.filter(BusinessExpense.expense_year == expense_year)
     
     # Sort pending by newest first, processed by newest first
     expenses = query.order_by(BusinessExpense.created_at.desc()).all()

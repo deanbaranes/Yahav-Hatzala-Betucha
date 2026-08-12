@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
-import { Download, Upload, CheckCircle2, FileText, Trash2, X, RefreshCw, FolderDown, ArrowUpCircle } from 'lucide-react';
+import { Download, Upload, CheckCircle2, FileText, Trash2, X, RefreshCw, FolderDown, ArrowUpCircle, ChevronRight, ChevronLeft, Calendar } from 'lucide-react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
@@ -12,10 +12,14 @@ export default function Expenses() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const currentMonth = currentDate.getMonth() + 1;
+  const currentYear = currentDate.getFullYear();
+
   const { data: expenses, isLoading } = useQuery<any[]>({
-    queryKey: ['expenses', activeTab],
+    queryKey: ['expenses', activeTab, currentMonth, currentYear],
     queryFn: async () => {
-      const res = await axiosClient.get(`/expenses/?status=${activeTab}`);
+      const res = await axiosClient.get(`/expenses/?status=${activeTab}&expense_month=${currentMonth}&expense_year=${currentYear}`);
       return res.data;
     }
   });
@@ -46,6 +50,8 @@ export default function Expenses() {
         const file = files[i];
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('expense_month', currentMonth.toString());
+        formData.append('expense_year', currentYear.toString());
         await axiosClient.post('/expenses/', formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
@@ -102,23 +108,49 @@ export default function Expenses() {
       }));
       
       const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, `yahav_expenses_${new Date().toISOString().split('T')[0]}.zip`);
+      saveAs(content, `yahav_expenses_${currentYear}_${currentMonth}_pending.zip`);
     } catch (error) {
       console.error("Error creating zip:", error);
       alert("שגיאה בהורדת הקבצים כ-ZIP");
     }
   };
 
+  const handlePrevMonth = () => {
+    setCurrentDate(new Date(currentYear, currentMonth - 2, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentDate(new Date(currentYear, currentMonth, 1));
+  };
+
+  const monthName = currentDate.toLocaleString('he-IL', { month: 'long' });
+
   return (
     <div className="space-y-6 animate-fade-in pb-10">
-      <header className="mb-6 relative bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
-        <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3">
-          <span className="bg-blue-100 text-blue-700 p-2 rounded-lg shrink-0">
-            <FolderDown size={28} />
-          </span>
-          ניהול הוצאות עסק
-        </h1>
-        <p className="text-gray-500 text-sm sm:text-base mt-2 font-medium">העלאה, סריקה ומעקב אחר הוצאות שוטפות של יהב הצלה בטוחה.</p>
+      <header className="mb-6 relative bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4 justify-between md:items-center">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+            <span className="bg-blue-100 text-blue-700 p-2 rounded-lg shrink-0">
+              <FolderDown size={28} />
+            </span>
+            ניהול הוצאות עסק
+          </h1>
+          <p className="text-gray-500 text-sm sm:text-base mt-2 font-medium">העלאה, סריקה ומעקב לפי חודשים.</p>
+        </div>
+        
+        {/* Month Selector */}
+        <div className="flex items-center gap-4 bg-slate-50 border border-gray-200 p-2 rounded-xl">
+          <button onClick={handlePrevMonth} className="p-2 hover:bg-white rounded-lg transition-colors text-gray-600 hover:text-blue-600 shadow-sm border border-transparent hover:border-gray-200">
+            <ChevronRight size={20} />
+          </button>
+          <div className="flex flex-col items-center justify-center min-w-[120px]">
+            <div className="text-xs text-gray-500 font-medium mb-0.5 flex items-center gap-1"><Calendar size={12}/> תיקיית חודש</div>
+            <div className="font-bold text-lg text-slate-800">{monthName} {currentYear}</div>
+          </div>
+          <button onClick={handleNextMonth} className="p-2 hover:bg-white rounded-lg transition-colors text-gray-600 hover:text-blue-600 shadow-sm border border-transparent hover:border-gray-200">
+            <ChevronLeft size={20} />
+          </button>
+        </div>
       </header>
 
       {/* Upload Zone */}
@@ -141,7 +173,7 @@ export default function Expenses() {
             {isUploading ? <RefreshCw className="animate-spin" size={32} /> : <Upload size={32} />}
           </div>
           <div>
-            <h3 className="font-bold text-gray-800 text-lg mb-1">{isUploading ? 'מעלה קבצים...' : 'גרור קבלות לכאן או לחץ להעלאה'}</h3>
+            <h3 className="font-bold text-gray-800 text-lg mb-1">{isUploading ? 'מעלה קבצים...' : `גרור קבלות לתיקיית ${monthName}`}</h3>
             <p className="text-gray-500 text-sm">ניתן להעלות תמונות או קובצי PDF. אפשר לבחור מספר קבצים יחד.</p>
           </div>
           <button 

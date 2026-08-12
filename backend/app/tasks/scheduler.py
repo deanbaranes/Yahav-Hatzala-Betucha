@@ -157,22 +157,24 @@ def delete_old_receipts():
 
 def delete_old_business_expenses():
     """
-    Deletes business expenses that are older than 2 months and 15 days.
-    Runs on the 15th of each month, deleting expenses created before the 1st of the previous month.
-    (e.g., on Oct 15th, deletes all expenses created before Sep 1st).
+    Deletes business expenses based on their assigned folder (expense_month and expense_year).
+    Runs on the 15th of each month, deleting folders older than 2 months.
+    (e.g., on Oct 15th, deletes all expenses in the August folder and older).
     """
     logger.info("Running delete_old_business_expenses task...")
     db: Session = next(get_db())
     now = datetime.now()
     
-    # Calculate the 1st of the previous month
-    if now.month == 1:
-        cutoff_date = datetime(now.year - 1, 12, 1)
-    else:
-        cutoff_date = datetime(now.year, now.month - 1, 1)
+    # Calculate the cutoff month/year (2 months ago)
+    cutoff_month = now.month - 2
+    cutoff_year = now.year
+    if cutoff_month <= 0:
+        cutoff_month += 12
+        cutoff_year -= 1
         
     old_expenses = db.query(BusinessExpense).filter(
-        BusinessExpense.created_at < cutoff_date
+        (BusinessExpense.expense_year < cutoff_year) |
+        ((BusinessExpense.expense_year == cutoff_year) & (BusinessExpense.expense_month <= cutoff_month))
     ).all()
     
     deleted_count = 0

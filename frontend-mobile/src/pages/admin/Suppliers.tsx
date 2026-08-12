@@ -35,6 +35,14 @@ export default function Suppliers() {
     }
   });
 
+  const { data: employees = [] } = useQuery<any[]>({
+    queryKey: ['employees'],
+    queryFn: async () => {
+      const res = await axiosClient.get('/payroll/employees');
+      return res.data;
+    }
+  });
+
   const createMutation = useMutation({
     mutationFn: async (data: any) => axiosClient.post('/suppliers/', data),
     onSuccess: () => {
@@ -101,6 +109,9 @@ export default function Suppliers() {
   );
 
   const totalDebt = filteredSuppliers.reduce((sum, s) => sum + (!s.is_invoiced ? s.amount : 0), 0);
+
+  const freelancers = employees.filter(e => e.employment_type === 'עצמאי').map(e => e.full_name);
+  const uniqueSupplierNames = Array.from(new Set([...suppliers.map(s => s.name), ...freelancers]));
 
   const handleExport = () => {
     if (!filteredSuppliers || filteredSuppliers.length === 0) return;
@@ -277,10 +288,17 @@ export default function Suppliers() {
                 <input 
                   type="text" 
                   required
+                  list="supplier-suggestions"
                   className="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium"
                   value={formData.name}
                   onChange={e => setFormData({...formData, name: e.target.value})}
+                  autoComplete="off"
                 />
+                <datalist id="supplier-suggestions">
+                  {uniqueSupplierNames.map(name => (
+                    <option key={name} value={name} />
+                  ))}
+                </datalist>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
