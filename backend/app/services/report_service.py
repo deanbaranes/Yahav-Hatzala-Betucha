@@ -114,27 +114,7 @@ def process_and_save_report(
         )
         db.add(new_report)
 
-    # Auto-charge client for accommodation (only if it's the final submission and wasn't charged yet)
     trip = assignment.trip
-    if not new_report.is_draft and not existing_report and trip.start_date and trip.end_date:
-        nights = (trip.end_date.date() - trip.start_date.date()).days
-        if nights > 0:
-            client = trip.client
-            if client:
-                try:
-                    current_bal = float(str(client.balance or '0').replace(',', ''))
-                except ValueError:
-                    current_bal = 0.0
-
-                charge = nights * CLIENT_ACCOMMODATION_CHARGE
-                client.balance = str(current_bal - charge)
-                note_addition = (
-                    f"חיוב אוטומטי {charge} ₪ על לינת עובד בטיול "
-                    f"{trip.location} ({trip.start_date.strftime('%d/%m/%Y')})"
-                )
-                client.notes = f"{client.notes or ''}\n{note_addition}".strip()
-                db.add(client)
-
     db.commit()
     db.refresh(new_report)
 
