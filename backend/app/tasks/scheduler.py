@@ -11,6 +11,7 @@ from app.services.notification_service import NotificationService
 from app.services.storage_service import StorageService
 import os
 from app.models.trip_report import TripReport
+from app.models.business_expense import BusinessExpense
 
 logger = logging.getLogger(__name__)
 
@@ -154,6 +155,36 @@ def delete_old_receipts():
     db.commit()
     logger.info(f"Deleted {deleted_count} old receipts.")
 
+def delete_old_business_expenses():
+    """
+    Deletes business expenses that are older than 2 months and 15 days.
+    Runs on the 15th of each month, deleting expenses created before the 1st of the previous month.
+    (e.g., on Oct 15th, deletes all expenses created before Sep 1st).
+    """
+    logger.info("Running delete_old_business_expenses task...")
+    db: Session = next(get_db())
+    now = datetime.now()
+    
+    # Calculate the 1st of the previous month
+    if now.month == 1:
+        cutoff_date = datetime(now.year - 1, 12, 1)
+    else:
+        cutoff_date = datetime(now.year, now.month - 1, 1)
+        
+    old_expenses = db.query(BusinessExpense).filter(
+        BusinessExpense.created_at < cutoff_date
+    ).all()
+    
+    deleted_count = 0
+    for expense in old_expenses:
+        if expense.file_url:
+            StorageService.delete_file(expense.file_url)
+        db.delete(expense)
+        deleted_count += 1
+        
+    db.commit()
+    logger.info(f"Deleted {deleted_count} old business expenses.")
+
 def check_ended_trips_for_reports():
     """
     Check for trips that ended recently (within the last 3 days).
@@ -205,6 +236,8 @@ def start_scheduler():
     scheduler.add_job(check_ended_trips_for_reports, 'cron', minute=0)
     # Run deletion task every night at 3 AM
     scheduler.add_job(delete_old_receipts, 'cron', hour=3, minute=0)
+    # Run business expenses cleanup on the 15th of every month at 4 AM
+    scheduler.add_job(delete_old_business_expenses, 'cron', day=15, hour=4, minute=0)
     
     scheduler.start()
     logger.info("APScheduler started successfully.")
