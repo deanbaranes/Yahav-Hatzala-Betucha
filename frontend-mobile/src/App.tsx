@@ -8,6 +8,7 @@ import Clients from './pages/admin/Clients';
 import Suppliers from './pages/admin/Suppliers';
 import PayrollManagement from './pages/admin/PayrollManagement';
 import Billing from './pages/admin/Billing';
+import Expenses from './pages/admin/Expenses';
 import Home from './pages/employee/Home';
 import EmployeeTrips from './pages/employee/Trips';
 import Report from './pages/employee/Report';
@@ -68,7 +69,8 @@ const router = createBrowserRouter([
           { path: 'matrix', element: <EmployeeMatrix /> },
           { path: 'payroll', element: <PayrollManagement /> },
           { path: 'billing', element: <Billing /> },
-          { path: 'reports', element: <Reports /> }
+          { path: 'reports', element: <Reports /> },
+          { path: 'expenses', element: <Expenses /> }
         ]
       }
     ]

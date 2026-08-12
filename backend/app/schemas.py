@@ -217,3 +217,24 @@ class SupplierOut(SupplierBase):
 
     class Config:
         from_attributes = True
+
+# ── Business Expenses Schemas ──────────────────────────────────────────────────
+
+class BusinessExpenseBase(BaseModel):
+    notes: Optional[str] = None
+    status: Optional[str] = "pending"
+    file_name: Optional[str] = None
+
+class BusinessExpenseUpdate(BaseModel):
+    status: Optional[str] = None
+    notes: Optional[str] = None
+
+class BusinessExpenseOut(BusinessExpenseBase):
+    id: uuid.UUID
+    file_url: str
+    uploaded_by_id: Optional[uuid.UUID] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

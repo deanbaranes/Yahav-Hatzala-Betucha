@@ -7,3 +7,4 @@ from .refresh_token import RefreshToken
 from .supplier import Supplier
 from .notification import Notification
 from .payslip import Payslip
+from .business_expense import BusinessExpense
