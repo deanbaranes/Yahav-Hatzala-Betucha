@@ -178,39 +178,39 @@ export default function Reports() {
             <table className="w-full text-right border-collapse">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200 text-gray-600">
-                  <th className="p-4 font-bold text-sm">עובד ופרטי קשר</th>
-                  <th className="hidden md:table-cell p-4 font-bold text-sm">פרטי טיול</th>
-                  <th className="p-4 font-bold text-sm">שעות דיווח</th>
-                  <th className="hidden lg:table-cell p-4 font-bold text-sm">שעות נוספות</th>
-                  <th className="p-4 font-bold text-sm">הוצאות (₪)</th>
-                  <th className="hidden md:table-cell p-4 font-bold text-sm">קבלה</th>
-                  <th className="p-4 font-bold text-sm">סטטוס</th>
-                  <th className="p-4 font-bold text-sm text-center">פעולות</th>
+                  <th className="p-2 md:p-3 font-bold text-[11px] md:text-sm">עובד ופרטי קשר</th>
+                  <th className="hidden md:table-cell p-2 md:p-3 font-bold text-[11px] md:text-sm">פרטי טיול</th>
+                  <th className="p-2 md:p-3 font-bold text-[11px] md:text-sm">שעות דיווח</th>
+                  <th className="hidden lg:table-cell p-2 md:p-3 font-bold text-[11px] md:text-sm">שעות נוספות</th>
+                  <th className="p-2 md:p-3 font-bold text-[11px] md:text-sm">הוצאות (₪)</th>
+                  <th className="hidden md:table-cell p-2 md:p-3 font-bold text-[11px] md:text-sm">קבלה</th>
+                  <th className="p-2 md:p-3 font-bold text-[11px] md:text-sm">סטטוס</th>
+                  <th className="p-2 md:p-3 font-bold text-[11px] md:text-sm text-center">פעולות</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredReports?.map((report) => (
                   <tr key={report.id} className="border-b border-gray-100 hover:bg-indigo-50/30 transition-colors">
-                    <td className="p-2 md:p-4 break-words">
-                      <div className="font-bold text-gray-800">{report?.employee?.full_name || 'עובד לא ידוע'}</div>
-                      <div className="text-[10px] md:text-sm text-gray-500">{report?.employee?.phone || ''}</div>
-                      <div className="text-xs text-blue-600 font-semibold mt-1">
+                    <td className="p-2 md:p-3 break-words align-top">
+                      <div className="font-bold text-gray-800 text-sm">{report?.employee?.full_name || 'עובד לא ידוע'}</div>
+                      <div className="text-[10px] md:text-xs text-gray-500">{report?.employee?.phone || ''}</div>
+                      <div className="text-[10px] text-blue-600 font-semibold mt-0.5">
                         סוג עובד: {report?.employee?.employment_type || 'שכיר'}
                       </div>
-                      <span className="inline-block mt-1 bg-gray-100 text-gray-600 px-2 py-0.5 rounded text-xs">
+                      <span className="inline-block mt-0.5 bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[10px]">
                         {report?.employee?.role === 'general' || !report?.employee?.role ? 'כללי' : report.employee.role}
                       </span>
                       {/* Mobile extra info */}
-                      <div className="md:hidden mt-2 text-[10px] text-blue-600 font-bold border-t pt-1">
+                      <div className="md:hidden mt-1.5 text-[10px] text-blue-600 font-bold border-t pt-1 leading-tight">
                         {report?.trip?.client_name || 'לקוח'} • {report?.trip?.start_date ? new Date(report.trip.start_date).toLocaleDateString('he-IL') : ''}
                       </div>
                     </td>
-                    <td className="hidden md:table-cell p-4">
-                      <div className="font-semibold text-blue-700">{report?.trip?.client_name || 'לקוח כללי'}</div>
-                      <div className="text-sm text-gray-600">{report?.trip?.location || 'ללא מיקום'}</div>
-                      <div className="text-xs text-gray-400">{report?.trip?.start_date ? new Date(report.trip.start_date).toLocaleDateString('he-IL') : ''}</div>
+                    <td className="hidden md:table-cell p-2 md:p-3 align-top">
+                      <div className="font-bold text-blue-700 text-xs md:text-sm leading-tight max-w-[120px] lg:max-w-xs">{report?.trip?.client_name || 'לקוח כללי'}</div>
+                      <div className="text-[10px] md:text-xs text-gray-600 mt-0.5">{report?.trip?.location || 'ללא מיקום'}</div>
+                      <div className="text-[9px] md:text-[10px] text-gray-400">{report?.trip?.start_date ? new Date(report.trip.start_date).toLocaleDateString('he-IL') : ''}</div>
                     </td>
-                    <td className="p-2 md:p-4 break-words">
+                    <td className="p-2 md:p-3 break-words align-top">
                       {editingReport?.id === report.id ? (
                         <div className="space-y-2">
                           {editForm.daily_shifts && editForm.daily_shifts.length > 0 ? (
@@ -257,9 +257,9 @@ export default function Reports() {
                           {report.daily_shifts && report.daily_shifts.length > 0 ? (
                             <div className="space-y-1">
                               {report.daily_shifts.map((shift: any, idx: number) => (
-                                <div key={idx} className="text-[11px] bg-indigo-50/50 p-1 rounded border border-indigo-100 text-indigo-900 shadow-sm flex flex-col">
-                                  <span className="font-bold border-b border-indigo-100 mb-0.5">יום {idx + 1} ({new Date(shift.start_time).toLocaleDateString('he-IL')})</span>
-                                  <span>{new Date(shift.start_time).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})} - {new Date(shift.end_time).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})}</span>
+                                <div key={idx} className="text-[10px] bg-indigo-50/50 p-1 rounded border border-indigo-100 text-indigo-900 shadow-sm flex flex-col mb-1">
+                                  <span className="font-bold border-b border-indigo-100 mb-0.5 leading-none pb-0.5">יום {idx + 1} ({new Date(shift.start_time).toLocaleDateString('he-IL')})</span>
+                                  <span className="leading-none pt-0.5">{new Date(shift.start_time).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})} - {new Date(shift.end_time).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})}</span>
                                 </div>
                               ))}
                             </div>
@@ -276,37 +276,37 @@ export default function Reports() {
                         </>
                       )}
                     </td>
-                    <td className="hidden lg:table-cell p-4 text-center">
+                    <td className="hidden lg:table-cell p-2 md:p-3 text-center align-top">
                       {editingReport?.id === report.id ? (
-                        <input type="number" step="0.5" value={editForm.overtime_decimal} onChange={e => setEditForm({...editForm, overtime_decimal: Number(e.target.value)})} className="w-16 p-1 border rounded text-center font-bold" />
+                        <input type="number" step="0.5" value={editForm.overtime_decimal} onChange={e => setEditForm({...editForm, overtime_decimal: Number(e.target.value)})} className="w-12 p-0.5 border rounded text-center font-bold text-sm" />
                       ) : (
-                        <span className={`font-black text-lg ${report.overtime_decimal > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                        <span className={`font-black text-sm md:text-base ${report.overtime_decimal > 0 ? 'text-green-600' : 'text-gray-400'}`}>
                           {report.overtime_decimal > 0 ? `+${report.overtime_decimal}` : '0'}
                         </span>
                       )}
                     </td>
-                    <td className="p-4">
+                    <td className="p-2 md:p-3 align-top">
                       {editingReport?.id === report.id ? (
-                        <input type="number" step="1" value={editForm.expenses} onChange={e => setEditForm({...editForm, expenses: Number(e.target.value)})} className="w-16 p-1 border rounded text-center text-xs" />
+                        <input type="number" step="1" value={editForm.expenses} onChange={e => setEditForm({...editForm, expenses: Number(e.target.value)})} className="w-12 p-0.5 border rounded text-center text-xs" />
                       ) : (
-                        <span className="font-bold text-gray-700">₪{report.expenses}</span>
+                        <span className="font-bold text-gray-700 text-xs md:text-sm">₪{report.expenses}</span>
                       )}
                     </td>
-                    <td className="hidden md:table-cell p-4">
+                    <td className="hidden md:table-cell p-2 md:p-3 align-top">
                       {report.receipt_url ? (
-                        <button onClick={() => handleDownloadReceipt(report.receipt_url!)} className="inline-flex items-center gap-1 bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1 rounded-lg text-sm font-semibold">
-                          <FileText size={14} /> צפה
+                        <button onClick={() => handleDownloadReceipt(report.receipt_url!)} className="inline-flex items-center gap-1 bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-0.5 rounded text-[11px] font-semibold">
+                          <FileText size={12} /> צפה
                         </button>
                       ) : (
-                        <span className="text-gray-400 text-sm">אין קבלה</span>
+                        <span className="text-gray-400 text-[10px]">אין קבלה</span>
                       )}
                     </td>
-                    <td className="p-4 text-center">
-                      {report.manager_status === 'pending' && <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-xs font-bold">ממתין</span>}
-                      {report.manager_status === 'approved' && <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-bold">אושר</span>}
-                      {report.manager_status === 'rejected' && <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-bold">נדחה</span>}
+                    <td className="p-2 md:p-3 text-center align-top">
+                      {report.manager_status === 'pending' && <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-[10px] font-bold">ממתין</span>}
+                      {report.manager_status === 'approved' && <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-[10px] font-bold">אושר</span>}
+                      {report.manager_status === 'rejected' && <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded text-[10px] font-bold">נדחה</span>}
                     </td>
-                    <td className="p-4 text-center">
+                    <td className="p-2 md:p-3 text-center align-top">
                       {editingReport?.id === report.id ? (
                         <div className="flex flex-col gap-2">
                             <div className="flex justify-center gap-2">
