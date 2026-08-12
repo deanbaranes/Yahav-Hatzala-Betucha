@@ -4,7 +4,7 @@ from app.database import get_db
 from app.models.client import Client
 from app.models.user import User
 from app.dependencies import get_admin_user
-from app.schemas import ClientUpdate
+from app.schemas import ClientUpdate, ClientCreate
 from dateutil import parser
 
 router = APIRouter(prefix="/clients", tags=["clients"])
@@ -59,6 +59,24 @@ def get_clients(skip: int = 0, limit: int = 50, q: str = "", db: Session = Depen
             } for c in clients
         ]
     }
+
+@router.post("/")
+def create_client(data: ClientCreate, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
+    existing = db.query(Client).filter(Client.name == data.name).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Client with this name already exists")
+    
+    new_client = Client(
+        name=data.name,
+        contact_person=data.contact_person,
+        email=data.email,
+        phone=data.phone,
+        balance="0"
+    )
+    db.add(new_client)
+    db.commit()
+    db.refresh(new_client)
+    return {"id": str(new_client.id), "message": "Client created successfully"}
 
 @router.put("/{client_id}")
 def update_client(client_id: str, data: ClientUpdate, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):

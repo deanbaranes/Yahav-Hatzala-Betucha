@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
-import { Search, Save, Edit2, Trash2, Copy, Check, Users, Download } from 'lucide-react';
+import { Search, Save, Edit2, Trash2, Copy, Check, Users, Download, Plus, X } from 'lucide-react';
 import { exportToCSV } from '../../utils/csvExport';
 
 export default function Clients() {
@@ -11,6 +11,8 @@ export default function Clients() {
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
   const [mobileViewMode, setMobileViewMode] = useState<'cards' | 'table'>('cards');
   const [page, setPage] = useState(0);
+  const [showAddClient, setShowAddClient] = useState(false);
+  const [addClientForm, setAddClientForm] = useState({ name: '', contact_person: '', phone: '', email: '' });
   const limit = 50;
 
   const PAYMENT_TERMS_OPTIONS = [
@@ -57,6 +59,22 @@ export default function Clients() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       setEditingId(null);
+    }
+  });
+
+  const createClientMutation = useMutation({
+    mutationFn: async (data: any) => {
+      if (!data.name.trim()) throw new Error('שם לקוח הוא שדה חובה');
+      await axiosClient.post(`/clients/`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      setShowAddClient(false);
+      setAddClientForm({ name: '', contact_person: '', phone: '', email: '' });
+      alert('הלקוח נוצר בהצלחה!');
+    },
+    onError: (err: any) => {
+      alert(err.response?.data?.detail || err.message || 'שגיאה בהקמת לקוח');
     }
   });
 
@@ -160,14 +178,24 @@ export default function Clients() {
             </h1>
             <p className="text-gray-500 text-sm sm:text-base mt-2 font-medium">ניהול שוטף, מעקב יתרות וסטטוס גביה.</p>
           </div>
-          <button 
-            onClick={handleExport}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 h-9 sm:h-10 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg font-bold text-sm transition-colors border border-emerald-200 whitespace-nowrap shrink-0"
-          >
-            <Download size={16} />
-            <span className="hidden sm:inline">ייצוא לאקסל</span>
-            <span className="sm:hidden">ייצוא</span>
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setShowAddClient(true)}
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 h-9 sm:h-10 bg-blue-600 text-white hover:bg-blue-700 rounded-lg font-bold text-sm transition-colors shadow-sm whitespace-nowrap shrink-0"
+            >
+              <Plus size={16} />
+              <span className="hidden sm:inline">הוסף לקוח</span>
+              <span className="sm:hidden">הוסף</span>
+            </button>
+            <button 
+              onClick={handleExport}
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 h-9 sm:h-10 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg font-bold text-sm transition-colors border border-emerald-200 whitespace-nowrap shrink-0"
+            >
+              <Download size={16} />
+              <span className="hidden sm:inline">ייצוא לאקסל</span>
+              <span className="sm:hidden">ייצוא</span>
+            </button>
+          </div>
         </div>
         <div className="flex flex-col md:flex-row items-stretch gap-4 w-full border-t border-gray-100 pt-4">
           <div className="flex gap-4 w-full md:w-auto">
@@ -557,6 +585,72 @@ export default function Clients() {
           </button>
         </div>
       )}
+      {/* Add Client Modal */}
+      {showAddClient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm" onClick={() => setShowAddClient(false)}>
+          <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-sm w-full animate-fade-in text-right" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4 border-b pb-2">
+              <h3 className="text-xl font-bold text-gray-800">הוספת לקוח חדש</h3>
+              <button onClick={() => setShowAddClient(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">שם הלקוח / חברה (חובה)</label>
+                <input 
+                  type="text" 
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500" 
+                  value={addClientForm.name} 
+                  onChange={e => setAddClientForm({...addClientForm, name: e.target.value})} 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">איש קשר</label>
+                <input 
+                  type="text" 
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500" 
+                  value={addClientForm.contact_person} 
+                  onChange={e => setAddClientForm({...addClientForm, contact_person: e.target.value})} 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">טלפון</label>
+                <input 
+                  type="tel" 
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500" 
+                  dir="ltr"
+                  value={addClientForm.phone} 
+                  onChange={e => setAddClientForm({...addClientForm, phone: e.target.value})} 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">אימייל</label>
+                <input 
+                  type="email" 
+                  className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500" 
+                  dir="ltr"
+                  value={addClientForm.email} 
+                  onChange={e => setAddClientForm({...addClientForm, email: e.target.value})} 
+                />
+              </div>
+              
+              <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
+                <button onClick={() => setShowAddClient(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded font-bold">ביטול</button>
+                <button 
+                  disabled={createClientMutation.isPending || !addClientForm.name}
+                  onClick={() => createClientMutation.mutate(addClientForm)} 
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold disabled:opacity-50"
+                >
+                  {createClientMutation.isPending ? 'מקים...' : 'הקם לקוח'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
