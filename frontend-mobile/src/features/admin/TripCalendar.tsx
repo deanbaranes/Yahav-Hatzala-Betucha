@@ -2,12 +2,9 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, Calendar as CalendarIcon, CheckCircle2, Download } from 'lucide-react';
 import axiosClient from '../../api/axiosClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import SmartClientInput from './SmartClientInput';
 import CreateManualTripModal from './CreateManualTripModal';
 import TripDetailsModal from './TripDetailsModal';
 import { exportToCSV } from '../../utils/csvExport';
-
-const AVAILABLE_ROLES = ["מע\"ר", "חובש", "פראמדיק", "שומר לילה", "מע\"ר חמוש", "חובש חמוש", "מאבטח"];
 
 
 export default function TripCalendar({ trips }: { trips: any[] }) {
