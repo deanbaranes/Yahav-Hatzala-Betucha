@@ -289,7 +289,18 @@ export default function Reports() {
                       {editingReport?.id === report.id ? (
                         <input type="number" step="1" value={editForm.expenses} onChange={e => setEditForm({...editForm, expenses: Number(e.target.value)})} className="w-12 p-0.5 border rounded text-center text-xs" />
                       ) : (
-                        <span className="font-bold text-gray-700 text-xs md:text-sm">₪{report.expenses}</span>
+                        <div className="flex flex-col items-center gap-1.5">
+                          <span className="font-bold text-gray-700 text-xs md:text-sm">₪{report.expenses}</span>
+                          <div className="md:hidden">
+                            {report.receipt_url ? (
+                              <button onClick={() => handleDownloadReceipt(report.receipt_url!)} className="inline-flex items-center gap-1 bg-blue-50 text-blue-600 hover:bg-blue-100 px-1.5 py-0.5 rounded text-[10px] font-semibold">
+                                <FileText size={10} /> קבלה
+                              </button>
+                            ) : (
+                              <span className="text-gray-400 text-[9px]">אין קבלה</span>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </td>
                     <td className="hidden md:table-cell p-2 md:p-3 align-top">
