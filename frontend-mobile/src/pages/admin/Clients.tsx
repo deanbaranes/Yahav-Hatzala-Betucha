@@ -153,20 +153,39 @@ export default function Clients() {
     return `${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/80'} hover:bg-blue-50/70 border-b border-gray-100`;
   };
 
-  const handleExport = () => {
-    if (!filteredClients || filteredClients.length === 0) return;
-    const headers = ['שם הלקוח', 'איש קשר', 'טלפון', 'אימייל', 'יתרה (₪)', 'תאריך עדכון', 'תנאי תשלום', 'הערות'];
-    const rows = filteredClients.map((c: any) => [
-      c.name || '',
-      c.contact_person || '',
-      c.phone || '',
-      c.email || '',
-      c.balance || '0',
-      c.debt_start_date ? new Date(c.debt_start_date).toLocaleDateString('he-IL') : '',
-      c.payment_terms || '',
-      c.notes || ''
-    ]);
-    exportToCSV(`לקוחות_וחובות_${new Date().toISOString().split('T')[0]}`, headers, rows);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      // Fetch all clients for export (ignoring pagination but keeping current search filter)
+      const res = await axiosClient.get(`/clients/?limit=10000&q=${searchTerm}`);
+      const clientsToExport = res.data.data || [];
+      
+      if (clientsToExport.length === 0) {
+        alert('אין נתונים לייצוא');
+        return;
+      }
+      
+      const headers = ['שם הלקוח', 'איש קשר', 'טלפון', 'אימייל', 'יתרה (₪)', 'תאריך עדכון', 'תנאי תשלום', 'הערות'];
+      const rows = clientsToExport.map((c: any) => [
+        c.name || '',
+        c.contact_person || '',
+        c.phone || '',
+        c.email || '',
+        c.balance || '0',
+        c.debt_start_date ? new Date(c.debt_start_date).toLocaleDateString('he-IL') : '',
+        c.payment_terms || '',
+        c.notes || ''
+      ]);
+      
+      exportToCSV(`לקוחות_וחובות_${new Date().toISOString().split('T')[0]}`, headers, rows);
+    } catch (err) {
+      console.error('Error exporting clients:', err);
+      alert('שגיאה בייצוא לקוחות');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -193,11 +212,12 @@ export default function Clients() {
             </button>
             <button 
               onClick={handleExport}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 h-9 sm:h-10 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg font-bold text-sm transition-colors border border-emerald-200 whitespace-nowrap shrink-0"
+              disabled={isExporting}
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 h-9 sm:h-10 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg font-bold text-sm transition-colors border border-emerald-200 whitespace-nowrap shrink-0 disabled:opacity-50"
             >
               <Download size={16} />
-              <span className="hidden sm:inline">ייצוא לאקסל</span>
-              <span className="sm:hidden">ייצוא</span>
+              <span className="hidden sm:inline">{isExporting ? 'מייצא...' : 'ייצוא לאקסל'}</span>
+              <span className="sm:hidden">{isExporting ? 'מייצא' : 'ייצוא'}</span>
             </button>
           </div>
         </div>
