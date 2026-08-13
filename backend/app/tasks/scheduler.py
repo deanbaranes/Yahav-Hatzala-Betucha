@@ -306,8 +306,8 @@ def start_scheduler():
     # Run business expenses cleanup on the 15th of every month at 4 AM
     scheduler.add_job(delete_old_business_expenses, 'cron', day=15, hour=4, minute=0)
     
-    # Check for upcoming trips and request confirmation every day at 18:00
-    scheduler.add_job(check_upcoming_trips_for_confirmation, 'cron', hour=18, minute=0)
+    # Check for upcoming trips and request confirmation every day at 16:00
+    scheduler.add_job(check_upcoming_trips_for_confirmation, 'cron', hour=16, minute=0)
     
     scheduler.start()
     logger.info("APScheduler started successfully.")
