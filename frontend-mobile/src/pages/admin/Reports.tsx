@@ -52,6 +52,7 @@ interface ReportUpdateData {
 export default function Reports() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'pending' | 'approved' | 'all'>('pending');
   const [editingReport, setEditingReport] = useState<TripReport | null>(null);
   const [editForm, setEditForm] = useState<ReportUpdateData>({ start_time: '', end_time: '', daily_shifts: [], overtime_decimal: 0, expenses: 0, sleeps: 0 });
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
@@ -64,11 +65,17 @@ export default function Reports() {
     }
   });
 
-  const filteredReports = reports?.filter((report: TripReport) => 
-    report.employee?.full_name?.includes(searchTerm) || 
-    report.trip?.location?.includes(searchTerm) ||
-    (report.trip?.client_name && report.trip.client_name.includes(searchTerm))
-  );
+  const filteredReports = reports?.filter((report: TripReport) => {
+    const matchesSearch = report.employee?.full_name?.includes(searchTerm) || 
+                          report.trip?.location?.includes(searchTerm) ||
+                          (report.trip?.client_name && report.trip.client_name.includes(searchTerm));
+                          
+    if (!matchesSearch) return false;
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'pending') return report.manager_status === 'pending';
+    if (statusFilter === 'approved') return report.manager_status === 'approved';
+    return true;
+  });
 
   const updateMutation = useMutation({
     mutationFn: async (data: ReportUpdateData) => {
@@ -158,12 +165,28 @@ export default function Reports() {
       />
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 overflow-hidden">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-          <h2 className="text-xl font-bold text-gray-800">דוחות שהוגשו</h2>
+        <div className="flex flex-col gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <h2 className="text-xl font-bold text-gray-800">דוחות שהוגשו</h2>
+            <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg w-full sm:w-auto overflow-x-auto">
+              <button 
+                onClick={() => setStatusFilter('pending')}
+                className={`flex-1 sm:flex-none px-4 py-1.5 text-xs sm:text-sm font-bold rounded-md transition-all whitespace-nowrap ${statusFilter === 'pending' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >ממתינים לאישור</button>
+              <button 
+                onClick={() => setStatusFilter('approved')}
+                className={`flex-1 sm:flex-none px-4 py-1.5 text-xs sm:text-sm font-bold rounded-md transition-all whitespace-nowrap ${statusFilter === 'approved' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >שאושרו</button>
+              <button 
+                onClick={() => setStatusFilter('all')}
+                className={`flex-1 sm:flex-none px-4 py-1.5 text-xs sm:text-sm font-bold rounded-md transition-all whitespace-nowrap ${statusFilter === 'all' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >הכל</button>
+            </div>
+          </div>
           <input 
             type="text"
             placeholder="חיפוש לפי עובד או מיקום..."
-            className="p-2 border border-gray-300 rounded-lg w-full sm:w-64 text-sm"
+            className="p-2 border border-gray-300 rounded-lg w-full sm:max-w-md text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -203,6 +226,12 @@ export default function Reports() {
                       {/* Mobile extra info */}
                       <div className="md:hidden mt-1.5 text-[10px] text-blue-600 font-bold border-t pt-1 leading-tight">
                         {report?.trip?.client_name || 'לקוח'} • {report?.trip?.start_date ? new Date(report.trip.start_date).toLocaleDateString('he-IL') : ''}
+                      </div>
+                      <div className="lg:hidden mt-1 text-[10px] font-bold leading-tight flex justify-between bg-gray-50 p-1 rounded border border-gray-100">
+                        <span className="text-gray-600">שעות נוספות:</span>
+                        <span className={report.overtime_decimal > 0 ? 'text-green-600' : 'text-gray-500'}>
+                          {report.overtime_decimal > 0 ? `+${report.overtime_decimal}` : '0'}
+                        </span>
                       </div>
                     </td>
                     <td className="hidden md:table-cell p-2 md:p-3 align-top">
