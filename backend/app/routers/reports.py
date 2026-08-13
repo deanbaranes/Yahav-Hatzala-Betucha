@@ -99,6 +99,25 @@ def get_my_draft(assignment_id: str, db: Session = Depends(get_db), current_user
     }
 
 
+@router.get("/my-reports")
+def get_my_reports(db: Session = Depends(get_db), current_user: User = Depends(get_employee_user)):
+    reports = db.query(TripReport).join(TripAssignment).join(Trip).filter(
+        TripAssignment.user_id == current_user.id,
+        TripReport.is_draft == False
+    ).order_by(Trip.start_date.desc()).all()
+    
+    return [
+        {
+            "id": str(r.id),
+            "assignment_id": str(r.assignment_id),
+            "location": r.assignment.trip.location,
+            "start_date": r.assignment.trip.start_date.isoformat(),
+            "manager_status": r.manager_status,
+            "billing_status": r.billing_status,
+            "expenses": float(r.expenses or 0)
+        } for r in reports
+    ]
+
 # ── File Upload ───────────────────────────────────────────────────────────────
 
 @router.post("/upload")
