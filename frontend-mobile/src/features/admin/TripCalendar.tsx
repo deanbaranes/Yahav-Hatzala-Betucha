@@ -569,9 +569,13 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                     ) : (
                       selectedTrip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned').map((a:any) => (
                         <div key={a.id} className="flex justify-between items-center text-sm bg-white p-2 border border-gray-100 rounded shadow-sm">
-                          <span className="font-bold text-gray-800 flex items-center gap-1">
+                          <span className="font-bold text-gray-800 flex items-center gap-1.5">
+                            {a.employee_confirmed_arrival ? (
+                              <span title="אישר הגעה סופית" className="flex items-center"><CheckCircle2 size={14} className="text-green-500" /></span>
+                            ) : (
+                              <div className="w-2 h-2 rounded-full bg-gray-300" title="טרם אישר הגעה סופית"></div>
+                            )}
                             {a.user?.full_name}
-                            {a.employee_confirmed_arrival && <span title="אישר הגעה סופית" className="flex items-center"><CheckCircle2 size={14} className="text-green-500" /></span>}
                           </span>
                           <div className="flex items-center gap-2">
                             <span className="text-gray-500 font-medium text-xs bg-gray-100 px-2 py-0.5 rounded">{a.role || 'כללי'}</span>

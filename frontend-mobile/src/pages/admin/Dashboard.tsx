@@ -179,8 +179,10 @@ export default function Dashboard() {
                                   {trip.assignments?.filter((a:any) => a.is_confirmed).map((a:any) => (
                                     <span key={a.id} className="inline-flex items-center gap-1 bg-white border border-gray-200 px-3 py-1 rounded-full text-xs font-semibold shadow-sm text-gray-800">
                                       {a.user?.full_name || 'עובד'}
-                                      {a.employee_confirmed_arrival && (
+                                      {a.employee_confirmed_arrival ? (
                                         <span title="אישר הגעה סופית" className="mr-1 inline-flex items-center"><CheckCircle2 size={14} className="text-green-500" /></span>
+                                      ) : (
+                                        <span title="טרם אישר הגעה סופית" className="mr-1 inline-flex items-center"><div className="w-2 h-2 rounded-full bg-gray-300"></div></span>
                                       )}
                                       <span className="text-gray-400 font-normal mr-1">| {a.role === 'general' || !a.role ? 'כללי' : a.role}</span>
                                       <button 
