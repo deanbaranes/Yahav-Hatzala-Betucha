@@ -209,6 +209,9 @@ def get_billing_status(year: int, month: int, db: Session = Depends(get_db), cur
 
     result = []
     for stats in client_stats.values():
+        # Round total overtime to nearest 0.5 (jumps of half an hour)
+        stats["total_overtime"] = round(stats["total_overtime"] * 2) / 2
+        
         status = "פעיל"
         if stats["invoiced_trips"] == stats["total_trips"]:
             status = "חויב במלואו"
