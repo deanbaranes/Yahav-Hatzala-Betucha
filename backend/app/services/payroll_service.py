@@ -197,7 +197,7 @@ class PayrollService:
                     
                     days_worked = Decimal(len(report_days_set))
                     
-                    ot_hours = Decimal(str(report.overtime_decimal or 0))
+                    rounded_ot = round(float(report.overtime_decimal or 0) * 2) / 2
                     sleeps = report.sleeps or 0
                     trip_loc = report.assignment.trip.location if report.assignment.trip else ""
                     role = report.assignment.role if report.assignment.role else "תפקיד כללי"
@@ -205,8 +205,9 @@ class PayrollService:
                     details_text = f"{role} בטיול: {trip_loc} (דוח: {report.id})"
                     if sleeps > 0:
                         details_text += f" | {sleeps} לילות"
-                    if ot_hours > 0:
-                        details_text += f" | {ot_hours} שעות נוספות"
+                    if rounded_ot > 0:
+                        ot_display = int(rounded_ot) if rounded_ot.is_integer() else rounded_ot
+                        details_text += f" | {ot_display} שעות נוספות"
                     
                     supplier_entry = Supplier(
                         name=user.full_name,
