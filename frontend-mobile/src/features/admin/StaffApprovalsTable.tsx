@@ -48,7 +48,10 @@ export default function StaffApprovalsTable() {
                   <div className="font-medium text-gray-900">{a.full_name}</div>
                   <div className="text-sm text-gray-500">{a.phone}</div>
                 </td>
-                <td className="p-4 text-gray-800 font-semibold">{a.role === 'general' || !a.role ? 'כללי' : a.role}</td>
+                <td className="p-4 text-gray-800 font-semibold">
+                  <div>{a.role === 'general' || !a.role ? 'כללי' : a.role}</div>
+                  {a.status === 'waitlisted' && <div className="text-xs text-orange-600 bg-orange-100 rounded-full px-2 py-0.5 inline-block mt-1">רשימת המתנה</div>}
+                </td>
                 <td className="p-4">
                   <div className="text-gray-900">{a.trip_location}</div>
                   <div className="text-sm text-gray-500">{new Date(a.trip_start).toLocaleString('he-IL')}</div>

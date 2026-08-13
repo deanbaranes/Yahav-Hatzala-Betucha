@@ -229,7 +229,7 @@ def get_billing_status(year: int, month: int, db: Session = Depends(get_db), cur
 def get_unconfirmed_assignments(db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     assignments = db.query(TripAssignment).join(Trip).join(User).filter(
         TripAssignment.is_confirmed == False,
-        TripAssignment.status == "assigned"
+        TripAssignment.status.in_(["assigned", "waitlisted"])
     ).order_by(Trip.start_date.asc()).all()
 
     return [
@@ -240,6 +240,7 @@ def get_unconfirmed_assignments(db: Session = Depends(get_db), admin_user: User 
             "full_name": a.user.full_name,
             "phone": a.user.phone,
             "role": a.role,
+            "status": a.status,
             "trip_location": a.trip.location,
             "trip_start": a.trip.start_date.isoformat(),
             "contact_phone": a.trip.contact_phone
@@ -406,6 +407,7 @@ def confirm_assignment(assignment_id: str, db: Session = Depends(get_db), admin_
         raise HTTPException(status_code=404, detail="שיבוץ לא נמצא")
 
     assignment.is_confirmed = True
+    assignment.status = "assigned"
     db.commit()
 
     # Send SMS to assigned user
