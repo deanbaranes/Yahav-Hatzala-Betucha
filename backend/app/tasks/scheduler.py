@@ -131,7 +131,7 @@ def check_uninvoiced_trips():
         
         if future_trips == 0:
             msg = f"התראת חשבונית: ללקוח '{client.name}' יש {len(trips)} טיולים שהסתיימו החודש ללא חשבונית, ואין טיולים נוספים שנותרו לו החודש. כדאי להפיק חשבונית!"
-            NotificationService.send_sms(ADMIN_PHONE, msg, db=db)
+            NotificationService.create_in_app_notification(msg, db, title="התראת מערכת")
 
 def delete_old_receipts():
     """
