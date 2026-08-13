@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
-import { Calculator, Save, Download, Copy, Check, Plus, Trash2, UploadCloud } from 'lucide-react';
+import { Calculator, Save, Download, Copy, Check, Plus, Trash2, UploadCloud, X } from 'lucide-react';
 import PayslipUploader from '../../features/admin/PayslipUploader';
 
 export default function PayrollManagement() {
@@ -263,18 +263,16 @@ export default function PayrollManagement() {
                           }
                         }}
                         disabled={rejectMutation.isPending}
-                        title="דחה ומחק משתמש"
-                        className="bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-lg text-xs font-bold transition-colors"
+                        className="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1"
                       >
-                        <Trash2 size={16} />
+                        <X size={14} /> דחה
                       </button>
                       <button 
                         onClick={() => approveMutation.mutate(emp.id)}
                         disabled={approveMutation.isPending}
-                        title="אשר עובד"
-                        className="bg-green-500 hover:bg-green-600 text-white p-1.5 rounded-lg text-xs font-bold transition-colors"
+                        className="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1"
                       >
-                        <Check size={16} />
+                        <Check size={14} /> אשר
                       </button>
                     </div>
                   </div>
