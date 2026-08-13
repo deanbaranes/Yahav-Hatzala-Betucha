@@ -68,7 +68,7 @@ def check_client_debts():
             ).first()
             
             if not recent_notif:
-                NotificationService.send_sms(ADMIN_PHONE, msg, db=db)
+                NotificationService.create_in_app_notification(msg, db, title="התראת חוב")
     
 def check_unassigned_trips():
     """
