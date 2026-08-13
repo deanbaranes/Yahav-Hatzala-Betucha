@@ -3,6 +3,7 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import SmartClientInput from './SmartClientInput';
 import GoogleCalendarImport from './GoogleCalendarImport';
+import { CheckCircle2 } from 'lucide-react';
 
 const AVAILABLE_ROLES = ["מע\"ר", "חובש", "פראמדיק", "שומר לילה", "מע\"ר חמוש", "חובש חמוש", "מאבטח", "כללי"];
 
@@ -470,7 +471,11 @@ export default function TripManagementBoard() {
                                   <div className="flex flex-wrap gap-1.5">
                                     {trip.assignments.filter((a:any) => a.is_confirmed).map((a:any) => (
                                       <span key={a.id} className="bg-white border border-gray-200 text-gray-800 px-2 py-1 rounded text-xs shadow-sm font-semibold flex items-center gap-1">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                                        {a.employee_confirmed_arrival ? (
+                                          <span title="אישר הגעה סופית" className="flex items-center"><CheckCircle2 size={14} className="text-green-500" /></span>
+                                        ) : (
+                                          <div className="w-1.5 h-1.5 rounded-full bg-gray-300" title="טרם אישר הגעה סופית"></div>
+                                        )}
                                         {a.user?.full_name || 'עובד'} <span className="text-gray-400 font-normal">({a.role === 'general' || !a.role ? 'כללי' : a.role})</span>
                                       </span>
                                     ))}
