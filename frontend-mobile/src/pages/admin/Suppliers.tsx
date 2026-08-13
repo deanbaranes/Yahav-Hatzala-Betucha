@@ -45,6 +45,14 @@ export default function Suppliers() {
     }
   });
 
+  const { data: savedContacts = [] } = useQuery<string[]>({
+    queryKey: ['supplier-contacts'],
+    queryFn: async () => {
+      const res = await axiosClient.get('/suppliers/contacts');
+      return res.data;
+    }
+  });
+
   const createMutation = useMutation({
     mutationFn: async (data: any) => axiosClient.post('/suppliers/', data),
     onSuccess: () => {
@@ -118,7 +126,7 @@ export default function Suppliers() {
   const totalDebt = filteredSuppliers.reduce((sum, s) => sum + (!s.is_invoiced ? s.amount : 0), 0);
 
   const freelancers = employees.filter(e => e.employment_type === 'עצמאי').map(e => e.full_name);
-  const uniqueSupplierNames = Array.from(new Set([...suppliers.map(s => s.name), ...freelancers]));
+  const uniqueSupplierNames = Array.from(new Set([...suppliers.map(s => s.name), ...freelancers, ...savedContacts]));
 
   const handleExport = () => {
     if (!filteredSuppliers || filteredSuppliers.length === 0) return;

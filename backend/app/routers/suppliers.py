@@ -3,7 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models.supplier import Supplier
+from app.models.supplier import Supplier, SupplierContact
 from app.models.user import User
 from app.dependencies import get_admin_user
 from app.schemas import SupplierCreate, SupplierUpdate, SupplierOut
@@ -20,9 +20,21 @@ def get_suppliers(db: Session = Depends(get_db), admin_user: User = Depends(get_
 def create_supplier(supplier: SupplierCreate, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     new_supplier = Supplier(**supplier.model_dump())
     db.add(new_supplier)
+    
+    # Auto-save supplier to contact list if doesn't exist
+    contact = db.query(SupplierContact).filter(SupplierContact.name == supplier.name).first()
+    if not contact:
+        new_contact = SupplierContact(name=supplier.name)
+        db.add(new_contact)
+        
     db.commit()
     db.refresh(new_supplier)
     return new_supplier
+
+@router.get("/contacts", response_model=List[str])
+def get_supplier_contacts(db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
+    contacts = db.query(SupplierContact).all()
+    return [c.name for c in contacts]
 
 @router.put("/{supplier_id}", response_model=SupplierOut)
 def update_supplier(supplier_id: uuid.UUID, supplier: SupplierUpdate, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):

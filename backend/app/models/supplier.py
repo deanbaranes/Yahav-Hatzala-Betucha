@@ -4,6 +4,13 @@ from sqlalchemy import Column, String, DateTime, Numeric, Boolean, Date
 from sqlalchemy.dialects.postgresql import UUID
 from app.database import Base
 
+class SupplierContact(Base):
+    __tablename__ = "supplier_contacts"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String, unique=True, index=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
 class Supplier(Base):
     __tablename__ = "suppliers"
 
