@@ -23,7 +23,7 @@ def mark_read(notification_id: str, db: Session = Depends(get_db), current_user:
         (Notification.user_id == current_user.id) | (Notification.user_id == None)
     ).first()
     if not notif:
-        raise HTTPException(status_code=404, detail="Notification not found")
+        raise HTTPException(status_code=404, detail="התראה לא נמצאה")
     
     notif.is_read = True
     db.commit()

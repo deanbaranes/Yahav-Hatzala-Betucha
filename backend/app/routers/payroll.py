@@ -57,7 +57,7 @@ def update_employee_details(user_id: str, data: EmployeeUpdate, db: Session = De
         # Check if phone belongs to someone else
         existing = db.query(User).filter(User.phone == data.phone, User.id != user_id).first()
         if existing:
-            raise HTTPException(status_code=400, detail="Phone already exists for another user")
+            raise HTTPException(status_code=400, detail="מספר טלפון זה כבר קיים עבור משתמש אחר")
         user.phone = data.phone
     if data.national_id is not None:
         user.national_id = data.national_id
@@ -289,7 +289,7 @@ async def upload_payslip(
         return {"message": "Payslip uploaded successfully", "id": str(payslip.id)}
     except Exception as e:
         logger.error(f"Payslip upload error: {e}")
-        raise HTTPException(status_code=500, detail="Could not upload payslip")
+        raise HTTPException(status_code=500, detail="שגיאה בהעלאת תלוש השכר")
 
 @router.get("/payslips/{user_id}")
 def get_user_payslips(user_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):

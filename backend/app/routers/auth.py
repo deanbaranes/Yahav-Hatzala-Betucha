@@ -131,11 +131,11 @@ def login(
     if not user or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect phone or password",
+            detail="טלפון או סיסמה שגויים",
             headers={"WWW-Authenticate": "Bearer"},
         )
     if user.status == UserStatus.inactive:
-        raise HTTPException(status_code=403, detail="Account is inactive")
+        raise HTTPException(status_code=403, detail="המשתמש אינו פעיל במערכת")
 
     return _build_tokens_and_set_cookie(user, db, response)
 
@@ -153,7 +153,7 @@ def refresh_token(
     """
     credentials_exc = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid or expired refresh token. Please log in again."
+        detail="פג תוקף החיבור למערכת, אנא התחבר מחדש."
     )
 
     if not refresh_token:

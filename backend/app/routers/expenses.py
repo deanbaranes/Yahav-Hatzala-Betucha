@@ -26,7 +26,7 @@ async def upload_expense(
     try:
         url = StorageService.upload_file(file.file, folder="business_expenses", content_type=file.content_type)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to upload file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"שגיאה בהעלאת הקובץ: {str(e)}")
         
     expense = BusinessExpense(
         file_url=url,
@@ -66,7 +66,7 @@ def list_expenses(
 def update_expense(expense_id: str, data: BusinessExpenseUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
     expense = db.query(BusinessExpense).filter(BusinessExpense.id == expense_id).first()
     if not expense:
-        raise HTTPException(status_code=404, detail="Expense not found")
+        raise HTTPException(status_code=404, detail="הוצאה לא נמצאה")
         
     if data.status is not None:
         expense.status = data.status
@@ -81,7 +81,7 @@ def update_expense(expense_id: str, data: BusinessExpenseUpdate, db: Session = D
 def delete_expense(expense_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
     expense = db.query(BusinessExpense).filter(BusinessExpense.id == expense_id).first()
     if not expense:
-        raise HTTPException(status_code=404, detail="Expense not found")
+        raise HTTPException(status_code=404, detail="הוצאה לא נמצאה")
         
     # Delete from storage if possible
     if expense.file_url:

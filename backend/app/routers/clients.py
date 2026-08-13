@@ -64,7 +64,7 @@ def get_clients(skip: int = 0, limit: int = 50, q: str = "", db: Session = Depen
 def create_client(data: ClientCreate, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     existing = db.query(Client).filter(Client.name == data.name).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Client with this name already exists")
+        raise HTTPException(status_code=400, detail="לקוח עם שם זה כבר קיים במערכת")
     
     new_client = Client(
         name=data.name,
@@ -82,7 +82,7 @@ def create_client(data: ClientCreate, db: Session = Depends(get_db), admin_user:
 def update_client(client_id: str, data: ClientUpdate, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     client = db.query(Client).filter(Client.id == client_id).first()
     if not client:
-        raise HTTPException(status_code=404, detail="Client not found")
+        raise HTTPException(status_code=404, detail="לקוח לא נמצא")
         
     if data.name is not None: client.name = data.name
     if data.contact_person is not None: client.contact_person = data.contact_person
@@ -102,7 +102,7 @@ def update_client(client_id: str, data: ClientUpdate, db: Session = Depends(get_
 def delete_client(client_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     client = db.query(Client).filter(Client.id == client_id).first()
     if not client:
-        raise HTTPException(status_code=404, detail="Client not found")
+        raise HTTPException(status_code=404, detail="לקוח לא נמצא")
         
     db.delete(client)
     db.commit()
