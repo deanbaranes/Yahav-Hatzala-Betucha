@@ -270,7 +270,8 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
                 roles_requirements: newTripForm.roles_requirements,
                 color: newTripForm.color,
                 global_salary: newTripForm.global_salary ? parseFloat(newTripForm.global_salary as string) : null,
-                contact_phone: newTripForm.contact_phone || null
+                contact_phone: newTripForm.contact_phone || null,
+                notes: newTripForm.notes || null
               });
             }}
             className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm"
