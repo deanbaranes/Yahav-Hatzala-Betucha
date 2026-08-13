@@ -99,7 +99,7 @@ export default function Clients() {
     setEditForm({ 
       balance: client.balance || '', 
       notes: client.notes || '',
-      debt_start_date: client.debt_start_date ? client.debt_start_date.split('T')[0] : todayStr,
+      debt_start_date: todayStr,
       payment_terms: client.payment_terms || '',
       name: client.name || '',
       contact_person: client.contact_person || '',
