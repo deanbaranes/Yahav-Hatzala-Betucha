@@ -12,7 +12,7 @@ from app.models import supplier             # register Supplier table
 from app.models import notification         # register Notification table
 from app.models import payslip              # register Payslip table
 from app.models import business_expense
-from app.routers import auth, trips, reports, clients, payroll, suppliers, notifications, expenses
+from app.routers import auth, trips, assignments, reports, clients, payroll, suppliers, notifications, expenses
 from app.dependencies import get_current_user
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
@@ -106,6 +106,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(trips.router)
+app.include_router(assignments.router)
 app.include_router(clients.router)
 app.include_router(reports.router)
 
