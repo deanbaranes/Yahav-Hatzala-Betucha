@@ -164,7 +164,7 @@ export default function BillingPivotView() {
                 </div>
               )}
 
-              {billingStatus?.filter(client => client.status === 'חויב במלואו' || client.status === 'הופקה חשבונית').length > 0 && (
+              {(billingStatus?.filter(client => client.status === 'חויב במלואו' || client.status === 'הופקה חשבונית')?.length || 0) > 0 && (
                 <div className="mt-8 border-t border-gray-200 pt-6">
                   <button 
                     onClick={() => setShowInvoiced(!showInvoiced)}
