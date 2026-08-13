@@ -233,63 +233,92 @@ def check_ended_trips_for_reports():
                                     db=db,
                                     user_id=assignment.user_id
                                 )
+    db: Session = SessionLocal()
+    try:
+        now = datetime.now()
+        seven_years_ago = now - timedelta(days=365 * 7)
+        
+        old_expenses = db.query(BusinessExpense).filter(
+            BusinessExpense.date < seven_years_ago
+        ).all()
+        
+        for expense in old_expenses:
+            if expense.receipt_url:
+                try:
+                    StorageService.delete_file(expense.receipt_url)
+                except Exception as e:
+                    logger.error(f"Failed to delete receipt for business expense {expense.id}: {str(e)}")
+            
+            db.delete(expense)
+            
+        if old_expenses:
+            db.commit()
+            logger.info(f"Deleted {len(old_expenses)} business expenses older than 7 years.")
+    finally:
+        db.close()
 
 def cleanup_expired_tokens():
     """
-    Deletes refresh tokens that have expired to keep the database clean.
+    Delete expired refresh tokens from the database.
+    Runs nightly.
     """
     logger.info("Running cleanup_expired_tokens task...")
-    db: Session = next(get_db())
-    now = datetime.now()
-    
-    expired_tokens = db.query(RefreshToken).filter(RefreshToken.expires_at < now).all()
-    deleted_count = 0
-    for token in expired_tokens:
-        db.delete(token)
-        deleted_count += 1
-        
-    db.commit()
-    if deleted_count > 0:
-        logger.info(f"Cleaned up {deleted_count} expired refresh tokens.")
+    db: Session = SessionLocal()
+    try:
+        now = datetime.now()
+        deleted = db.query(RefreshToken).filter(RefreshToken.expires_at < now).delete()
+        if deleted > 0:
+            db.commit()
+            logger.info(f"Deleted {deleted} expired refresh tokens.")
+    finally:
+        db.close()
 
 def check_upcoming_trips_for_confirmation():
     """
-    Check for trips in exactly 24-48 hours. Send an SMS to assigned employees asking them to confirm arrival.
+    Check for trips happening tomorrow and send an SMS with a deep link to employees
+    who are assigned and confirmed, so they can acknowledge their arrival.
+    Runs daily.
     """
     logger.info("Running check_upcoming_trips_for_confirmation task...")
-    db: Session = next(get_db())
-    now = datetime.now()
-    tomorrow = now + timedelta(days=1)
-    tomorrow_start = tomorrow.replace(hour=0, minute=0, second=0, microsecond=0)
-    tomorrow_end = tomorrow.replace(hour=23, minute=59, second=59, microsecond=999999)
-    
-    upcoming_trips = db.query(Trip).filter(
-        Trip.start_date >= tomorrow_start,
-        Trip.start_date <= tomorrow_end
-    ).all()
-    
-    FRONTEND_URL = os.getenv("FRONTEND_URL", "https://yahav-hatzala-betucha.vercel.app")
-    
-    for trip in upcoming_trips:
-        for assignment in trip.assignments:
-            if assignment.is_confirmed and assignment.status == "assigned" and not assignment.employee_confirmed_arrival:
-                if assignment.user and assignment.user.phone:
-                    link = f"{FRONTEND_URL}/employee"
-                    msg = f"תזכורת: מחר יש לך טיול ב-{trip.location}. אנא היכנס לאזור האישי באפליקציה כדי לאשר הגעה סופית: {link}"
-                    
-                    # Prevent spam
-                    existing_notif = db.query(Notification).filter(
-                        Notification.user_id == assignment.user_id,
-                        Notification.message == msg
-                    ).first()
-                    
-                    if not existing_notif:
-                        NotificationService.send_sms(
-                            phone_number=assignment.user.phone,
-                            message=msg,
-                            db=db,
-                            user_id=assignment.user_id
-                        )
+    db: Session = SessionLocal()
+    try:
+        now = datetime.now()
+        tomorrow = now + timedelta(days=1)
+        tomorrow_start = tomorrow.replace(hour=0, minute=0, second=0, microsecond=0)
+        tomorrow_end = tomorrow.replace(hour=23, minute=59, second=59, microsecond=999999)
+        
+        upcoming_trips = db.query(Trip).filter(
+            Trip.start_date >= tomorrow_start,
+            Trip.start_date <= tomorrow_end
+        ).all()
+        
+        frontend_url = os.getenv("FRONTEND_URL", "https://yahav-hatzala.co.il")
+        
+        for trip in upcoming_trips:
+            for assignment in trip.assignments:
+                if assignment.status == "assigned" and assignment.is_confirmed:
+                    user = assignment.user
+                    if user and user.phone:
+                        # Construct a generic link to their schedule page where they can see the trip
+                        schedule_link = f"{frontend_url}/employee/schedule"
+                        msg = f"תזכורת שיבוץ: מחר יש לך טיול ב-{trip.location}. אנא היכנס/י לקישור הבא כדי לאשר הגעה סופית: {schedule_link}"
+                        
+                        # Prevent duplicate SMS on the same day for the same assignment
+                        existing_notif = db.query(Notification).filter(
+                            Notification.message == msg,
+                            Notification.user_id == user.id,
+                            Notification.created_at >= now.replace(hour=0, minute=0, second=0)
+                        ).first()
+                        
+                        if not existing_notif:
+                            NotificationService.send_sms(user.phone, msg)
+                            NotificationService.create_in_app_notification(
+                                message=msg,
+                                db=db,
+                                user_id=assignment.user_id
+                            )
+    finally:
+        db.close()
 
 def notify_admin_unconfirmed_arrivals():
     """
@@ -297,35 +326,38 @@ def notify_admin_unconfirmed_arrivals():
     Runs at 16:00.
     """
     logger.info("Running notify_admin_unconfirmed_arrivals task...")
-    db: Session = next(get_db())
-    now = datetime.now()
-    tomorrow = now + timedelta(days=1)
-    tomorrow_start = tomorrow.replace(hour=0, minute=0, second=0, microsecond=0)
-    tomorrow_end = tomorrow.replace(hour=23, minute=59, second=59, microsecond=999999)
-    
-    upcoming_trips = db.query(Trip).filter(
-        Trip.start_date >= tomorrow_start,
-        Trip.start_date <= tomorrow_end
-    ).all()
-    
-    admin_phone = os.getenv("ADMIN_PHONE")
-    
-    for trip in upcoming_trips:
-        for assignment in trip.assignments:
-            if assignment.is_confirmed and assignment.status == "assigned" and not assignment.employee_confirmed_arrival:
-                user = assignment.user
-                if user:
-                    msg = f"התראת אישור הגעה: העובד/ת {user.full_name} טרם אישר/ה הגעה לטיול מחר ב-{trip.location}!"
-                    
-                    # Prevent spam
-                    existing_notif = db.query(Notification).filter(
-                        Notification.message == msg
-                    ).first()
-                    
-                    if not existing_notif:
-                        NotificationService.create_in_app_notification(msg, db)
-                        if admin_phone:
-                            NotificationService.send_sms(admin_phone, msg)
+    db: Session = SessionLocal()
+    try:
+        now = datetime.now()
+        tomorrow = now + timedelta(days=1)
+        tomorrow_start = tomorrow.replace(hour=0, minute=0, second=0, microsecond=0)
+        tomorrow_end = tomorrow.replace(hour=23, minute=59, second=59, microsecond=999999)
+        
+        upcoming_trips = db.query(Trip).filter(
+            Trip.start_date >= tomorrow_start,
+            Trip.start_date <= tomorrow_end
+        ).all()
+        
+        admin_phone = os.getenv("ADMIN_PHONE")
+        
+        for trip in upcoming_trips:
+            for assignment in trip.assignments:
+                if assignment.is_confirmed and assignment.status == "assigned" and not assignment.employee_confirmed_arrival:
+                    user = assignment.user
+                    if user:
+                        msg = f"התראת אישור הגעה: העובד/ת {user.full_name} טרם אישר/ה הגעה לטיול מחר ב-{trip.location}!"
+                        
+                        # Prevent spam
+                        existing_notif = db.query(Notification).filter(
+                            Notification.message == msg
+                        ).first()
+                        
+                        if not existing_notif:
+                            NotificationService.create_in_app_notification(msg, db)
+                            if admin_phone:
+                                NotificationService.send_sms(admin_phone, msg)
+    finally:
+        db.close()
 
 def start_scheduler():
     scheduler = BackgroundScheduler()

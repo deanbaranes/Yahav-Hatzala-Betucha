@@ -259,20 +259,21 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden" dir="rtl">
       {/* Calendar Header */}
       <div className="flex flex-col md:flex-row items-center justify-between p-4 border-b border-gray-100 gap-4">
-        <div className="flex items-center gap-2">
-          <CalendarIcon className="text-blue-600 shrink-0" />
-          <h2 className="text-xl font-bold text-gray-800 whitespace-nowrap">
-            {currentDate.toLocaleString('he-IL', { month: 'long', year: 'numeric' })}
-          </h2>
-          <button 
-            onClick={handleExport}
-            className="mr-3 flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg font-bold text-xs md:text-sm transition-colors border border-emerald-200 whitespace-nowrap shrink-0"
-            title="ייצא טיולים ושיבוצים לאקסל"
-          >
-            <Download size={14} />
-            <span className="hidden sm:inline">ייצוא יומן לאקסל</span>
-            <span className="sm:hidden">ייצוא</span>
-          </button>
+        <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
+          <div className="flex items-center gap-2">
+            <CalendarIcon className="text-blue-600 shrink-0" />
+            <h2 className="text-xl font-bold text-gray-800 whitespace-nowrap">
+              {currentDate.toLocaleString('he-IL', { month: 'long', year: 'numeric' })}
+            </h2>
+          </div>
+          <div className="flex gap-1">
+            <button onClick={prevMonth} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors bg-gray-50 border border-gray-200 shadow-sm">
+              <ChevronRight size={18} />
+            </button>
+            <button onClick={nextMonth} className="p-1.5 hover:bg-gray-100 rounded-full transition-colors bg-gray-50 border border-gray-200 shadow-sm">
+              <ChevronLeft size={18} />
+            </button>
+          </div>
         </div>
         
         <div className="flex-1 w-full max-w-sm mx-auto md:mx-4">
@@ -288,12 +289,15 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
           </div>
         </div>
 
-        <div className="flex gap-2 w-full md:w-auto justify-between md:justify-end">
-          <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-full transition-colors bg-gray-50 border border-gray-200">
-            <ChevronRight size={20} />
-          </button>
-          <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-full transition-colors bg-gray-50 border border-gray-200">
-            <ChevronLeft size={20} />
+        <div className="flex w-full md:w-auto justify-end">
+          <button 
+            onClick={handleExport}
+            className="flex items-center justify-center w-full md:w-auto gap-1.5 px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg font-bold text-xs md:text-sm transition-colors border border-emerald-200 whitespace-nowrap"
+            title="ייצא טיולים ושיבוצים לאקסל"
+          >
+            <Download size={14} />
+            <span className="hidden sm:inline">ייצוא יומן לאקסל</span>
+            <span className="sm:hidden">ייצוא לאקסל</span>
           </button>
         </div>
       </div>
