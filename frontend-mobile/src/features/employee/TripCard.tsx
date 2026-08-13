@@ -30,7 +30,7 @@ export default function TripCard({ trip }: { trip: any }) {
   const hasRoles = Object.keys(rolesReqs).length > 0;
 
   return (
-    <div className="bg-white rounded-xl shadow p-5 mb-4 text-right" dir="rtl">
+    <div className={`bg-white rounded-xl shadow p-5 mb-4 text-right border-r-4 ${isFull ? 'border-orange-500 bg-orange-50/50' : 'border-blue-500'}`} dir="rtl">
       <h3 className="text-xl font-bold mb-2">{trip.location}</h3>
       <p className="text-gray-600 mb-2">{new Date(trip.start_date).toLocaleString('he-IL')}</p>
       <p className="text-md text-gray-500 mb-4">תפוסה כוללת: <span className="font-semibold">{trip.assigned_count} / {trip.capacity}</span></p>
