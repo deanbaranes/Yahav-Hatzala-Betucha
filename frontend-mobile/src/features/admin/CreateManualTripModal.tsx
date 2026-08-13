@@ -12,6 +12,7 @@ interface CreateManualTripModalProps {
 
 export default function CreateManualTripModal({ initialDate, onClose }: CreateManualTripModalProps) {
   const queryClient = useQueryClient();
+  const [additionalDates, setAdditionalDates] = useState<string[]>([]);
 
   const [newTripForm, setNewTripForm] = useState(() => {
     const pad = (n: number) => n.toString().padStart(2, '0');
@@ -52,7 +53,23 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
       const payload = { ...data };
       if (!payload.global_salary || payload.global_salary === '') payload.global_salary = null;
       if (!payload.end_date || payload.end_date === '') payload.end_date = payload.start_date;
+      
+      // Post the main trip
       await axiosClient.post('/trips/', payload);
+      
+      // Post additional dates if any
+      if (additionalDates.length > 0) {
+        const baseStartTime = payload.start_date.split('T')[1];
+        const baseEndTime = payload.end_date.split('T')[1];
+        
+        for (const d of additionalDates) {
+          if (!d) continue;
+          const newPayload = { ...payload };
+          newPayload.start_date = `${d}T${baseStartTime}`;
+          newPayload.end_date = `${d}T${baseEndTime}`;
+          await axiosClient.post('/trips/', newPayload);
+        }
+      }
     },
     onSuccess: () => {
       alert('הטיול נוסף בהצלחה!');
@@ -107,6 +124,41 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
                 value={newTripForm.end_date}
                 onChange={e => setNewTripForm({...newTripForm, end_date: e.target.value})}
               />
+            </div>
+          </div>
+          
+          {/* תאריכים נוספים לשכפול */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">תאריכים נוספים לאותו אירוע (שכפול לשעות זהות)</label>
+            <div className="space-y-2">
+              {additionalDates.map((d, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <input 
+                    type="date" 
+                    className="w-full p-2 border border-gray-300 rounded text-sm"
+                    value={d}
+                    onChange={e => {
+                      const newDates = [...additionalDates];
+                      newDates[i] = e.target.value;
+                      setAdditionalDates(newDates);
+                    }}
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setAdditionalDates(additionalDates.filter((_, idx) => idx !== i))}
+                    className="text-red-500 hover:bg-red-50 p-2 rounded-lg font-bold text-sm"
+                  >
+                    הסר
+                  </button>
+                </div>
+              ))}
+              <button 
+                type="button"
+                onClick={() => setAdditionalDates([...additionalDates, ''])}
+                className="text-blue-600 hover:bg-blue-50 font-bold text-sm p-2 rounded-lg w-full text-right"
+              >
+                + הוסף תאריך נוסף לאירוע
+              </button>
             </div>
           </div>
 
