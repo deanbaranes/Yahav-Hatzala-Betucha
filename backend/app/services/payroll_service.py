@@ -182,9 +182,9 @@ class PayrollService:
         if report.manager_status != "approved" and report.assignment and report.assignment.user:
             user = report.assignment.user
             if user.employment_type == "עצמאי":
-                # Check if we already created it to avoid duplicates
                 from app.models.supplier import Supplier
-                existing = self.db.query(Supplier).filter(Supplier.details.like(f"%דוח: {report.id}%")).first()
+                invisible_id = "".join(f"\u200B{c}" for c in str(report.id))
+                existing = self.db.query(Supplier).filter(Supplier.details.like(f"%{invisible_id}%")).first()
                 if not existing:
                     report_days_set = set()
                     if report.daily_shifts and len(report.daily_shifts) > 0:
@@ -202,7 +202,7 @@ class PayrollService:
                     trip_loc = report.assignment.trip.location if report.assignment.trip else ""
                     role = report.assignment.role if report.assignment.role else "תפקיד כללי"
                     
-                    details_text = f"{role} בטיול: {trip_loc} (דוח: {report.id})"
+                    details_text = f"{role} בטיול: {trip_loc}{invisible_id}"
                     if sleeps > 0:
                         details_text += f" | {sleeps} לילות"
                     if rounded_ot > 0:
