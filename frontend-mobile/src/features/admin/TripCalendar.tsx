@@ -128,13 +128,16 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
   };
 
   const getTripLabelMobile = (trip: any) => {
-    return trip.client?.name === 'לקוח כללי' ? trip.location : (trip.client?.name || trip.location);
+    let name = trip.client?.name === 'לקוח כללי' ? trip.location : (trip.client?.name || trip.location);
+    if (trip.notes) name = `${name} ${trip.notes}`;
+    return name;
   };
 
   const getTripLabelDesktop = (trip: any) => {
     const confirmedCount = trip.assignments?.filter((a: any) => a.is_confirmed && a.status === 'assigned').length || 0;
     const missing = trip.capacity - confirmedCount;
-    const name = trip.client?.name === 'לקוח כללי' ? trip.location : (trip.client?.name || trip.location);
+    let name = trip.client?.name === 'לקוח כללי' ? trip.location : (trip.client?.name || trip.location);
+    if (trip.notes) name = `${name} ${trip.notes}`;
     
     if (trip.is_billed) return `${name} (חויב)`;
     if (trip.capacity === 0) return name;
@@ -153,7 +156,7 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
   const [reportDailyShifts, setReportDailyShifts] = useState([{ start_time: '', end_time: '' }]);
 
   const [quickEditMode, setQuickEditMode] = useState(false);
-  const [quickEditForm, setQuickEditForm] = useState({ client_name: '', location: '', start_date: '', end_date: '', capacity: 0, roles_requirements: {} as Record<string, number>, color: '', global_salary: '' as string | number, contact_phone: '' });
+  const [quickEditForm, setQuickEditForm] = useState({ client_name: '', location: '', start_date: '', end_date: '', capacity: 0, roles_requirements: {} as Record<string, number>, color: '', global_salary: '' as string | number, contact_phone: '', notes: '' });
 
   // Employee Assignment State and Mutation moved to AssignEmployeeForm.tsx
 
@@ -397,7 +400,8 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
                         roles_requirements: selectedTrip.roles_requirements || {},
                         color: selectedTrip.color || '',
                         global_salary: selectedTrip.global_salary || '',
-                        contact_phone: selectedTrip.contact_phone || ''
+                        contact_phone: selectedTrip.contact_phone || '',
+                        notes: selectedTrip.notes || ''
                       });
                       setQuickEditMode(true);
                       setReportingAssignment(null);
@@ -412,6 +416,10 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
             
             {quickEditMode ? (
               <div className="space-y-4 mb-6 p-4 bg-blue-50/30 rounded-lg border border-blue-100">
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">הערה / טקסט חופשי (למשל: הדרכה)</label>
+                  <input type="text" placeholder="טקסט שיופיע ליד שם הלקוח" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.notes} onChange={e => setQuickEditForm({...quickEditForm, notes: e.target.value})} />
+                </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-600 mb-1">מיקום (אופציונלי)</label>
                   <input type="text" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.location} onChange={e => setQuickEditForm({...quickEditForm, location: e.target.value})} />

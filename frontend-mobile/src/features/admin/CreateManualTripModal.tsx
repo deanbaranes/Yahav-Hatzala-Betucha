@@ -30,7 +30,8 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
       roles_requirements: {} as Record<string, number>,
       color: '',
       global_salary: '',
-      contact_phone: ''
+      contact_phone: '',
+      notes: ''
     };
   });
 
@@ -94,6 +95,17 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
             value={newTripForm.client_name} 
             onChange={(v) => setNewTripForm({...newTripForm, client_name: v})} 
           />
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">הערה / טקסט חופשי (למשל: הדרכה)</label>
+            <input 
+              type="text" 
+              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+              value={newTripForm.notes}
+              onChange={e => setNewTripForm({...newTripForm, notes: e.target.value})}
+              placeholder="טקסט קצר שיופיע ליד שם הלקוח"
+            />
+          </div>
 
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">מיקום / שם היעד (אופציונלי)</label>

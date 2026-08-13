@@ -266,7 +266,8 @@ def create_trip(trip_data: TripCreate, db: Session = Depends(get_db), current_us
         roles_requirements=trip_data.roles_requirements,
         color=trip_data.color,
         global_salary=trip_data.global_salary,
-        contact_phone=trip_data.contact_phone
+        contact_phone=trip_data.contact_phone,
+        notes=trip_data.notes
     )
     db.add(new_trip)
     db.commit()
@@ -475,6 +476,7 @@ def update_trip(trip_id: str, trip_data: TripCreate, db: Session = Depends(get_d
     trip.color = trip_data.color
     trip.global_salary = trip_data.global_salary
     trip.contact_phone = trip_data.contact_phone
+    trip.notes = trip_data.notes
 
     db.commit()
     db.refresh(trip)

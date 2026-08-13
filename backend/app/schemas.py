@@ -83,6 +83,7 @@ class TripCreate(BaseModel):
     color: Optional[str] = None
     global_salary: Optional[float] = None
     contact_phone: Optional[str] = None
+    notes: Optional[str] = None
 
 class TripOut(BaseModel):
     id: uuid.UUID
@@ -95,6 +96,7 @@ class TripOut(BaseModel):
     color: Optional[str] = None
     global_salary: Optional[float] = None
     contact_phone: Optional[str] = None
+    notes: Optional[str] = None
     is_billed: bool = False
     client: ClientOut
 
