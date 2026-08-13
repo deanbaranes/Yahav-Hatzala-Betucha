@@ -137,6 +137,7 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
     const name = trip.client?.name === 'לקוח כללי' ? trip.location : (trip.client?.name || trip.location);
     
     if (trip.is_billed) return `${name} (חויב)`;
+    if (trip.capacity === 0) return name;
     if (missing <= 0) return `${name} (מלא)`;
     return `${name} (חסרים ${missing})`;
   };
@@ -551,54 +552,56 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
               </div>
             )}
 
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="text-sm text-gray-500 font-bold mb-2">צוות מאושר בטיול ({selectedTrip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned').length || 0} מתוך {selectedTrip.capacity})</div>
-                <div className="space-y-2">
-                  {selectedTrip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned').length === 0 ? (
-                    <div className="text-sm text-red-500 font-medium">עדיין לא שובצו עובדים!</div>
-                  ) : (
-                    selectedTrip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned').map((a:any) => (
-                      <div key={a.id} className="flex justify-between items-center text-sm bg-white p-2 border border-gray-100 rounded shadow-sm">
-                        <span className="font-bold text-gray-800">{a.user?.full_name}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-500 font-medium text-xs bg-gray-100 px-2 py-0.5 rounded">{a.role || 'כללי'}</span>
-                          <button
-                            onClick={() => {
-                              setReportingAssignment(a);
-                              setReportDaysCount(1);
-                              setReportDailyShifts([{
-                                start_time: selectedTrip.start_date.substring(0, 16),
-                                end_time: selectedTrip.end_date ? selectedTrip.end_date.substring(0, 16) : ''
-                              }]);
-                            }}
-                            className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-1 rounded text-xs font-bold transition-colors"
-                          >
-                            דו״ח
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm(`האם אתה בטוח שברצונך למחוק את ${a.user?.full_name} מהטיול?`)) {
-                                removeAssignmentMutation.mutate({ trip_id: selectedTrip.id, user_id: a.user_id });
-                              }
-                            }}
-                            className="text-red-400 hover:text-red-600 p-1 bg-red-50 hover:bg-red-100 rounded transition-colors"
-                            title="הסר עובד מהטיול"
-                          >
-                            ✕
-                          </button>
+              {selectedTrip.capacity > 0 && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-sm text-gray-500 font-bold mb-2">צוות מאושר בטיול ({selectedTrip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned').length || 0} מתוך {selectedTrip.capacity})</div>
+                  <div className="space-y-2">
+                    {selectedTrip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned').length === 0 ? (
+                      <div className="text-sm text-red-500 font-medium">עדיין לא שובצו עובדים!</div>
+                    ) : (
+                      selectedTrip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned').map((a:any) => (
+                        <div key={a.id} className="flex justify-between items-center text-sm bg-white p-2 border border-gray-100 rounded shadow-sm">
+                          <span className="font-bold text-gray-800">{a.user?.full_name}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-500 font-medium text-xs bg-gray-100 px-2 py-0.5 rounded">{a.role || 'כללי'}</span>
+                            <button
+                              onClick={() => {
+                                setReportingAssignment(a);
+                                setReportDaysCount(1);
+                                setReportDailyShifts([{
+                                  start_time: selectedTrip.start_date.substring(0, 16),
+                                  end_time: selectedTrip.end_date ? selectedTrip.end_date.substring(0, 16) : ''
+                                }]);
+                              }}
+                              className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-1 rounded text-xs font-bold transition-colors"
+                            >
+                              דו״ח
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(`האם אתה בטוח שברצונך למחוק את ${a.user?.full_name} מהטיול?`)) {
+                                  removeAssignmentMutation.mutate({ trip_id: selectedTrip.id, user_id: a.user_id });
+                                }
+                              }}
+                              className="text-red-400 hover:text-red-600 p-1 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                              title="הסר עובד מהטיול"
+                            >
+                              ✕
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+                      ))
+                    )}
+                  </div>
 
-                {/* Employee Assignment moved out of Quick Edit */}
-                <AssignEmployeeForm 
-                  tripId={selectedTrip.id} 
-                  employees={employees || []} 
-                  onAssignSuccess={() => setSelectedTrip(null)} 
-                />
-              </div>
+                  {/* Employee Assignment moved out of Quick Edit */}
+                  <AssignEmployeeForm 
+                    tripId={selectedTrip.id} 
+                    employees={employees || []} 
+                    onAssignSuccess={() => setSelectedTrip(null)} 
+                  />
+                </div>
+              )}
 
             {reportingAssignment && (
               <div className="mt-4 p-4 border border-blue-200 bg-blue-50/50 rounded-lg">
