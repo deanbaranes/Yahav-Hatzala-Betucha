@@ -60,6 +60,20 @@ def confirm_assignment(assignment_id: str, db: Session = Depends(get_db), admin_
 
     return {"message": "Assignment confirmed"}
 
+@router.patch("/assignments/{assignment_id}/confirm-arrival")
+def confirm_arrival(assignment_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    assignment = db.query(TripAssignment).filter(
+        TripAssignment.id == assignment_id,
+        TripAssignment.user_id == current_user.id
+    ).first()
+    
+    if not assignment:
+        raise HTTPException(status_code=404, detail="שיבוץ לא נמצא או אינו שייך לך")
+        
+    assignment.employee_confirmed_arrival = True
+    db.commit()
+    return {"message": "Arrival confirmed successfully"}
+
 @router.delete("/assignments/{assignment_id}")
 def delete_assignment(assignment_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     assignment = db.query(TripAssignment).filter(TripAssignment.id == assignment_id).first()

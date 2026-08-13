@@ -252,6 +252,45 @@ def cleanup_expired_tokens():
     if deleted_count > 0:
         logger.info(f"Cleaned up {deleted_count} expired refresh tokens.")
 
+def check_upcoming_trips_for_confirmation():
+    """
+    Check for trips in exactly 24-48 hours. Send an SMS to assigned employees asking them to confirm arrival.
+    """
+    logger.info("Running check_upcoming_trips_for_confirmation task...")
+    db: Session = next(get_db())
+    now = datetime.now()
+    tomorrow = now + timedelta(days=1)
+    tomorrow_start = tomorrow.replace(hour=0, minute=0, second=0, microsecond=0)
+    tomorrow_end = tomorrow.replace(hour=23, minute=59, second=59, microsecond=999999)
+    
+    upcoming_trips = db.query(Trip).filter(
+        Trip.start_date >= tomorrow_start,
+        Trip.start_date <= tomorrow_end
+    ).all()
+    
+    FRONTEND_URL = os.getenv("FRONTEND_URL", "https://yahav-hatzala-betucha.vercel.app")
+    
+    for trip in upcoming_trips:
+        for assignment in trip.assignments:
+            if assignment.is_confirmed and assignment.status == "assigned" and not assignment.employee_confirmed_arrival:
+                if assignment.user and assignment.user.phone:
+                    link = f"{FRONTEND_URL}/employee"
+                    msg = f"תזכורת: מחר יש לך טיול ב-{trip.location}. אנא היכנס לאזור האישי באפליקציה כדי לאשר הגעה סופית: {link}"
+                    
+                    # Prevent spam
+                    existing_notif = db.query(Notification).filter(
+                        Notification.user_id == assignment.user_id,
+                        Notification.message == msg
+                    ).first()
+                    
+                    if not existing_notif:
+                        NotificationService.send_sms(
+                            phone_number=assignment.user.phone,
+                            message=msg,
+                            db=db,
+                            user_id=assignment.user_id
+                        )
+
 def start_scheduler():
     scheduler = BackgroundScheduler()
     
@@ -266,6 +305,9 @@ def start_scheduler():
     scheduler.add_job(cleanup_expired_tokens, 'cron', hour=3, minute=30)
     # Run business expenses cleanup on the 15th of every month at 4 AM
     scheduler.add_job(delete_old_business_expenses, 'cron', day=15, hour=4, minute=0)
+    
+    # Check for upcoming trips and request confirmation every day at 18:00
+    scheduler.add_job(check_upcoming_trips_for_confirmation, 'cron', hour=18, minute=0)
     
     scheduler.start()
     logger.info("APScheduler started successfully.")

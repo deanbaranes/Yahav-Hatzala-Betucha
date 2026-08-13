@@ -20,6 +20,7 @@ class TripAssignment(Base):
     status = Column(Enum(AssignmentStatus), nullable=False, default=AssignmentStatus.assigned, index=True)
     is_confirmed = Column(Boolean, default=False, nullable=False)
     role = Column(String, nullable=True)
+    employee_confirmed_arrival = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     trip = relationship("Trip", back_populates="assignments")

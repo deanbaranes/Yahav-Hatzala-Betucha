@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
-import { Calendar, Clock, MapPin, CheckCircle, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, MapPin, CheckCircle, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 export default function MySchedule() {
   const { data: myTrips, isLoading } = useQuery<any[]>({
@@ -12,6 +13,16 @@ export default function MySchedule() {
   });
 
   if (isLoading) return <div className="text-center p-8 text-blue-600 font-bold animate-pulse">טוען את הסידור שלך...</div>;
+
+  const queryClient = useQueryClient();
+
+  const confirmArrivalMutation = useMutation({
+    mutationFn: (assignmentId: string) => axiosClient.patch(`/trips/assignments/${assignmentId}/confirm-arrival`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-trips'] });
+      alert("תודה! אישור ההגעה שלך נקלט בהצלחה.");
+    }
+  });
 
   const now = new Date();
   const assignedTrips = myTrips?.filter(t => t.status === 'assigned') || [];
@@ -66,6 +77,23 @@ export default function MySchedule() {
                   <div className="flex items-center gap-2"><Clock size={16} className="text-blue-500" /> {new Date(trip.start_date).toLocaleString('he-IL', { weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit' })}</div>
                   <div className="flex items-center gap-2"><span className="text-blue-500 text-lg leading-none">👤</span> תפקיד: {trip.role || 'כללי'}</div>
                 </div>
+                {trip.is_confirmed && (
+                  <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end relative z-10">
+                    {trip.employee_confirmed_arrival ? (
+                      <span className="flex items-center gap-1.5 text-green-600 font-bold text-sm bg-green-50 px-3 py-1.5 rounded-lg border border-green-200">
+                        <CheckCircle2 size={16} /> אישרת הגעה
+                      </span>
+                    ) : (
+                      <button 
+                        onClick={() => confirmArrivalMutation.mutate(trip.assignment_id)}
+                        disabled={confirmArrivalMutation.isPending}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-xl shadow-md transition-all active:scale-95 text-sm"
+                      >
+                        <CheckCircle size={16} /> לחץ לאישור הגעה לטיול
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

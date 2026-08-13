@@ -53,6 +53,7 @@ def get_trips(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), ad
                     "user_id": str(a.user_id),
                     "status": a.status,
                     "role": a.role,
+                    "employee_confirmed_arrival": getattr(a, 'employee_confirmed_arrival', False),
                     "user": {
                         "full_name": a.user.full_name
                     } if a.user else None
@@ -155,6 +156,7 @@ def get_my_trips(db: Session = Depends(get_db), current_user: User = Depends(get
             "status": a.status,
             "role": a.role,
             "is_confirmed": a.is_confirmed,
+            "employee_confirmed_arrival": getattr(a, 'employee_confirmed_arrival', False),
             "contact_phone": t.contact_phone if a.is_confirmed else None,
             "client": {"name": t.client.name} if t.client else None
         })
