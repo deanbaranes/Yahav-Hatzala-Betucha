@@ -172,7 +172,7 @@ export default function BillingPivotView() {
                   >
                     <div className="flex items-center gap-2">
                       <CheckCircle size={20} />
-                      לקוחות שחויבו במלואו החודש ({billingStatus.filter(client => client.status === 'חויב במלואו' || client.status === 'הופקה חשבונית').length})
+                      לקוחות שחויבו במלואו החודש ({billingStatus?.filter(client => client.status === 'חויב במלואו' || client.status === 'הופקה חשבונית').length || 0})
                     </div>
                     {showInvoiced ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                   </button>
