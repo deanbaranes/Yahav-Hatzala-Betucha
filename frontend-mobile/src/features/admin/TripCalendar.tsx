@@ -276,8 +276,8 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
           </div>
         </div>
         
-        <div className="flex-1 w-full max-w-sm mx-auto md:mx-4">
-          <div className="relative">
+        <div className="flex w-full md:w-auto max-w-sm mx-auto md:mx-4 gap-2">
+          <div className="relative flex-1">
             <input 
               type="text" 
               placeholder="חיפוש חברה או מיקום..."
@@ -287,17 +287,12 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
             />
             <span className="absolute right-2.5 top-2 text-gray-400">🔍</span>
           </div>
-        </div>
-
-        <div className="flex w-full md:w-auto justify-end">
           <button 
             onClick={handleExport}
-            className="flex items-center justify-center w-full md:w-auto gap-1.5 px-4 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg font-bold text-xs md:text-sm transition-colors border border-emerald-200 whitespace-nowrap"
+            className="flex items-center justify-center shrink-0 w-10 h-10 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg font-bold transition-colors border border-emerald-200"
             title="ייצא טיולים ושיבוצים לאקסל"
           >
-            <Download size={14} />
-            <span className="hidden sm:inline">ייצוא יומן לאקסל</span>
-            <span className="sm:hidden">ייצוא לאקסל</span>
+            <Download size={18} />
           </button>
         </div>
       </div>

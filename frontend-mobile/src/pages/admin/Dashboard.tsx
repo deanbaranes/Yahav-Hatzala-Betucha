@@ -86,19 +86,25 @@ export default function Dashboard() {
       </header>
 
       {readyToBill.length > 0 && (
-        <div className="bg-green-50 border-2 border-green-400 text-green-900 px-6 py-4 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm animate-fade-in">
-          <div className="flex items-center gap-4">
-            <div className="bg-green-100 p-3 rounded-full shadow-inner">
+        <div className="bg-green-50 border-2 border-green-400 text-green-900 px-6 py-5 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm animate-fade-in text-center md:text-right">
+          <div className="flex flex-col md:flex-row items-center gap-4 w-full">
+            <div className="bg-green-100 p-3 rounded-full shadow-inner hidden md:block">
               <span className="text-2xl">💰</span>
             </div>
-            <div>
-              <h3 className="font-bold text-lg">ישנם לקוחות שמוכנים להוצאת חשבונית לחודש זה!</h3>
-              <p className="text-sm font-medium opacity-90 mt-1">
+            <div className="flex-1 flex flex-col items-center md:items-start w-full">
+              <div className="flex items-center gap-2 mb-1 justify-center md:justify-start w-full">
+                <span className="text-xl md:hidden">💰</span>
+                <h3 className="font-black text-lg md:text-xl">ישנם לקוחות שמוכנים להוצאת חשבונית לחודש זה!</h3>
+              </div>
+              <p className="text-sm font-medium opacity-90 mt-1 text-center md:text-right max-w-lg mb-3 md:mb-0">
                 {readyToBill.map(c => c.client_name).join(', ')} סיימו את כל הטיולים שלהם לחודש זה.
               </p>
+              <a href="/admin/billing" className="bg-green-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-green-700 transition-colors shadow-sm whitespace-nowrap mt-2 md:mt-0 md:hidden block w-full sm:w-auto text-center mx-auto">
+                למעבר לדוח חיובים
+              </a>
             </div>
           </div>
-          <a href="/admin/billing" className="bg-green-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-700 transition-colors shadow-sm whitespace-nowrap">
+          <a href="/admin/billing" className="bg-green-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-700 transition-colors shadow-sm whitespace-nowrap hidden md:block">
             למעבר לדוח חיובים
           </a>
         </div>
