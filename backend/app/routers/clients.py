@@ -11,6 +11,8 @@ router = APIRouter(prefix="/clients", tags=["clients"])
 
 import re
 
+from sqlalchemy import func
+
 def parse_balance(bal_str):
     if not bal_str: return 0.0
     cleaned = str(bal_str).replace(',', '')
@@ -20,26 +22,22 @@ def parse_balance(bal_str):
 
 @router.get("/")
 def get_clients(skip: int = 0, limit: int = 50, q: str = "", db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
-    query = db.query(Client)
-    
+    filters = []
     if q:
-        query = query.filter(
+        filters.append(
             (Client.name.ilike(f"%{q}%")) | 
             (Client.contact_person.ilike(f"%{q}%"))
         )
         
+    query = db.query(Client).filter(*filters) if filters else db.query(Client)
     total = query.count()
     
-    # Calculate totals
-    all_filtered = query.all()
-    total_positive = sum(parse_balance(c.balance) for c in all_filtered if parse_balance(c.balance) > 0)
-    total_negative = sum(parse_balance(c.balance) for c in all_filtered if parse_balance(c.balance) < 0)
+    # Calculate totals using DB aggregation for blazing fast performance
+    total_positive = db.query(func.sum(Client.numeric_balance)).filter(*filters, Client.numeric_balance > 0).scalar() or 0.0
+    total_negative = db.query(func.sum(Client.numeric_balance)).filter(*filters, Client.numeric_balance < 0).scalar() or 0.0
 
-    # Sort by balance ascending (most negative / highest debt comes first)
-    all_filtered.sort(key=lambda c: parse_balance(c.balance))
-
-    # Apply pagination in Python
-    clients = all_filtered[skip : skip + limit]
+    # Sort by balance ascending (most negative / highest debt comes first) directly in the database
+    clients = query.order_by(Client.numeric_balance.asc()).offset(skip).limit(limit).all()
     
     return {
         "total": total,
@@ -71,7 +69,8 @@ def create_client(data: ClientCreate, db: Session = Depends(get_db), admin_user:
         contact_person=data.contact_person,
         email=data.email,
         phone=data.phone,
-        balance="0"
+        balance="0",
+        numeric_balance=0.0
     )
     db.add(new_client)
     db.commit()
@@ -88,7 +87,9 @@ def update_client(client_id: str, data: ClientUpdate, db: Session = Depends(get_
     if data.contact_person is not None: client.contact_person = data.contact_person
     if data.email is not None: client.email = data.email
     if data.phone is not None: client.phone = data.phone
-    if data.balance is not None: client.balance = data.balance
+    if data.balance is not None: 
+        client.balance = data.balance
+        client.numeric_balance = parse_balance(data.balance)
     if data.debt_start_date is not None: 
         client.debt_start_date = parser.parse(data.debt_start_date) if data.debt_start_date else None
     if data.notes is not None: client.notes = data.notes
