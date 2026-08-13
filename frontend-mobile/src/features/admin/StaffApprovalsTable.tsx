@@ -21,6 +21,15 @@ export default function StaffApprovalsTable() {
     }
   });
 
+  const rejectMutation = useMutation({
+    mutationFn: (id: string) => axiosClient.delete(`/trips/assignments/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['unconfirmed-assignments'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
+    }
+  });
+
   if (isLoading) return <div className="text-right p-4" dir="rtl">טוען נתונים...</div>;
 
   return (
@@ -57,13 +66,26 @@ export default function StaffApprovalsTable() {
                   <div className="text-[10px] md:text-sm text-gray-500 whitespace-nowrap">{new Date(a.trip_start).toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' })}</div>
                 </td>
                 <td className="p-2 md:p-4">
-                  <button 
-                    onClick={() => approveMutation.mutate(a.id)}
-                    disabled={approveMutation.isPending}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white px-2 py-1.5 md:px-4 md:py-2 rounded-lg font-bold shadow-sm transition-colors text-[11px] md:text-sm whitespace-nowrap"
-                  >
-                    אשר שיבוץ
-                  </button>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <button 
+                      onClick={() => approveMutation.mutate(a.id)}
+                      disabled={approveMutation.isPending}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white px-2 py-1.5 md:px-4 md:py-2 rounded-lg font-bold shadow-sm transition-colors text-[11px] md:text-sm whitespace-nowrap"
+                    >
+                      אשר
+                    </button>
+                    <button 
+                      onClick={() => {
+                        if (window.confirm('האם אתה בטוח שברצונך לדחות ולבטל שיבוץ זה?')) {
+                          rejectMutation.mutate(a.id);
+                        }
+                      }}
+                      disabled={rejectMutation.isPending}
+                      className="flex-1 bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1.5 md:px-4 md:py-2 rounded-lg font-bold shadow-sm transition-colors text-[11px] md:text-sm whitespace-nowrap border border-red-200"
+                    >
+                      דחה
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
