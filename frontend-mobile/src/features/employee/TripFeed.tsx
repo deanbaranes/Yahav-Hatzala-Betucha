@@ -93,6 +93,7 @@ export default function TripFeed() {
         return tStart <= dayEnd && actualEnd >= dayStart;
       });
       const hasTrips = tripsOnDay && tripsOnDay.length > 0;
+      const allTripsFull = hasTrips && tripsOnDay.every((t: any) => t.assigned_count >= t.capacity);
       
       days.push(
         <button
@@ -102,8 +103,8 @@ export default function TripFeed() {
             ${isSelected ? 'bg-blue-600 text-white font-bold shadow-md' : 'text-gray-700 hover:bg-gray-100'}`}
         >
           <span>{i}</span>
-          {hasTrips && !isSelected && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full absolute bottom-1"></div>}
-          {hasTrips && isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full absolute bottom-1"></div>}
+          {hasTrips && !isSelected && <div className={`w-1.5 h-1.5 rounded-full absolute bottom-1 ${allTripsFull ? 'bg-orange-500' : 'bg-blue-500'}`}></div>}
+          {hasTrips && isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full absolute bottom-1 opacity-80"></div>}
         </button>
       );
     }
