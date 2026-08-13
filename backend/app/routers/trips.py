@@ -41,6 +41,7 @@ def get_trips(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), ad
             "roles_requirements": t.roles_requirements or {},
             "is_billed": t.is_billed,
             "color": t.color,
+            "notes": t.notes,
             "client": {
                 "id": str(t.client.id),
                 "name": t.client.name,
@@ -99,6 +100,7 @@ def get_available_trips(db: Session = Depends(get_db), current_user: User = Depe
             "location": t.location,
             "start_date": t.start_date.isoformat(),
             "end_date": t.end_date.isoformat() if t.end_date else None,
+            "notes": t.notes,
             "capacity": t.capacity,
             "roles_requirements": t.roles_requirements or {},
             "role_counts": role_counts,
@@ -127,6 +129,7 @@ def get_next_trip(db: Session = Depends(get_db), current_user: User = Depends(ge
         "id": str(t.id),
         "assignment_id": str(assignment.id),
         "location": t.location,
+        "notes": t.notes,
         "start_date": t.start_date.isoformat(),
         "is_confirmed": assignment.is_confirmed,
         "client": {"name": t.client.name} if t.client else None
@@ -148,6 +151,7 @@ def get_my_trips(db: Session = Depends(get_db), current_user: User = Depends(get
             "location": t.location,
             "start_date": t.start_date.isoformat(),
             "end_date": t.end_date.isoformat() if t.end_date else None,
+            "notes": t.notes,
             "status": a.status,
             "role": a.role,
             "is_confirmed": a.is_confirmed,

@@ -49,6 +49,7 @@ def get_all_pending_reports(db: Session = Depends(get_db), current_user: User = 
             "trip_id": str(a.trip_id),
             "employee_name": a.user.full_name,
             "location": a.trip.location,
+            "notes": a.trip.notes,
             "start_date": a.trip.start_date.isoformat(),
             "role": a.role
         } for a in pending_assignments
@@ -73,6 +74,7 @@ def get_my_pending_reports(db: Session = Depends(get_db), current_user: User = D
             "assignment_id": str(a.id),
             "trip_id": str(a.trip_id),
             "location": a.trip.location,
+            "notes": a.trip.notes,
             "start_date": a.trip.start_date.isoformat(),
             "end_date": a.trip.end_date.isoformat() if a.trip.end_date else None,
             "role": a.role
