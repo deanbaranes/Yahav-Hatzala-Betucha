@@ -129,7 +129,7 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
 
   const getTripLabelMobile = (trip: any) => {
     let name = trip.client?.name === 'לקוח כללי' ? trip.location : (trip.client?.name || trip.location);
-    if (trip.notes) name = `${name} ${trip.notes}`;
+    if (trip.notes) name = `${name} (${trip.notes})`;
     return name;
   };
 
@@ -137,7 +137,7 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
     const confirmedCount = trip.assignments?.filter((a: any) => a.is_confirmed && a.status === 'assigned').length || 0;
     const missing = trip.capacity - confirmedCount;
     let name = trip.client?.name === 'לקוח כללי' ? trip.location : (trip.client?.name || trip.location);
-    if (trip.notes) name = `${name} ${trip.notes}`;
+    if (trip.notes) name = `${name} (${trip.notes})`;
     
     if (trip.is_billed) return `${name} (חויב)`;
     if (trip.capacity === 0) return name;
@@ -201,7 +201,9 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
     const start = new Date(trip.start_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'});
     const end = trip.end_date ? new Date(trip.end_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'}) : 'לא צוין';
     
-    let tooltip = `לקוח: ${trip.client?.name === 'לקוח כללי' ? 'מיובא מיומן גוגל' : (trip.client?.name || 'לא ידוע')}\nמיקום/שם הטיול: ${trip.location}\nשעות: ${start} - ${end}\nסה"כ אנשי צוות דרושים: ${trip.capacity}\n\nצוות ששובץ ומאושר:\n`;
+    let tooltip = `לקוח: ${trip.client?.name === 'לקוח כללי' ? 'מיובא מיומן גוגל' : (trip.client?.name || 'לא ידוע')}\n`;
+    if (trip.notes) tooltip += `הערות: ${trip.notes}\n`;
+    tooltip += `מיקום/שם הטיול: ${trip.location}\nשעות: ${start} - ${end}\nסה"כ אנשי צוות דרושים: ${trip.capacity}\n\nצוות ששובץ ומאושר:\n`;
     
     const confirmed = trip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned') || [];
     if (confirmed.length === 0) {

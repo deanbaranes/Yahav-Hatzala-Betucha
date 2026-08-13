@@ -146,6 +146,7 @@ export default function Dashboard() {
                               <div>
                                 <h4 className={`font-bold text-lg ${isFullyStaffed ? 'text-blue-900' : 'text-green-900'}`}>
                                   {trip.client?.name === 'לקוח כללי' ? trip.location : (trip.client?.name || 'לקוח לא ידוע')}
+                                  {trip.notes && <span className="text-sm font-normal text-gray-500 mr-2 opacity-80">({trip.notes})</span>}
                                 </h4>
                                 <p className="text-gray-600 font-medium">
                                   {trip.client?.name === 'לקוח כללי' ? 'מיובא מיומן גוגל' : trip.location}
