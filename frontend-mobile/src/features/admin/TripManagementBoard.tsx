@@ -404,70 +404,84 @@ export default function TripManagementBoard() {
                       {expandedWeeks[weekGroup.weekName] && (
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-3">
                           {weekGroup.trips.map(trip => (
-                            <div key={trip.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50/50 hover:bg-gray-50 transition-colors">
-                              <div className="flex justify-between items-start mb-2">
-                                <div className="flex items-start gap-3">
-                                  <button 
-                                    onClick={() => {
-                                      setEditingTripId(trip.id);
-                                      setFormData({
-                                        client_name: trip.client?.name || '',
-                                        location: trip.location || '',
-                                        start_date: trip.start_date ? trip.start_date.substring(0, 16) : '',
-                                        end_date: trip.end_date ? trip.end_date.substring(0, 16) : '',
-                                        roles_requirements: trip.roles_requirements || {},
-                                        color: trip.color || '',
-                                        global_salary: trip.global_salary || '',
-                                        contact_phone: trip.contact_phone || ''
-                                      });
-                                        setTimeout(() => {
-                                        document.getElementById('edit-form-area')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                      }, 50);
-                                    }}
-                                    className="text-gray-400 hover:text-blue-600 p-1 transition-colors bg-white border border-gray-200 rounded shadow-sm"
-                                    title="ערוך טיול"
-                                  >
-                                    ✎
-                                  </button>
-                                  <button 
-                                    onClick={() => {
-                                      if (window.confirm('האם אתה בטוח שברצונך למחוק טיול זה לצמיתות?')) {
-                                        deleteTrip.mutate(trip.id);
-                                      }
-                                    }}
-                                    className="text-red-400 hover:text-red-600 p-1 transition-colors bg-white border border-gray-200 rounded shadow-sm"
-                                    title="מחק טיול"
-                                  >
-                                    ✕
-                                  </button>
-                                  <div className="mt-0.5">
-                                    <span className="font-bold text-lg text-blue-800">{trip.client?.name === 'לקוח כללי' ? trip.location : trip.client?.name}</span>
-                                    <span className="mx-2 text-gray-400">|</span>
-                                    <span className="text-gray-700 font-medium">{trip.client?.name === 'לקוח כללי' ? 'מיובא מיומן גוגל' : trip.location}</span>
+                            <div key={trip.id} className="border border-gray-200 rounded-xl p-3 sm:p-4 bg-white shadow-sm hover:shadow transition-shadow">
+                              {/* Header: Title and Actions */}
+                              <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-3">
+                                <div className="flex items-start gap-3 w-full sm:w-auto">
+                                  <div className="flex shrink-0 gap-1 mt-0.5">
+                                    <button 
+                                      onClick={() => {
+                                        setEditingTripId(trip.id);
+                                        setFormData({
+                                          client_name: trip.client?.name || '',
+                                          location: trip.location || '',
+                                          start_date: trip.start_date ? trip.start_date.substring(0, 16) : '',
+                                          end_date: trip.end_date ? trip.end_date.substring(0, 16) : '',
+                                          roles_requirements: trip.roles_requirements || {},
+                                          color: trip.color || '',
+                                          global_salary: trip.global_salary || '',
+                                          contact_phone: trip.contact_phone || ''
+                                        });
+                                          setTimeout(() => {
+                                          document.getElementById('edit-form-area')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        }, 50);
+                                      }}
+                                      className="text-gray-400 hover:text-blue-600 p-2 transition-colors bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg"
+                                      title="ערוך טיול"
+                                    >
+                                      ✎
+                                    </button>
+                                    <button 
+                                      onClick={() => {
+                                        if (window.confirm('האם אתה בטוח שברצונך למחוק טיול זה לצמיתות?')) {
+                                          deleteTrip.mutate(trip.id);
+                                        }
+                                      }}
+                                      className="text-red-400 hover:text-red-600 p-2 transition-colors bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg"
+                                      title="מחק טיול"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                  <div className="flex-1 min-w-0 pt-1">
+                                    <div className="font-black text-sm sm:text-base text-blue-900 leading-tight mb-1 break-words">
+                                      {trip.client?.name === 'לקוח כללי' ? trip.location : trip.client?.name}
+                                    </div>
+                                    <div className="text-xs sm:text-sm text-gray-600 font-medium break-words">
+                                      {trip.client?.name === 'לקוח כללי' ? 'מיובא מיומן גוגל' : trip.location}
+                                    </div>
+                                    {trip.notes && (
+                                      <div className="text-[11px] sm:text-xs text-orange-600 font-bold mt-1.5 bg-orange-50 px-2 py-0.5 rounded inline-block">
+                                        {trip.notes}
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
-                                <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap">
-                                  דרושים {trip.capacity} אנשי צוות
-                                </span>
+                                
+                                <div className="shrink-0 mr-12 sm:mr-0 w-full sm:w-auto mt-2 sm:mt-0">
+                                  <span className="bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg sm:rounded-full text-[11px] sm:text-xs font-bold flex items-center justify-center sm:inline-block w-full sm:w-auto border border-indigo-200">
+                                    דרושים {trip.capacity} אנשי צוות
+                                  </span>
+                                </div>
                               </div>
-                              <div className="text-gray-500 text-sm mb-3 mt-1 flex items-center gap-2">
-                                <span className="bg-white border border-gray-200 px-2 py-1 rounded text-xs font-semibold">
-                                  {new Date(trip.start_date).toLocaleString('he-IL', { weekday: 'long', hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
-                                </span>
-                                {trip.end_date && (
-                                  <>
-                                    <span className="text-gray-400">-</span>
-                                    <span className="bg-white border border-gray-200 px-2 py-1 rounded text-xs font-semibold text-gray-500">
-                                      {new Date(trip.end_date).toLocaleString('he-IL', { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
-                                  </>
+
+                              {/* Dates */}
+                              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-bold text-gray-600 bg-gray-50 p-2 sm:p-2.5 rounded-lg border border-gray-100 mb-3 mr-12 sm:mr-0">
+                                <span className="text-blue-600">📅</span>
+                                <span>{new Date(trip.start_date).toLocaleString('he-IL', { weekday: 'long', day: '2-digit', month: '2-digit' })}</span>
+                                <span className="text-gray-300 mx-1">|</span>
+                                <span className="text-blue-600">⏰</span>
+                                {trip.end_date ? (
+                                  <span>{new Date(trip.start_date).toLocaleString('he-IL', { hour: '2-digit', minute: '2-digit' })} - {new Date(trip.end_date).toLocaleString('he-IL', { hour: '2-digit', minute: '2-digit' })}</span>
+                                ) : (
+                                  <span>החל מ- {new Date(trip.start_date).toLocaleString('he-IL', { hour: '2-digit', minute: '2-digit' })}</span>
                                 )}
                               </div>
                               
                               {/* Confirmed Employees */}
                               {trip.assignments?.filter((a:any) => a.is_confirmed).length > 0 && (
-                                <div className="border-t border-gray-200 pt-3 mt-3">
-                                  <span className="text-[10px] font-bold text-gray-500 mb-2 block">עובדים ששובצו ואושרו:</span>
+                                <div className="border-t border-gray-100 pt-3 mt-3 mr-12 sm:mr-0">
+                                  <span className="text-[10px] sm:text-xs font-bold text-gray-500 mb-2 block">עובדים ששובצו ואושרו:</span>
                                   <div className="flex flex-wrap gap-1.5">
                                     {trip.assignments.filter((a:any) => a.is_confirmed).map((a:any) => (
                                       <span key={a.id} className="bg-white border border-gray-200 text-gray-800 px-2 py-1 rounded text-xs shadow-sm font-semibold flex items-center gap-1">
