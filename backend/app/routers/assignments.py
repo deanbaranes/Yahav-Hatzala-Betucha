@@ -72,6 +72,15 @@ def confirm_arrival(assignment_id: str, db: Session = Depends(get_db), current_u
         
     assignment.employee_confirmed_arrival = True
     db.commit()
+    
+    # Notify Admin
+    trip = assignment.trip
+    admin_phone = os.getenv("ADMIN_PHONE")
+    msg = f"אישור הגעה: העובד/ת {current_user.full_name} אישר/ה הגעה לטיול ב-{trip.location} (בתאריך {trip.start_date.strftime('%d/%m/%Y')})."
+    NotificationService.create_in_app_notification(msg, db)
+    if admin_phone:
+        NotificationService.send_sms(admin_phone, msg)
+        
     return {"message": "Arrival confirmed successfully"}
 
 @router.delete("/assignments/{assignment_id}")

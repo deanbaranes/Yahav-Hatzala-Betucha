@@ -291,6 +291,42 @@ def check_upcoming_trips_for_confirmation():
                             user_id=assignment.user_id
                         )
 
+def notify_admin_unconfirmed_arrivals():
+    """
+    Check for trips tomorrow where employees have not confirmed arrival, and notify the admin.
+    Runs at 16:00.
+    """
+    logger.info("Running notify_admin_unconfirmed_arrivals task...")
+    db: Session = next(get_db())
+    now = datetime.now()
+    tomorrow = now + timedelta(days=1)
+    tomorrow_start = tomorrow.replace(hour=0, minute=0, second=0, microsecond=0)
+    tomorrow_end = tomorrow.replace(hour=23, minute=59, second=59, microsecond=999999)
+    
+    upcoming_trips = db.query(Trip).filter(
+        Trip.start_date >= tomorrow_start,
+        Trip.start_date <= tomorrow_end
+    ).all()
+    
+    admin_phone = os.getenv("ADMIN_PHONE")
+    
+    for trip in upcoming_trips:
+        for assignment in trip.assignments:
+            if assignment.is_confirmed and assignment.status == "assigned" and not assignment.employee_confirmed_arrival:
+                user = assignment.user
+                if user:
+                    msg = f"התראת אישור הגעה: העובד/ת {user.full_name} טרם אישר/ה הגעה לטיול מחר ב-{trip.location}!"
+                    
+                    # Prevent spam
+                    existing_notif = db.query(Notification).filter(
+                        Notification.message == msg
+                    ).first()
+                    
+                    if not existing_notif:
+                        NotificationService.create_in_app_notification(msg, db)
+                        if admin_phone:
+                            NotificationService.send_sms(admin_phone, msg)
+
 def start_scheduler():
     scheduler = BackgroundScheduler()
     
@@ -306,8 +342,11 @@ def start_scheduler():
     # Run business expenses cleanup on the 15th of every month at 4 AM
     scheduler.add_job(delete_old_business_expenses, 'cron', day=15, hour=4, minute=0)
     
-    # Check for upcoming trips and request confirmation every day at 16:00
-    scheduler.add_job(check_upcoming_trips_for_confirmation, 'cron', hour=16, minute=0)
+    # Check for upcoming trips and request confirmation every day at 10:00
+    scheduler.add_job(check_upcoming_trips_for_confirmation, 'cron', hour=10, minute=0)
+    
+    # Alert admin about unconfirmed arrivals every day at 16:00
+    scheduler.add_job(notify_admin_unconfirmed_arrivals, 'cron', hour=16, minute=0)
     
     scheduler.start()
     logger.info("APScheduler started successfully.")
