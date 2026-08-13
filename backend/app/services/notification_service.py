@@ -6,6 +6,21 @@ logger = logging.getLogger(__name__)
 
 class NotificationService:
     @staticmethod
+    def create_in_app_notification(message: str, db: Session, user_id: str = None, title: str = "התראת מערכת") -> bool:
+        try:
+            new_notif = Notification(
+                user_id=user_id,
+                title=title,
+                message=message
+            )
+            db.add(new_notif)
+            db.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save notification to DB: {str(e)}")
+            return False
+
+    @staticmethod
     def send_sms(phone_number: str, message: str, db: Session = None, user_id: str = None) -> bool:
         """
         Mock function to send an SMS.
@@ -19,16 +34,7 @@ class NotificationService:
         
         # Save to database if session is provided (in-app notification)
         if db:
-            try:
-                new_notif = Notification(
-                    user_id=user_id,
-                    title="התראת מערכת",
-                    message=message
-                )
-                db.add(new_notif)
-                db.commit()
-            except Exception as e:
-                logger.error(f"Failed to save notification to DB: {str(e)}")
+            NotificationService.create_in_app_notification(message, db, user_id)
         
         # TODO: Implement real SMS provider integration here (e.g. SMS2010 API)
         # response = requests.post("https://api.sms-provider.co.il/send", json={...})

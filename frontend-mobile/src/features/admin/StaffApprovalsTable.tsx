@@ -30,10 +30,10 @@ export default function StaffApprovalsTable() {
         <table className="w-full text-right border-collapse">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200 text-gray-700">
-              <th className="p-4 font-bold rounded-tr-lg">שם עובד</th>
-              <th className="p-4 font-bold">תפקיד</th>
-              <th className="p-4 font-bold">פרטי טיול</th>
-              <th className="p-4 font-bold rounded-tl-lg w-32">פעולה</th>
+              <th className="p-2 md:p-4 text-xs md:text-base font-bold rounded-tr-lg">שם עובד</th>
+              <th className="p-2 md:p-4 text-xs md:text-base font-bold">תפקיד</th>
+              <th className="p-2 md:p-4 text-xs md:text-base font-bold">פרטי טיול</th>
+              <th className="p-2 md:p-4 text-xs md:text-base font-bold rounded-tl-lg w-auto md:w-32">פעולה</th>
             </tr>
           </thead>
           <tbody>
@@ -44,23 +44,23 @@ export default function StaffApprovalsTable() {
             )}
             {assignments?.map((a: any) => (
               <tr key={a.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                <td className="p-4">
-                  <div className="font-medium text-gray-900">{a.full_name}</div>
-                  <div className="text-sm text-gray-500">{a.phone}</div>
+                <td className="p-2 md:p-4">
+                  <div className="font-medium text-gray-900 text-xs md:text-base">{a.full_name}</div>
+                  <div className="text-[10px] md:text-sm text-gray-500">{a.phone}</div>
                 </td>
-                <td className="p-4 text-gray-800 font-semibold">
+                <td className="p-2 md:p-4 text-gray-800 font-semibold text-xs md:text-base">
                   <div>{a.role === 'general' || !a.role ? 'כללי' : a.role}</div>
-                  {a.status === 'waitlisted' && <div className="text-xs text-orange-600 bg-orange-100 rounded-full px-2 py-0.5 inline-block mt-1">רשימת המתנה</div>}
+                  {a.status === 'waitlisted' && <div className="text-[10px] md:text-xs text-orange-600 bg-orange-100 rounded-full px-1 md:px-2 py-0.5 inline-block mt-1 whitespace-nowrap">רשימת המתנה</div>}
                 </td>
-                <td className="p-4">
-                  <div className="text-gray-900">{a.trip_location}</div>
-                  <div className="text-sm text-gray-500">{new Date(a.trip_start).toLocaleString('he-IL')}</div>
+                <td className="p-2 md:p-4">
+                  <div className="text-gray-900 text-xs md:text-base truncate max-w-[80px] md:max-w-[150px]" title={a.trip_location}>{a.trip_location}</div>
+                  <div className="text-[10px] md:text-sm text-gray-500 whitespace-nowrap">{new Date(a.trip_start).toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' })}</div>
                 </td>
-                <td className="p-4">
+                <td className="p-2 md:p-4">
                   <button 
                     onClick={() => approveMutation.mutate(a.id)}
                     disabled={approveMutation.isPending}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold shadow-sm transition-colors text-sm"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white px-2 py-1.5 md:px-4 md:py-2 rounded-lg font-bold shadow-sm transition-colors text-[11px] md:text-sm whitespace-nowrap"
                   >
                     אשר שיבוץ
                   </button>

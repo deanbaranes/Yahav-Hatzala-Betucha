@@ -47,14 +47,16 @@ def confirm_assignment(assignment_id: str, db: Session = Depends(get_db), admin_
     assignment.status = "assigned"
     db.commit()
 
-    # Send SMS to assigned user
+    # Send notification to assigned user
     user = assignment.user
     trip = assignment.trip
-    if user and user.phone:
+    if user:
         contact_str = f"איש קשר לטיול: {trip.contact_phone}" if trip.contact_phone else ""
         date_str = trip.start_date.strftime("%d/%m/%Y %H:%M") if trip.start_date else ""
         msg = f"הטיול אושר! שובצת סופית לטיול ב-{trip.location} בתאריך {date_str} בתפקיד {assignment.role}. {contact_str}\nלפרטים נוספים היכנס לאפליקציה."
-        NotificationService.send_sms(user.phone, msg, db=db, user_id=user.id)
+        NotificationService.create_in_app_notification(msg, db, user_id=user.id)
+        if user.phone:
+            NotificationService.send_sms(user.phone, msg)
 
     return {"message": "Assignment confirmed"}
 
@@ -140,10 +142,12 @@ def join_trip(trip_id: str, request: JoinTripRequest, db: Session = Depends(get_
     db.commit()
     db.refresh(new_assignment)
 
-    # Send SMS to Admin — only after successful commit
+    admin_msg = f"הודעת מערכת: העובד {current_user.full_name} נרשם לטיול ב-{trip.location}. נא להיכנס לאפליקציה כדי לאשר את השיבוץ."
+    NotificationService.create_in_app_notification(admin_msg, db)
+    
+    # Send SMS to Admin
     if ADMIN_PHONE:
-        sms_msg = f"הודעת מערכת: העובד {current_user.full_name} נרשם לטיול ב-{trip.location}. נא להיכנס לאפליקציה כדי לאשר את השיבוץ."
-        NotificationService.send_sms(ADMIN_PHONE, sms_msg, db=db)
+        NotificationService.send_sms(ADMIN_PHONE, admin_msg)
 
     return {"message": f"Successfully joined. Status: {status}", "status": status}
 
@@ -163,10 +167,12 @@ def cancel_trip(trip_id: str, db: Session = Depends(get_db), current_user: User 
     assignment.status = "cancelled"
     db.commit()
 
-    # Send SMS to Admin — only after successful commit
+    admin_msg = f"הודעת מערכת: העובד {current_user.full_name} ביטל את הרישום שלו לטיול ב-{trip.location} ב-{trip.start_date.strftime('%d/%m/%Y')}."
+    NotificationService.create_in_app_notification(admin_msg, db)
+    
+    # Send SMS to Admin
     if ADMIN_PHONE:
-        sms_msg = f"הודעת מערכת: העובד {current_user.full_name} ביטל את הרישום שלו לטיול ב-{trip.location} ב-{trip.start_date.strftime('%d/%m/%Y')}."
-        NotificationService.send_sms(ADMIN_PHONE, sms_msg, db=db)
+        NotificationService.send_sms(ADMIN_PHONE, admin_msg)
 
     # If the user was assigned, promote the oldest waitlisted user
     promoted_user = None
@@ -182,10 +188,12 @@ def cancel_trip(trip_id: str, db: Session = Depends(get_db), current_user: User 
             db.commit()
             promoted_user = next_in_line.user_id
 
-            # Send SMS to the newly promoted user
-            if next_in_line.user and next_in_line.user.phone:
+            # Send notification to the newly promoted user
+            if next_in_line.user:
                 promoted_msg = f"הודעת מערכת: קודמת לרשימת המשובצים לטיול ב-{trip.location}. נא לוודא שאתה מגיע!"
-                NotificationService.send_sms(next_in_line.user.phone, promoted_msg, db=db, user_id=next_in_line.user_id)
+                NotificationService.create_in_app_notification(promoted_msg, db, user_id=next_in_line.user_id)
+                if next_in_line.user.phone:
+                    NotificationService.send_sms(next_in_line.user.phone, promoted_msg)
 
     return {"message": "Cancelled successfully", "promoted_user": str(promoted_user) if promoted_user else None}
 
@@ -217,13 +225,15 @@ def admin_assign_trip(trip_id: str, request: AdminAssignRequest, db: Session = D
 
     db.commit()
 
-    # Send SMS to assigned user
+    # Send notification to assigned user
     user = db.query(User).filter(User.id == request.user_id).first()
-    if user and user.phone:
+    if user:
         contact_str = f"איש קשר לטיול: {trip.contact_phone}" if trip.contact_phone else ""
         date_str = trip.start_date.strftime("%d/%m/%Y %H:%M") if trip.start_date else ""
         msg = f"שובצת לטיול ב-{trip.location} בתאריך {date_str} בתפקיד {request.role}. {contact_str}\nלפרטים ואישור היכנס לאפליקציה."
-        NotificationService.send_sms(user.phone, msg, db=db, user_id=user.id)
+        NotificationService.create_in_app_notification(msg, db, user_id=user.id)
+        if user.phone:
+            NotificationService.send_sms(user.phone, msg)
 
     return {"message": "Assigned and reported successfully"}
 
