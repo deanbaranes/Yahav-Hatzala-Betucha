@@ -9,7 +9,7 @@ from app.models.user import User
 from app.models.trip_assignment import TripAssignment
 from app.schemas import TripCreate, TripOut, JoinTripRequest, AdminAssignRequest, IcalImportRequest
 from app.dependencies import get_admin_user, get_current_user
-from app.services.sms_service import SMSService
+from app.services.notification_service import NotificationService
 import requests as http_requests
 from icalendar import Calendar as ICalendar
 from sqlalchemy import extract
@@ -158,7 +158,10 @@ def get_my_trips(db: Session = Depends(get_db), current_user: User = Depends(get
 
 @router.get("/billing-status/{year}/{month}")
 def get_billing_status(year: int, month: int, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
-    trips = db.query(Trip).filter(
+    trips = db.query(Trip).options(
+        joinedload(Trip.client),
+        joinedload(Trip.assignments).joinedload(TripAssignment.report)
+    ).filter(
         extract('year', Trip.start_date) == year,
         extract('month', Trip.start_date) == month
     ).all()
@@ -244,7 +247,7 @@ def create_trip(trip_data: TripCreate, db: Session = Depends(get_db), current_us
     # Validations
 
     if trip_data.end_date <= trip_data.start_date:
-        raise HTTPException(status_code=400, detail="End date must be after start date")
+        raise HTTPException(status_code=400, detail="תאריך הסיום חייב להיות אחרי תאריך ההתחלה")
 
     # Soft Client Creation
     client = db.query(Client).filter(Client.name == trip_data.client_name).first()
@@ -392,7 +395,7 @@ def import_from_ical(
 def confirm_assignment(assignment_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     assignment = db.query(TripAssignment).filter(TripAssignment.id == assignment_id).first()
     if not assignment:
-        raise HTTPException(status_code=404, detail="Assignment not found")
+        raise HTTPException(status_code=404, detail="שיבוץ לא נמצא")
 
     assignment.is_confirmed = True
     db.commit()
@@ -404,7 +407,7 @@ def confirm_assignment(assignment_id: str, db: Session = Depends(get_db), admin_
         contact_str = f"איש קשר לטיול: {trip.contact_phone}" if trip.contact_phone else ""
         date_str = trip.start_date.strftime("%d/%m/%Y %H:%M") if trip.start_date else ""
         msg = f"הטיול אושר! שובצת סופית לטיול ב-{trip.location} בתאריך {date_str} בתפקיד {assignment.role}. {contact_str}\nלפרטים נוספים היכנס לאפליקציה."
-        SMSService.send_sms(user.phone, msg)
+        NotificationService.send_sms(user.phone, msg, db=db, user_id=user.id)
 
     return {"message": "Assignment confirmed"}
 
@@ -412,7 +415,7 @@ def confirm_assignment(assignment_id: str, db: Session = Depends(get_db), admin_
 def delete_assignment(assignment_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     assignment = db.query(TripAssignment).filter(TripAssignment.id == assignment_id).first()
     if not assignment:
-        raise HTTPException(status_code=404, detail="Assignment not found")
+        raise HTTPException(status_code=404, detail="שיבוץ לא נמצא")
 
     trip_id = assignment.trip_id
     db.delete(assignment)
@@ -454,7 +457,7 @@ def bulk_bill_trips(client_id: str, year: int, month: int, db: Session = Depends
 def update_trip(trip_id: str, trip_data: TripCreate, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
     if not trip:
-        raise HTTPException(status_code=404, detail="Trip not found")
+        raise HTTPException(status_code=404, detail="טיול לא נמצא")
 
     client = db.query(Client).filter(Client.name == trip_data.client_name).first()
     if not client:
@@ -481,7 +484,7 @@ def update_trip(trip_id: str, trip_data: TripCreate, db: Session = Depends(get_d
 def mark_trip_billed(trip_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
     if not trip:
-        raise HTTPException(status_code=404, detail="Trip not found")
+        raise HTTPException(status_code=404, detail="טיול לא נמצא")
 
     trip.is_billed = not trip.is_billed
     db.commit()
@@ -492,7 +495,7 @@ def join_trip(trip_id: str, request: JoinTripRequest, db: Session = Depends(get_
     # Verify trip exists — with_for_update prevents race condition on capacity check
     trip = db.query(Trip).with_for_update().filter(Trip.id == trip_id).first()
     if not trip:
-        raise HTTPException(status_code=404, detail="Trip not found")
+        raise HTTPException(status_code=404, detail="טיול לא נמצא")
 
     # Check if trip is in the past
     now = datetime.now()
@@ -500,7 +503,7 @@ def join_trip(trip_id: str, request: JoinTripRequest, db: Session = Depends(get_
     if isinstance(start_dt, str):
         start_dt = datetime.fromisoformat(start_dt)
     if start_dt.replace(tzinfo=None) < now:
-        raise HTTPException(status_code=400, detail="Cannot join a trip that already started")
+        raise HTTPException(status_code=400, detail="לא ניתן להצטרף לטיול שכבר התחיל")
 
     # Check if user already registered
     existing_assignment = db.query(TripAssignment).filter(
@@ -510,7 +513,7 @@ def join_trip(trip_id: str, request: JoinTripRequest, db: Session = Depends(get_
     ).first()
 
     if existing_assignment:
-        raise HTTPException(status_code=400, detail="You are already registered for this trip")
+        raise HTTPException(status_code=400, detail="אתה כבר רשום לטיול זה")
 
     # Check role capacity
     assigned_count_for_role = db.query(TripAssignment).filter(
@@ -550,7 +553,7 @@ def join_trip(trip_id: str, request: JoinTripRequest, db: Session = Depends(get_
     # Send SMS to Admin — only after successful commit
     if ADMIN_PHONE:
         sms_msg = f"הודעת מערכת: העובד {current_user.full_name} נרשם לטיול ב-{trip.location}. נא להיכנס לאפליקציה כדי לאשר את השיבוץ."
-        SMSService.send_sms(ADMIN_PHONE, sms_msg)
+        NotificationService.send_sms(ADMIN_PHONE, sms_msg, db=db)
 
     return {"message": f"Successfully joined. Status: {status}", "status": status}
 
@@ -563,7 +566,7 @@ def cancel_trip(trip_id: str, db: Session = Depends(get_db), current_user: User 
     ).first()
 
     if not assignment:
-        raise HTTPException(status_code=404, detail="Assignment not found")
+        raise HTTPException(status_code=404, detail="שיבוץ לא נמצא")
 
     was_assigned = assignment.status == "assigned"
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
@@ -573,7 +576,7 @@ def cancel_trip(trip_id: str, db: Session = Depends(get_db), current_user: User 
     # Send SMS to Admin — only after successful commit
     if ADMIN_PHONE:
         sms_msg = f"הודעת מערכת: העובד {current_user.full_name} ביטל את הרישום שלו לטיול ב-{trip.location} ב-{trip.start_date.strftime('%d/%m/%Y')}."
-        SMSService.send_sms(ADMIN_PHONE, sms_msg)
+        NotificationService.send_sms(ADMIN_PHONE, sms_msg, db=db)
 
     # If the user was assigned, promote the oldest waitlisted user
     promoted_user = None
@@ -592,7 +595,7 @@ def cancel_trip(trip_id: str, db: Session = Depends(get_db), current_user: User 
             # Send SMS to the newly promoted user
             if next_in_line.user and next_in_line.user.phone:
                 promoted_msg = f"הודעת מערכת: קודמת לרשימת המשובצים לטיול ב-{trip.location}. נא לוודא שאתה מגיע!"
-                SMSService.send_sms(next_in_line.user.phone, promoted_msg)
+                NotificationService.send_sms(next_in_line.user.phone, promoted_msg, db=db, user_id=next_in_line.user_id)
 
     return {"message": "Cancelled successfully", "promoted_user": str(promoted_user) if promoted_user else None}
 
@@ -600,7 +603,7 @@ def cancel_trip(trip_id: str, db: Session = Depends(get_db), current_user: User 
 def admin_assign_trip(trip_id: str, request: AdminAssignRequest, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
     if not trip:
-        raise HTTPException(status_code=404, detail="Trip not found")
+        raise HTTPException(status_code=404, detail="טיול לא נמצא")
 
     existing = db.query(TripAssignment).filter(
         TripAssignment.trip_id == trip_id,
@@ -630,7 +633,7 @@ def admin_assign_trip(trip_id: str, request: AdminAssignRequest, db: Session = D
         contact_str = f"איש קשר לטיול: {trip.contact_phone}" if trip.contact_phone else ""
         date_str = trip.start_date.strftime("%d/%m/%Y %H:%M") if trip.start_date else ""
         msg = f"שובצת לטיול ב-{trip.location} בתאריך {date_str} בתפקיד {request.role}. {contact_str}\nלפרטים ואישור היכנס לאפליקציה."
-        SMSService.send_sms(user.phone, msg)
+        NotificationService.send_sms(user.phone, msg, db=db, user_id=user.id)
 
     return {"message": "Assigned and reported successfully"}
 
@@ -642,7 +645,7 @@ def admin_remove_trip_assignment(trip_id: str, user_id: str, db: Session = Depen
     ).first()
 
     if not assignment:
-        raise HTTPException(status_code=404, detail="Assignment not found")
+        raise HTTPException(status_code=404, detail="שיבוץ לא נמצא")
 
     db.delete(assignment)
     db.commit()
@@ -652,7 +655,7 @@ def admin_remove_trip_assignment(trip_id: str, user_id: str, db: Session = Depen
 def delete_trip(trip_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     trip = db.query(Trip).filter(Trip.id == trip_id).first()
     if not trip:
-        raise HTTPException(status_code=404, detail="Trip not found")
+        raise HTTPException(status_code=404, detail="טיול לא נמצא")
 
     db.delete(trip)
     db.commit()

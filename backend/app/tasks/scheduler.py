@@ -12,6 +12,7 @@ from app.services.storage_service import StorageService
 import os
 from app.models.trip_report import TripReport
 from app.models.business_expense import BusinessExpense
+from app.models.refresh_token import RefreshToken
 
 logger = logging.getLogger(__name__)
 
@@ -58,10 +59,16 @@ def check_client_debts():
         
         if now > due_date:
             msg = f"התראת חוב: הלקוח '{client.name}' עבר את תאריך התשלום ({due_date.strftime('%d/%m/%Y')}). הגיע הזמן לגבות!"
-            NotificationService.send_sms(ADMIN_PHONE, msg, db=db)
             
-            # Reset or clear debt start date to avoid spamming everyday? 
-            # (We will just alert for now, in a real system we'd log the alert)
+            # Prevent spam: alert once a week per debt
+            last_week = now - timedelta(days=7)
+            recent_notif = db.query(Notification).filter(
+                Notification.message == msg,
+                Notification.created_at >= last_week
+            ).first()
+            
+            if not recent_notif:
+                NotificationService.send_sms(ADMIN_PHONE, msg, db=db)
     
 def check_unassigned_trips():
     """
@@ -227,6 +234,24 @@ def check_ended_trips_for_reports():
                                     user_id=assignment.user_id
                                 )
 
+def cleanup_expired_tokens():
+    """
+    Deletes refresh tokens that have expired to keep the database clean.
+    """
+    logger.info("Running cleanup_expired_tokens task...")
+    db: Session = next(get_db())
+    now = datetime.now()
+    
+    expired_tokens = db.query(RefreshToken).filter(RefreshToken.expires_at < now).all()
+    deleted_count = 0
+    for token in expired_tokens:
+        db.delete(token)
+        deleted_count += 1
+        
+    db.commit()
+    if deleted_count > 0:
+        logger.info(f"Cleaned up {deleted_count} expired refresh tokens.")
+
 def start_scheduler():
     scheduler = BackgroundScheduler()
     
@@ -236,8 +261,9 @@ def start_scheduler():
     scheduler.add_job(check_uninvoiced_trips, 'cron', day='last', hour=17, minute=0)
     # Check ended trips every hour
     scheduler.add_job(check_ended_trips_for_reports, 'cron', minute=0)
-    # Run deletion task every night at 3 AM
+    # Run deletion tasks every night at 3 AM
     scheduler.add_job(delete_old_receipts, 'cron', hour=3, minute=0)
+    scheduler.add_job(cleanup_expired_tokens, 'cron', hour=3, minute=30)
     # Run business expenses cleanup on the 15th of every month at 4 AM
     scheduler.add_job(delete_old_business_expenses, 'cron', day=15, hour=4, minute=0)
     

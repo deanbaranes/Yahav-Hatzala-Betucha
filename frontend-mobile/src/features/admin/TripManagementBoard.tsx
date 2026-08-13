@@ -264,9 +264,9 @@ export default function TripManagementBoard() {
       <div className="flex gap-4 mt-6">
         <button 
           onClick={() => editingTripId ? updateTrip.mutate(formData) : createTrip.mutate(formData)} 
-          disabled={createTrip.isPending || updateTrip.isPending || !formData.client_name || !formData.start_date || (!editingTripId && totalCapacity === 0)}
+          disabled={createTrip.isPending || updateTrip.isPending || !formData.client_name || !formData.start_date}
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold shadow transition-colors disabled:bg-gray-400"
-          title={(!editingTripId && totalCapacity === 0) ? "חובה להגדיר לפחות תפקיד אחד לטיול" : ""}
+          title=""
         >
           {createTrip.isPending || updateTrip.isPending ? 'שומר...' : editingTripId ? 'שמור שינויים' : 'צור טיול'}
         </button>

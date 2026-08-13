@@ -18,7 +18,10 @@ def get_notifications(db: Session = Depends(get_db), current_user: User = Depend
 
 @router.put("/{notification_id}/read")
 def mark_read(notification_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    notif = db.query(Notification).filter(Notification.id == notification_id).first()
+    notif = db.query(Notification).filter(
+        Notification.id == notification_id,
+        (Notification.user_id == current_user.id) | (Notification.user_id == None)
+    ).first()
     if not notif:
         raise HTTPException(status_code=404, detail="Notification not found")
     

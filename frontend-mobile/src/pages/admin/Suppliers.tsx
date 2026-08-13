@@ -195,15 +195,15 @@ export default function Suppliers() {
       {/* Table */}
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-right whitespace-nowrap">
+          <table className="w-full text-right">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="p-4 font-bold text-gray-600 text-sm">שם ספק</th>
-                <th className="p-4 font-bold text-gray-600 text-sm">תאריכים</th>
-                <th className="p-4 font-bold text-gray-600 text-sm">פירוט</th>
-                <th className="p-4 font-bold text-gray-600 text-sm">סכום</th>
-                <th className="p-4 font-bold text-gray-600 text-sm text-center">חשבונית יצאה?</th>
-                <th className="p-4 font-bold text-gray-600 text-sm text-left">פעולות</th>
+                <th className="p-4 font-bold text-gray-600 text-sm whitespace-nowrap">שם ספק</th>
+                <th className="p-4 font-bold text-gray-600 text-sm whitespace-nowrap">תאריכים</th>
+                <th className="p-4 font-bold text-gray-600 text-sm whitespace-nowrap">פירוט</th>
+                <th className="p-4 font-bold text-gray-600 text-sm whitespace-nowrap">סכום</th>
+                <th className="p-4 font-bold text-gray-600 text-sm text-center whitespace-nowrap">שולם? (מחיקה)</th>
+                <th className="p-4 font-bold text-gray-600 text-sm text-left whitespace-nowrap">פעולות</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -214,7 +214,7 @@ export default function Suppliers() {
                     {new Date(supplier.debt_date).toLocaleDateString('he-IL')}
                     {supplier.debt_end_date && ` - ${new Date(supplier.debt_end_date).toLocaleDateString('he-IL')}`}
                   </td>
-                  <td className="p-4 text-gray-600 text-sm max-w-[200px] truncate" title={supplier.details}>
+                  <td className="p-4 text-gray-600 text-sm whitespace-pre-wrap min-w-[200px]" title={supplier.details}>
                     {supplier.details || '-'}
                   </td>
                   <td className="p-4 font-bold text-red-600">
@@ -222,15 +222,14 @@ export default function Suppliers() {
                   </td>
                   <td className="p-4 text-center">
                     <button
-                      onClick={() => toggleInvoiceMutation.mutate(supplier)}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
-                        supplier.is_invoiced 
-                          ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                      }`}
+                      onClick={() => {
+                        if (window.confirm("האם שולם? האם אתה בטוח שברצונך למחוק חוב זה מהמערכת? (לא ניתן לשחזור)")) {
+                          deleteMutation.mutate(supplier.id);
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors bg-gray-100 text-gray-600 hover:bg-green-100 hover:text-green-700 whitespace-nowrap"
                     >
-                      {supplier.is_invoiced ? <Check size={14} /> : <X size={14} />}
-                      {supplier.is_invoiced ? 'יצאה' : 'טרם'}
+                      <Check size={14} /> סמן כשולם ומחק
                     </button>
                     {supplier.is_invoiced && supplier.invoice_date && (
                       <div className="text-[10px] text-gray-400 mt-1">

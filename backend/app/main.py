@@ -12,7 +12,7 @@ from app.models import supplier             # register Supplier table
 from app.models import notification         # register Notification table
 from app.models import payslip              # register Payslip table
 from app.models import business_expense
-from app.routers import auth, trips, reports, webhooks, clients, payroll, suppliers, notifications, expenses
+from app.routers import auth, trips, reports, clients, payroll, suppliers, notifications, expenses
 from app.dependencies import get_current_user
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
@@ -25,26 +25,37 @@ from app.rate_limiter import limiter
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
-# Quick migration for new columns
-from sqlalchemy import text
+from sqlalchemy import text, inspect
 try:
-    with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE users ADD COLUMN employment_type VARCHAR DEFAULT 'שכיר'"))
-except Exception:
-    pass # Column already exists or error
-
-try:
-    with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE business_expenses ADD COLUMN expense_month INTEGER"))
-        conn.execute(text("ALTER TABLE business_expenses ADD COLUMN expense_year INTEGER"))
-except Exception:
-    pass
-
-try:
-    with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE suppliers ADD COLUMN debt_end_date DATE"))
-except Exception:
-    pass
+    inspector = inspect(engine)
+    
+    # Check users table
+    if 'users' in inspector.get_table_names():
+        users_cols = {col['name'] for col in inspector.get_columns('users')}
+        if 'employment_type' not in users_cols:
+            with engine.begin() as conn:
+                conn.execute(text("ALTER TABLE users ADD COLUMN employment_type VARCHAR DEFAULT 'שכיר'"))
+                
+    # Check business_expenses table
+    if 'business_expenses' in inspector.get_table_names():
+        be_cols = {col['name'] for col in inspector.get_columns('business_expenses')}
+        with engine.begin() as conn:
+            if 'expense_month' not in be_cols:
+                conn.execute(text("ALTER TABLE business_expenses ADD COLUMN expense_month INTEGER"))
+            if 'expense_year' not in be_cols:
+                conn.execute(text("ALTER TABLE business_expenses ADD COLUMN expense_year INTEGER"))
+                
+    # Check suppliers table
+    if 'suppliers' in inspector.get_table_names():
+        sup_cols = {col['name'] for col in inspector.get_columns('suppliers')}
+        with engine.begin() as conn:
+            if 'debt_end_date' not in sup_cols:
+                conn.execute(text("ALTER TABLE suppliers ADD COLUMN debt_end_date DATE"))
+            if 'report_id' not in sup_cols:
+                conn.execute(text("ALTER TABLE suppliers ADD COLUMN report_id UUID UNIQUE"))
+except Exception as e:
+    import logging
+    logging.getLogger(__name__).warning(f"Auto-migration failed: {e}")
 
 from contextlib import asynccontextmanager
 from app.tasks.scheduler import start_scheduler
@@ -97,7 +108,6 @@ app.include_router(auth.router)
 app.include_router(trips.router)
 app.include_router(clients.router)
 app.include_router(reports.router)
-app.include_router(webhooks.router, prefix="/api")
 
 app.include_router(payroll.router)
 app.include_router(suppliers.router)

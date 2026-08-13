@@ -183,26 +183,14 @@ class PayrollService:
             user = report.assignment.user
             if user.employment_type == "עצמאי":
                 from app.models.supplier import Supplier
-                invisible_id = "".join(f"\u200B{c}" for c in str(report.id))
-                existing = self.db.query(Supplier).filter(Supplier.details.like(f"%{invisible_id}%")).first()
+                existing = self.db.query(Supplier).filter(Supplier.report_id == report.id).first()
                 if not existing:
-                    report_days_set = set()
-                    if report.daily_shifts and len(report.daily_shifts) > 0:
-                        for shift in report.daily_shifts:
-                            if "start_time" in shift:
-                                shift_date = datetime.fromisoformat(shift["start_time"].replace('Z', '+00:00')).date()
-                                report_days_set.add(shift_date)
-                    elif report.start_time:
-                        report_days_set.add(report.start_time.date())
-                    
-                    days_worked = Decimal(len(report_days_set))
-                    
                     rounded_ot = round(float(report.overtime_decimal or 0) * 2) / 2
                     sleeps = report.sleeps or 0
                     trip_loc = report.assignment.trip.location if report.assignment.trip else ""
                     role = report.assignment.role if report.assignment.role else "תפקיד כללי"
                     
-                    details_text = f"{role} בטיול: {trip_loc}{invisible_id}"
+                    details_text = f"{role} בטיול: {trip_loc}"
                     if sleeps > 0:
                         details_text += f" | {sleeps} לילות"
                     if rounded_ot > 0:
@@ -214,6 +202,7 @@ class PayrollService:
                         debt_date=report.start_time.date() if report.start_time else date.today(),
                         amount=0,
                         details=details_text,
-                        is_invoiced=False
+                        is_invoiced=False,
+                        report_id=report.id
                     )
                     self.db.add(supplier_entry)

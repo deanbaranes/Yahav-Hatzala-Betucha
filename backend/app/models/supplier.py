@@ -16,3 +16,4 @@ class Supplier(Base):
     is_invoiced = Column(Boolean, default=False, nullable=False)
     invoice_date = Column(Date, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    report_id = Column(UUID(as_uuid=True), nullable=True, unique=True, index=True)

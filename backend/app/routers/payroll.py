@@ -29,7 +29,7 @@ def create_employee(data: EmployeeCreate, db: Session = Depends(get_db), admin_u
     # Check if phone exists (use dummy if needed)
     db_user = db.query(User).filter(User.phone == data.phone).first()
     if db_user:
-        raise HTTPException(status_code=400, detail="Phone already exists")
+        raise HTTPException(status_code=400, detail="מספר טלפון זה כבר קיים במערכת")
         
     new_user = User(
         full_name=data.full_name,
@@ -49,7 +49,7 @@ def create_employee(data: EmployeeCreate, db: Session = Depends(get_db), admin_u
 def update_employee_details(user_id: str, data: EmployeeUpdate, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="משתמש לא נמצא")
     
     if data.full_name is not None:
         user.full_name = data.full_name
@@ -122,7 +122,7 @@ def get_pending_employees(db: Session = Depends(get_db), admin_user: User = Depe
 def approve_employee(user_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="משתמש לא נמצא")
     
     user.status = "active"
     db.commit()
@@ -132,7 +132,7 @@ def approve_employee(user_id: str, db: Session = Depends(get_db), admin_user: Us
 def reject_employee(user_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     user = db.query(User).filter(User.id == user_id, User.status == "pending").first()
     if not user:
-        raise HTTPException(status_code=404, detail="Pending user not found")
+        raise HTTPException(status_code=404, detail="משתמש ממתין לא נמצא")
     
     db.delete(user)
     db.commit()
@@ -142,7 +142,7 @@ def reject_employee(user_id: str, db: Session = Depends(get_db), admin_user: Use
 def update_rates(user_id: str, data: EmployeeRatesUpdate, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="משתמש לא נמצא")
     user.hourly_rate = data.hourly_rate
     user.base_daily_hours = data.base_daily_hours
     if data.employment_type is not None:
@@ -154,7 +154,7 @@ def update_rates(user_id: str, data: EmployeeRatesUpdate, db: Session = Depends(
 def deactivate_employee(user_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="משתמש לא נמצא")
     
     user.status = "inactive"
     db.commit()
@@ -194,7 +194,7 @@ def create_adjustment(data: AdjustmentCreate, db: Session = Depends(get_db), adm
 def delete_adjustment(adj_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     adj = db.query(PayrollAdjustment).filter(PayrollAdjustment.id == adj_id).first()
     if not adj:
-        raise HTTPException(status_code=404, detail="Adjustment not found")
+        raise HTTPException(status_code=404, detail="עדכון שכר לא נמצא")
     db.delete(adj)
     db.commit()
     return {"message": "Adjustment deleted"}
@@ -203,7 +203,7 @@ def delete_adjustment(adj_id: str, db: Session = Depends(get_db), admin_user: Us
 def export_payroll(employee_id: str, month: int, year: int, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     user = db.query(User).filter(User.id == employee_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="משתמש לא נמצא")
 
     payroll_service = PayrollService(db)
     report_text = payroll_service.generate_employee_report(user, month, year)
@@ -263,8 +263,12 @@ async def upload_payslip(
     # Verify user
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="משתמש לא נמצא")
         
+    ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp", "application/pdf"}
+    if file.content_type not in ALLOWED_CONTENT_TYPES:
+        raise HTTPException(status_code=400, detail="סוג קובץ לא נתמך. יש להעלות תמונה או PDF.")
+
     try:
         file_url = StorageService.upload_file(
             file.file,
@@ -300,7 +304,7 @@ def get_my_payslips(db: Session = Depends(get_db), current_user: User = Depends(
 def delete_payslip(payslip_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     payslip = db.query(Payslip).filter(Payslip.id == payslip_id).first()
     if not payslip:
-        raise HTTPException(status_code=404, detail="Payslip not found")
+        raise HTTPException(status_code=404, detail="תלוש שכר לא נמצא")
         
     db.delete(payslip)
     db.commit()

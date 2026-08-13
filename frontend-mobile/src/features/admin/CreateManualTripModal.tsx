@@ -195,7 +195,7 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
             ביטול
           </button>
           <button 
-            disabled={!newTripForm.client_name || newTripTotalCapacity === 0 || createManualTripMutation.isPending}
+            disabled={!newTripForm.client_name || createManualTripMutation.isPending}
             onClick={() => {
               createManualTripMutation.mutate({
                 client_name: newTripForm.client_name,
@@ -210,7 +210,7 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
               });
             }}
             className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm"
-            title={newTripTotalCapacity === 0 ? "חובה להגדיר לפחות תפקיד אחד לטיול" : ""}
+            title=""
           >
             {createManualTripMutation.isPending ? 'יוצר...' : 'שמור אירוע'}
           </button>

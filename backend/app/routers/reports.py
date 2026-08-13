@@ -21,13 +21,6 @@ from app.services.report_service import (
 )
 from app.services.storage_service import StorageService
 from app.services.payroll_service import PayrollService
-from app.constants import (
-    EMPLOYEE_ACCOMMODATION_PAY,
-    EMPLOYEE_TRAVEL_PAY_PER_DAY,
-    EMPLOYEE_RECOVERY_PAY_PER_DAY,
-    OVERTIME_MULTIPLIER,
-    DEFAULT_BASE_DAILY_HOURS
-)
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +86,7 @@ def get_my_draft(assignment_id: str, db: Session = Depends(get_db), current_user
         TripReport.is_draft == True
     ).first()
     if not report:
-        raise HTTPException(status_code=404, detail="Draft not found")
+        raise HTTPException(status_code=404, detail="טיוטה לא נמצאה")
         
     return {
         "start_time": report.start_time.isoformat() if report.start_time else None,
@@ -120,6 +113,10 @@ async def upload_file(file: UploadFile = File(...), current_user: User = Depends
     # Reset file position for subsequent reads
     await file.seek(0)
 
+    ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp", "application/pdf"}
+    if file.content_type not in ALLOWED_CONTENT_TYPES:
+        raise HTTPException(status_code=400, detail="סוג קובץ לא נתמך. יש להעלות תמונה או PDF.")
+
     try:
         url = StorageService.upload_file(
             file.file,
@@ -143,7 +140,7 @@ def submit_trip_report(report_data: TripReportCreate, db: Session = Depends(get_
     ).first()
     
     if not assignment:
-        raise HTTPException(status_code=404, detail="Assignment not found or does not belong to you")
+        raise HTTPException(status_code=404, detail="שיבוץ לא נמצא או שאינו שייך לך")
 
     return process_and_save_report(db, assignment, report_data)
 
@@ -158,7 +155,7 @@ def submit_trip_report_admin(report_data: TripReportCreate, db: Session = Depend
     ).first()
     
     if not assignment:
-        raise HTTPException(status_code=404, detail="Assignment not found")
+        raise HTTPException(status_code=404, detail="שיבוץ לא נמצא")
 
     return process_and_save_report(db, assignment, report_data)
 
@@ -234,7 +231,7 @@ def update_report(report_id: str, data: ReportUpdate, db: Session = Depends(get_
 def delete_report(report_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
     report = db.query(TripReport).filter(TripReport.id == report_id).first()
     if not report:
-        raise HTTPException(status_code=404, detail="Report not found")
+        raise HTTPException(status_code=404, detail="דיווח לא נמצא")
     
     db.delete(report)
     db.commit()
@@ -244,7 +241,7 @@ def delete_report(report_id: str, db: Session = Depends(get_db), current_user: U
 def approve_report(report_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
     report = db.query(TripReport).filter(TripReport.id == report_id).first()
     if not report:
-        raise HTTPException(status_code=404, detail="Report not found")
+        raise HTTPException(status_code=404, detail="דיווח לא נמצא")
     
     # Check if we should automatically create a Supplier record
     payroll_service = PayrollService(db)
@@ -258,7 +255,7 @@ def approve_report(report_id: str, db: Session = Depends(get_db), current_user: 
 def reject_report(report_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
     report = db.query(TripReport).filter(TripReport.id == report_id).first()
     if not report:
-        raise HTTPException(status_code=404, detail="Report not found")
+        raise HTTPException(status_code=404, detail="דיווח לא נמצא")
     
     report.manager_status = "rejected"
     db.commit()

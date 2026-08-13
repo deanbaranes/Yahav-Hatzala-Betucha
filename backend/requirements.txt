@@ -6,7 +6,6 @@ alembic
 python-dotenv
 celery
 redis
-twilio
 boto3
 python-jose[cryptography]
 bcrypt==3.2.2
