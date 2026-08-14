@@ -133,6 +133,8 @@ export default function Clients() {
     });
   }, [filteredClients, sortOrder]);
 
+  const [isExporting, setIsExporting] = useState(false);
+
   if (isLoading) return <div className="p-8 text-center">טוען לקוחות...</div>;
 
   const getDebtAgeMonths = (dateStr: string) => {
@@ -152,8 +154,6 @@ export default function Clients() {
     }
     return `${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/80'} hover:bg-blue-50/70 border-b border-gray-100`;
   };
-
-  const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async () => {
     try {
