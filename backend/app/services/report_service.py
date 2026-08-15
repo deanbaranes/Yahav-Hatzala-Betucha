@@ -27,15 +27,15 @@ def calculate_overtime_decimal(start_time, end_time, is_supplier: bool = False) 
     overtime_minutes = max(0, total_minutes - (9 * 60))
     overtime_hours = overtime_minutes / 60.0
 
-    # Use Decimal for strict financial precision rounding to nearest 0.05
+    # Use Decimal for strict financial precision rounding to nearest 0.5
     d_overtime = Decimal(str(overtime_hours))
 
     if d_overtime > 0 and not is_supplier:
         d_overtime += Decimal('0.4')
 
-    d_scaled = d_overtime * Decimal('20')
+    d_scaled = d_overtime * Decimal('2')
     d_rounded = d_scaled.quantize(Decimal('1'), rounding=ROUND_HALF_UP)
-    d_final = d_rounded / Decimal('20')
+    d_final = d_rounded / Decimal('2')
 
     return float(d_final)
 
