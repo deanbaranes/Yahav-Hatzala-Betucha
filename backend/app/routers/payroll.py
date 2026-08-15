@@ -60,9 +60,9 @@ def update_employee_details(user_id: str, data: EmployeeUpdate, db: Session = De
             raise HTTPException(status_code=400, detail="מספר טלפון זה כבר קיים עבור משתמש אחר")
         user.phone = data.phone
     if data.national_id is not None:
-        user.national_id = data.national_id
+        user.national_id = data.national_id if data.national_id.strip() != "" else None
     if data.email is not None:
-        user.email = data.email
+        user.email = data.email if data.email.strip() != "" else None
     if data.employment_type is not None:
         user.employment_type = data.employment_type
         
