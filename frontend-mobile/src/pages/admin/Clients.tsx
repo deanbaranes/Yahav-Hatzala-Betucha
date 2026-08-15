@@ -379,7 +379,7 @@ export default function Clients() {
                         dir="ltr"
                       />
                     ) : (
-                      <span className={`inline-block px-1.5 py-1 rounded-md font-bold shadow-sm text-xs ${String(client.balance || '').includes('-') ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`} dir="ltr">
+                      <span className={`inline-block text-center min-w-[90px] px-1.5 py-1 rounded-md font-bold shadow-sm text-xs ${String(client.balance || '').includes('-') ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`} dir="ltr">
                         {client.balance || '0'}
                       </span>
                     )}
@@ -595,7 +595,7 @@ export default function Clients() {
                         dir="ltr"
                       />
                   ) : (
-                    <span className={`px-3 py-1 rounded-lg font-bold text-sm shadow-sm ${String(client.balance || '').includes('-') ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`} dir="ltr">
+                    <span className={`inline-block text-center min-w-[100px] px-3 py-1 rounded-lg font-bold text-sm shadow-sm ${String(client.balance || '').includes('-') ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'}`} dir="ltr">
                       {client.balance || '0'}
                     </span>
                   )}
