@@ -151,14 +151,27 @@ def update_rates(user_id: str, data: EmployeeRatesUpdate, db: Session = Depends(
     return {"message": "Rates updated successfully"}
 
 @router.delete("/employees/{user_id}")
-def deactivate_employee(user_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
+def delete_employee(user_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
+    import uuid
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="משתמש לא נמצא")
     
+    # Soft delete: mark as inactive but modify unique fields so the user can re-register if needed
     user.status = "inactive"
+    suffix = f"_deleted_{uuid.uuid4().hex[:8]}"
+    user.phone = user.phone + suffix
+    
+    # national_id is String(9), so appending a suffix will exceed the length limit.
+    # Setting it to None frees it up since it is a nullable field.
+    if user.national_id:
+        user.national_id = None
+        
+    if user.email:
+        user.email = user.email + suffix
+        
     db.commit()
-    return {"message": "User deactivated successfully"}
+    return {"message": "User deactivated and details cleared successfully"}
 
 @router.get("/adjustments/{user_id}/{month}/{year}")
 def get_adjustments(user_id: str, month: int, year: int, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
