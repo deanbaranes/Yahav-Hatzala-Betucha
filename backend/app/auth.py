@@ -10,7 +10,7 @@ if not SECRET_KEY:
     raise RuntimeError("FATAL: SECRET_KEY environment variable is not set. Cannot start.")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30          # Short-lived: 30 minutes
-REFRESH_TOKEN_EXPIRE_DAYS = 30            # Long-lived: 30 days
+REFRESH_TOKEN_EXPIRE_DAYS = 365           # Long-lived: 1 year (to keep admin always logged in)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -30,8 +30,9 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def create_refresh_token() -> tuple[str, datetime]:
+def create_refresh_token(is_admin: bool = False) -> tuple[str, datetime]:
     """Returns (token_string, expires_at_datetime)"""
     token = secrets.token_urlsafe(64)
-    expires_at = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    days = REFRESH_TOKEN_EXPIRE_DAYS if is_admin else 30
+    expires_at = datetime.utcnow() + timedelta(days=days)
     return token, expires_at

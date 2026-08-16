@@ -48,8 +48,9 @@ def _build_tokens_and_set_cookie(user: User, db: Session, response: Response) ->
         "name": user.full_name
     })
 
-    # --- Refresh Token (30 days, DB-backed) ---
-    raw_token, expires_at = create_refresh_token()
+    # --- Refresh Token (Dynamic, DB-backed) ---
+    is_admin = user.role == "admin"
+    raw_token, expires_at = create_refresh_token(is_admin=is_admin)
     db_refresh = RefreshToken(
         token=raw_token,
         user_id=user.id,
@@ -58,18 +59,21 @@ def _build_tokens_and_set_cookie(user: User, db: Session, response: Response) ->
     db.add(db_refresh)
     db.commit()
 
+    # Calculate max_age in seconds
+    max_age_seconds = int((expires_at - datetime.utcnow()).total_seconds())
+
     # Set HttpOnly cookie (not accessible from JS)
-    # IMPORTANT: path must match the browser-visible URL (/api/auth/refresh),
-    # not the backend path (/auth/refresh) — Vite proxy rewrites /api → /
+    # IMPORTANT: For cross-origin requests (Vercel frontend -> Render backend),
+    # SameSite must be "none" and secure must be True. path must be "/" to match any API URL setup.
     is_prod = os.getenv("ENVIRONMENT", "development") == "production"
     response.set_cookie(
         key=REFRESH_COOKIE_NAME,
         value=raw_token,
         httponly=True,
-        secure=is_prod,     # set True in production behind HTTPS
-        samesite="lax",
-        max_age=REFRESH_COOKIE_MAX_AGE,
-        path="/api/auth/refresh"  # must match the frontend proxy path
+        secure=True if is_prod else False,
+        samesite="none" if is_prod else "lax",
+        max_age=max_age_seconds,
+        path="/"
     )
 
     return {"access_token": access_token, "token_type": "bearer"}
@@ -201,7 +205,8 @@ def logout(
             db_token.revoked = True
             db.commit()
 
-    response.delete_cookie(key=REFRESH_COOKIE_NAME, path="/api/auth/refresh")
+    is_prod = os.getenv("ENVIRONMENT", "development") == "production"
+    response.delete_cookie(key=REFRESH_COOKIE_NAME, path="/", samesite="none" if is_prod else "lax", secure=True if is_prod else False)
     return {"message": "Logged out successfully"}
 
 
