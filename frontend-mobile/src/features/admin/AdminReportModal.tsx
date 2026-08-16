@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import { X, Plus } from 'lucide-react';
@@ -34,6 +35,18 @@ export default function AdminReportModal({ isOpen, onClose }: AdminReportModalPr
   const [dailyShifts, setDailyShifts] = useState([{ start_time: '', end_time: '' }]);
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Prevent background scrolling when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [isOpen]);
+
   const { data: pendingAssignments, isLoading } = useQuery<PendingAssignment[]>({
     queryKey: ['all-pending-reports'],
     queryFn: async () => {
@@ -60,7 +73,7 @@ export default function AdminReportModal({ isOpen, onClose }: AdminReportModalPr
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto" dir="rtl">
       <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative shadow-2xl animate-scale-up my-auto">
         <div className="sticky top-0 bg-white/90 backdrop-blur-md p-6 border-b border-gray-100 flex justify-between items-center z-10">
@@ -235,6 +248,7 @@ export default function AdminReportModal({ isOpen, onClose }: AdminReportModalPr
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

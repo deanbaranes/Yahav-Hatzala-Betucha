@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import SmartClientInput from './SmartClientInput';
@@ -13,6 +14,14 @@ interface CreateManualTripModalProps {
 export default function CreateManualTripModal({ initialDate, onClose }: CreateManualTripModalProps) {
   const queryClient = useQueryClient();
   const [additionalDates, setAdditionalDates] = useState<string[]>([]);
+
+  // Prevent background scrolling when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, []);
 
   const [newTripForm, setNewTripForm] = useState(() => {
     const pad = (n: number) => n.toString().padStart(2, '0');
@@ -83,7 +92,7 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
     }
   });
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 p-3 sm:p-6 bg-gray-900/60 backdrop-blur-sm overflow-y-auto" onClick={onClose}>
       <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-2xl max-w-lg w-full mx-auto animate-fade-in text-right my-4 sm:my-10" onClick={e => e.stopPropagation()}>
         <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">
@@ -281,6 +290,7 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

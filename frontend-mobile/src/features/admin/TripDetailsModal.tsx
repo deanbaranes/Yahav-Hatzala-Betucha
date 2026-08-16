@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import { CheckCircle2 } from 'lucide-react';
@@ -22,6 +23,14 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose }: T
   const [quickEditMode, setQuickEditMode] = useState(false);
   const [quickEditForm, setQuickEditForm] = useState({ client_name: '', location: '', start_date: '', end_date: '', capacity: 0, roles_requirements: {} as Record<string, number>, color: '', global_salary: '' as string | number, contact_phone: '', notes: '' });
 
+  // Prevent background scrolling when modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, []);
+
   const deleteTripMutation = useMutation({
     mutationFn: async (tripId: string) => {
       await axiosClient.delete(`/trips/${tripId}`);
@@ -40,8 +49,6 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose }: T
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
-      // We don't close the modal here to let the user see the visual change, but the parent trip object might not update instantly unless we handle it. 
-      // Invalidating queries will update the list, but `selectedTrip` is a stale reference. We can close it or let it be. Let's just close it or rely on parent passing down new trip.
       onClose();
     }
   });
@@ -97,7 +104,7 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose }: T
     }
   });
 
-  return (
+  return createPortal(
         <div className="fixed inset-0 z-50 p-3 sm:p-6 bg-gray-900/60 backdrop-blur-sm overflow-y-auto" onClick={onClose}>
           <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-2xl max-w-md w-full mx-auto animate-fade-in text-right my-4 sm:my-10" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-4">
@@ -459,6 +466,7 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose }: T
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
   );
 }
