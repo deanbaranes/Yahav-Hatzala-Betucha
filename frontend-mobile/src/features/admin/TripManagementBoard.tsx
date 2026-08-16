@@ -458,7 +458,7 @@ export default function TripManagementBoard() {
                                   </div>
                                 </div>
                                 
-                                <div className="shrink-0 mr-12 sm:mr-0 w-full sm:w-auto mt-2 sm:mt-0">
+                                <div className="shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
                                   <span className="bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg sm:rounded-full text-[11px] sm:text-xs font-bold flex items-center justify-center sm:inline-block w-full sm:w-auto border border-indigo-200">
                                     דרושים {trip.capacity} אנשי צוות
                                   </span>
@@ -466,7 +466,7 @@ export default function TripManagementBoard() {
                               </div>
 
                               {/* Dates */}
-                              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-bold text-gray-600 bg-gray-50 p-2 sm:p-2.5 rounded-lg border border-gray-100 mb-3 mr-12 sm:mr-0">
+                              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-bold text-gray-600 bg-gray-50 p-2 sm:p-2.5 rounded-lg border border-gray-100 mb-3">
                                 <span className="text-blue-600">📅</span>
                                 <span>{new Date(trip.start_date).toLocaleString('he-IL', { weekday: 'long', day: '2-digit', month: '2-digit' })}</span>
                                 <span className="text-gray-300 mx-1">|</span>
@@ -480,7 +480,7 @@ export default function TripManagementBoard() {
                               
                               {/* Confirmed Employees */}
                               {trip.assignments?.filter((a:any) => a.is_confirmed).length > 0 && (
-                                <div className="border-t border-gray-100 pt-3 mt-3 mr-12 sm:mr-0">
+                                <div className="border-t border-gray-100 pt-3 mt-3">
                                   <span className="text-[10px] sm:text-xs font-bold text-gray-500 mb-2 block">עובדים ששובצו ואושרו:</span>
                                   <div className="flex flex-wrap gap-1.5">
                                     {trip.assignments.filter((a:any) => a.is_confirmed).map((a:any) => (
