@@ -145,6 +145,12 @@ export default function Suppliers() {
 
   if (isLoading) return <div className="p-8 text-center text-gray-500 font-bold">טוען נתונים...</div>;
 
+  const groupedSuppliers = filteredSuppliers.reduce((acc: Record<string, Supplier[]>, supplier) => {
+    if (!acc[supplier.name]) acc[supplier.name] = [];
+    acc[supplier.name].push(supplier);
+    return acc;
+  }, {});
+
   return (
     <div className="space-y-6" dir="rtl">
       {/* Header */}
@@ -215,59 +221,72 @@ export default function Suppliers() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filteredSuppliers.map(supplier => (
-                <tr key={supplier.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="p-4 font-bold text-gray-900">{supplier.name}</td>
-                  <td className="p-4 text-gray-600 text-sm">
-                    {new Date(supplier.debt_date).toLocaleDateString('he-IL')}
-                    {supplier.debt_end_date && ` - ${new Date(supplier.debt_end_date).toLocaleDateString('he-IL')}`}
-                  </td>
-                  <td className="p-4 text-gray-600 text-sm whitespace-pre-wrap min-w-[200px]" title={supplier.details}>
-                    {supplier.details || '-'}
-                  </td>
-                  <td className="p-4 font-bold text-red-600">
-                    ₪{supplier.amount.toLocaleString()}
-                  </td>
-                  <td className="p-4 text-center">
-                    <button
-                      onClick={() => {
-                        if (window.confirm("האם שולם? האם אתה בטוח שברצונך למחוק חוב זה מהמערכת? (לא ניתן לשחזור)")) {
-                          deleteMutation.mutate(supplier.id);
-                        }
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors bg-gray-100 text-gray-600 hover:bg-green-100 hover:text-green-700 whitespace-nowrap"
-                    >
-                      <Check size={14} /> סמן כשולם ומחק
-                    </button>
-                    {supplier.is_invoiced && supplier.invoice_date && (
-                      <div className="text-[10px] text-gray-400 mt-1">
-                        {new Date(supplier.invoice_date).toLocaleDateString('he-IL')}
-                      </div>
-                    )}
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center justify-end gap-2">
-                      <button 
-                        onClick={() => handleEdit(supplier)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="ערוך"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button 
-                        onClick={() => {
-                          if (window.confirm('האם אתה בטוח שברצונך למחוק ספק זה?')) {
-                            deleteMutation.mutate(supplier.id);
-                          }
-                        }}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        title="מחק"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+              {Object.entries(groupedSuppliers).map(([name, group]) => (
+                <React.Fragment key={name}>
+                  <tr className="bg-blue-50/30 border-t-2 border-blue-100/50">
+                    <td colSpan={3} className="p-4 font-black text-blue-900 text-lg">
+                      {name}
+                    </td>
+                    <td className="p-4 font-black text-red-600 text-lg">
+                      סה"כ: ₪{group.reduce((sum, s) => sum + s.amount, 0).toLocaleString()}
+                    </td>
+                    <td colSpan={2}></td>
+                  </tr>
+                  {group.map(supplier => (
+                    <tr key={supplier.id} className="hover:bg-gray-50/50 transition-colors bg-white">
+                      <td className="p-4 font-bold text-gray-300 text-sm pr-8">↳</td>
+                      <td className="p-4 text-gray-600 text-sm">
+                        {new Date(supplier.debt_date).toLocaleDateString('he-IL')}
+                        {supplier.debt_end_date && ` - ${new Date(supplier.debt_end_date).toLocaleDateString('he-IL')}`}
+                      </td>
+                      <td className="p-4 text-gray-600 text-sm whitespace-pre-wrap min-w-[200px]" title={supplier.details}>
+                        {supplier.details || '-'}
+                      </td>
+                      <td className="p-4 font-bold text-gray-700">
+                        ₪{supplier.amount.toLocaleString()}
+                      </td>
+                      <td className="p-4 text-center">
+                        <button
+                          onClick={() => {
+                            if (window.confirm("האם שולם? האם אתה בטוח שברצונך למחוק חוב זה מהמערכת? (לא ניתן לשחזור)")) {
+                              deleteMutation.mutate(supplier.id);
+                            }
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors bg-gray-100 text-gray-600 hover:bg-green-100 hover:text-green-700 whitespace-nowrap"
+                        >
+                          <Check size={14} /> סמן כשולם ומחק
+                        </button>
+                        {supplier.is_invoiced && supplier.invoice_date && (
+                          <div className="text-[10px] text-gray-400 mt-1">
+                            {new Date(supplier.invoice_date).toLocaleDateString('he-IL')}
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <button 
+                            onClick={() => handleEdit(supplier)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="ערוך"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button 
+                            onClick={() => {
+                              if (window.confirm('האם אתה בטוח שברצונך למחוק ספק/דיווח זה?')) {
+                                deleteMutation.mutate(supplier.id);
+                              }
+                            }}
+                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            title="מחק"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </React.Fragment>
               ))}
               
               {filteredSuppliers.length === 0 && (
