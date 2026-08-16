@@ -199,15 +199,30 @@ def get_billing_status(year: int, month: int, db: Session = Depends(get_db), cur
         if t.is_billed:
             stats["invoiced_trips"] += 1
 
+        has_confirmed_assignments = False
         for a in t.assignments:
-            role = a.role or "לא הוגדר תפקיד"
-            if role not in stats["roles_summary"]:
-                stats["roles_summary"][role] = 0
-            stats["roles_summary"][role] += 1
+            if a.status == "assigned" and a.is_confirmed:
+                has_confirmed_assignments = True
+                role = a.role or "כללי"
+                if role not in stats["roles_summary"]:
+                    stats["roles_summary"][role] = 0
+                stats["roles_summary"][role] += 1
 
             if a.report and a.report.manager_status == "approved":
                 stats["total_overtime"] += float(a.report.overtime_decimal or 0)
                 stats["total_expenses"] += float(a.report.expenses or 0)
+                
+        # Fallback for billing: if they didn't assign staff in the app, use the trip's requirements
+        if not has_confirmed_assignments:
+            if t.roles_requirements and len(t.roles_requirements) > 0:
+                for role, count in t.roles_requirements.items():
+                    if role not in stats["roles_summary"]:
+                        stats["roles_summary"][role] = 0
+                    stats["roles_summary"][role] += int(count)
+            elif t.capacity > 0:
+                if "כללי" not in stats["roles_summary"]:
+                    stats["roles_summary"]["כללי"] = 0
+                stats["roles_summary"]["כללי"] += t.capacity
 
     result = []
     for stats in client_stats.values():
