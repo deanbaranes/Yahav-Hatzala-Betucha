@@ -12,8 +12,6 @@ export default function MySchedule() {
     }
   });
 
-  if (isLoading) return <div className="text-center p-8 text-blue-600 font-bold animate-pulse">טוען את הסידור שלך...</div>;
-
   const queryClient = useQueryClient();
 
   const confirmArrivalMutation = useMutation({
@@ -23,6 +21,8 @@ export default function MySchedule() {
       alert("תודה! אישור ההגעה שלך נקלט בהצלחה.");
     }
   });
+
+  if (isLoading) return <div className="text-center p-8 text-blue-600 font-bold animate-pulse">טוען את הסידור שלך...</div>;
 
   const now = new Date();
   const assignedTrips = myTrips?.filter(t => t.status === 'assigned') || [];
