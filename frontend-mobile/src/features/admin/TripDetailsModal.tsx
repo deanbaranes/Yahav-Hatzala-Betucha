@@ -286,9 +286,13 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose }: T
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="text-sm text-gray-500 font-bold mb-2">
                     צוות מאושר בטיול ({selectedTrip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned').length || 0} מתוך {selectedTrip.capacity})
-                    {selectedTrip.roles_requirements && Object.keys(selectedTrip.roles_requirements).length > 0 && (
+                    {selectedTrip.roles_requirements && Object.keys(selectedTrip.roles_requirements).length > 0 ? (
                       <span className="block text-xs text-blue-600 mt-1.5 font-medium bg-blue-50 p-1.5 rounded-md border border-blue-100 w-fit">
                         סוגי עובדים נדרשים: {Object.entries(selectedTrip.roles_requirements).map(([role, count]) => `${count} ${role}`).join(', ')}
+                      </span>
+                    ) : (
+                      <span className="block text-xs text-blue-600 mt-1.5 font-medium bg-blue-50 p-1.5 rounded-md border border-blue-100 w-fit">
+                        סוגי עובדים נדרשים: {selectedTrip.capacity} כללי
                       </span>
                     )}
                   </div>
