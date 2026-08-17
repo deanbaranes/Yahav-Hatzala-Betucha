@@ -259,6 +259,16 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose }: T
               </div>
             ) : (
               <div className="space-y-4 mb-6">
+                {selectedTrip.notes && (
+                  <div className="flex items-start gap-3 bg-amber-50 p-3 rounded-lg border border-amber-100">
+                    <div className="text-amber-600 mt-0.5">📝</div>
+                    <div>
+                      <div className="text-xs text-amber-700 font-bold mb-0.5">הערות / פרטים נוספים</div>
+                      <div className="text-amber-900 font-medium whitespace-pre-wrap text-sm">{selectedTrip.notes}</div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
                   <div className="text-blue-600">📍</div>
                   <div>
@@ -283,16 +293,6 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose }: T
                     <div>
                       <div className="text-xs text-green-700 font-bold">שכר גלובלי לטיול</div>
                       <div className="text-green-800 font-black">₪{selectedTrip.global_salary}</div>
-                    </div>
-                  </div>
-                )}
-
-                {selectedTrip.notes && (
-                  <div className="flex items-start gap-3 bg-amber-50 p-3 rounded-lg border border-amber-100">
-                    <div className="text-amber-600 mt-0.5">📝</div>
-                    <div>
-                      <div className="text-xs text-amber-700 font-bold mb-0.5">הערות / פרטים נוספים</div>
-                      <div className="text-amber-900 font-medium whitespace-pre-wrap text-sm">{selectedTrip.notes}</div>
                     </div>
                   </div>
                 )}
