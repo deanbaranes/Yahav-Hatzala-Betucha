@@ -83,9 +83,10 @@ def get_my_pending_reports(db: Session = Depends(get_db), current_user: User = D
 
 @router.get("/my-draft/{assignment_id}")
 def get_my_draft(assignment_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_employee_user)):
-    report = db.query(TripReport).filter(
+    report = db.query(TripReport).join(TripAssignment).filter(
         TripReport.assignment_id == assignment_id,
-        TripReport.is_draft == True
+        TripReport.is_draft == True,
+        TripAssignment.user_id == current_user.id
     ).first()
     if not report:
         raise HTTPException(status_code=404, detail="טיוטה לא נמצאה")
