@@ -36,8 +36,8 @@ export default function PendingApprovalScreen() {
           <h2 className="font-bold text-blue-900 mb-1">השלמת קליטה למערכת (לשכירים בלבד)</h2>
           <p className="text-sm text-blue-800 mb-4">
             בזמן שאתה ממתין לאישור, אנא ודא שמילאת <strong className="font-black">טופס 101 מקוון</strong> לשנת המס הנוכחית כדי שנוכל לקלוט אותך למערכת השכר.
-            <span className="block mt-2 text-xs font-bold bg-blue-100/50 p-1.5 rounded-lg text-blue-900">
-              * שימו לב: טופס 101 רלוונטי לעובדים שכירים בלבד. קבלנים עצמאיים אינם נדרשים למלא אותו.
+            <span className="block mt-2 text-xs font-bold bg-blue-100/50 p-1.5 rounded-lg text-blue-900 leading-relaxed">
+              * שימו לב: טופס 101 רלוונטי לעובדים שכירים בלבד. קבלנים עצמאיים, וכן מי שכבר מילא עבור השנה הנוכחית, אינם נדרשים למלא שוב.
             </span>
           </p>
           <a 
