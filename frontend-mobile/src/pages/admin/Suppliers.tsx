@@ -24,7 +24,7 @@ export default function Suppliers() {
   const [formData, setFormData] = useState({
     name: '',
     debt_date: new Date().toISOString().split('T')[0],
-    debt_end_date: '',
+    debt_end_date: new Date().toISOString().split('T')[0],
     amount: 0,
     details: '',
   });
@@ -89,7 +89,7 @@ export default function Suppliers() {
   });
 
   const resetForm = () => {
-    setFormData({ name: '', debt_date: new Date().toISOString().split('T')[0], debt_end_date: '', amount: 0, details: '' });
+    setFormData({ name: '', debt_date: new Date().toISOString().split('T')[0], debt_end_date: new Date().toISOString().split('T')[0], amount: 0, details: '' });
     setEditingId(null);
   };
 
