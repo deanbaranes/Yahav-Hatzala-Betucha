@@ -221,16 +221,21 @@ export default function Suppliers() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {Object.entries(groupedSuppliers).map(([name, group]) => (
+              {Object.entries(groupedSuppliers).map(([name, group], index) => (
                 <React.Fragment key={name}>
-                  <tr className="bg-blue-50/30 border-t-2 border-blue-100/50">
-                    <td colSpan={3} className="p-4 font-black text-blue-900 text-lg">
+                  {index > 0 && (
+                    <tr>
+                      <td colSpan={6} className="h-8 bg-gray-100 border-y-4 border-white"></td>
+                    </tr>
+                  )}
+                  <tr className="bg-blue-50/80 border-t-2 border-blue-200">
+                    <td colSpan={3} className="px-5 py-4 font-black text-blue-900 text-xl">
                       {name}
                     </td>
-                    <td className="p-4 font-black text-red-600 text-lg">
+                    <td className="px-5 py-4 font-black text-red-600 text-xl">
                       סה"כ: ₪{group.reduce((sum, s) => sum + s.amount, 0).toLocaleString()}
                     </td>
-                    <td colSpan={2}></td>
+                    <td colSpan={2} className="bg-blue-50/80"></td>
                   </tr>
                   {group.map(supplier => (
                     <tr key={supplier.id} className="hover:bg-gray-50/50 transition-colors bg-white">
