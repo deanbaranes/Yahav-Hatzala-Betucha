@@ -212,12 +212,12 @@ export default function Suppliers() {
           <table className="w-full text-right">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="p-4 font-bold text-gray-600 text-sm whitespace-nowrap">שם ספק</th>
-                <th className="p-4 font-bold text-gray-600 text-sm whitespace-nowrap">תאריכים</th>
-                <th className="p-4 font-bold text-gray-600 text-sm whitespace-nowrap">פירוט</th>
-                <th className="p-4 font-bold text-gray-600 text-sm whitespace-nowrap">סכום</th>
-                <th className="p-4 font-bold text-gray-600 text-sm text-center whitespace-nowrap">שולם? (מחיקה)</th>
-                <th className="p-4 font-bold text-gray-600 text-sm text-left whitespace-nowrap">פעולות</th>
+                <th className="p-2 sm:p-4 font-bold text-gray-600 text-xs sm:text-sm whitespace-nowrap">שם ספק</th>
+                <th className="p-2 sm:p-4 font-bold text-gray-600 text-xs sm:text-sm whitespace-nowrap">תאריכים</th>
+                <th className="p-2 sm:p-4 font-bold text-gray-600 text-xs sm:text-sm whitespace-nowrap">פירוט</th>
+                <th className="p-2 sm:p-4 font-bold text-gray-600 text-xs sm:text-sm whitespace-nowrap">סכום</th>
+                <th className="p-2 sm:p-4 font-bold text-gray-600 text-xs sm:text-sm text-center whitespace-nowrap">שולם? (מחיקה)</th>
+                <th className="p-2 sm:p-4 font-bold text-gray-600 text-xs sm:text-sm text-left whitespace-nowrap">פעולות</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -229,37 +229,40 @@ export default function Suppliers() {
                     </tr>
                   )}
                   <tr className="bg-blue-50/80 border-t-2 border-blue-200">
-                    <td colSpan={3} className="px-5 py-4 font-black text-blue-900 text-xl">
+                    <td colSpan={3} className="px-3 py-3 sm:px-5 sm:py-4 font-black text-blue-900 text-base sm:text-xl">
                       {name}
                     </td>
-                    <td className="px-5 py-4 font-black text-red-600 text-xl">
+                    <td className="px-3 py-3 sm:px-5 sm:py-4 font-black text-red-600 text-base sm:text-xl">
                       סה"כ: ₪{group.reduce((sum, s) => sum + s.amount, 0).toLocaleString()}
                     </td>
                     <td colSpan={2} className="bg-blue-50/80"></td>
                   </tr>
                   {group.map(supplier => (
                     <tr key={supplier.id} className="hover:bg-gray-50/50 transition-colors bg-white">
-                      <td className="p-4 font-bold text-gray-300 text-sm pr-8">↳</td>
-                      <td className="p-4 text-gray-600 text-sm">
+                      <td className="p-2 sm:p-4 font-bold text-gray-300 text-sm pr-2 sm:pr-8">↳</td>
+                      <td className="p-2 sm:p-4 text-gray-600 text-[11px] sm:text-sm">
                         {new Date(supplier.debt_date).toLocaleDateString('he-IL')}
-                        {supplier.debt_end_date && ` - ${new Date(supplier.debt_end_date).toLocaleDateString('he-IL')}`}
+                        {supplier.debt_end_date && <br className="sm:hidden" />}
+                        {supplier.debt_end_date && <span className="hidden sm:inline"> - </span>}
+                        {supplier.debt_end_date && new Date(supplier.debt_end_date).toLocaleDateString('he-IL')}
                       </td>
-                      <td className="p-4 text-gray-600 text-sm whitespace-pre-wrap min-w-[200px]" title={supplier.details}>
+                      <td className="p-2 sm:p-4 text-gray-600 text-xs sm:text-sm whitespace-pre-wrap min-w-[120px] sm:min-w-[200px]" title={supplier.details}>
                         {supplier.details || '-'}
                       </td>
-                      <td className="p-4 font-bold text-gray-700">
+                      <td className="p-2 sm:p-4 font-bold text-gray-700 text-xs sm:text-sm">
                         ₪{supplier.amount.toLocaleString()}
                       </td>
-                      <td className="p-4 text-center">
+                      <td className="p-2 sm:p-4 text-center">
                         <button
                           onClick={() => {
                             if (window.confirm("האם שולם? האם אתה בטוח שברצונך למחוק חוב זה מהמערכת? (לא ניתן לשחזור)")) {
                               deleteMutation.mutate(supplier.id);
                             }
                           }}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors bg-gray-100 text-gray-600 hover:bg-green-100 hover:text-green-700 whitespace-nowrap"
+                          title="סמן כשולם ומחק"
+                          className="inline-flex items-center justify-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold transition-colors bg-gray-100 text-gray-600 hover:bg-green-100 hover:text-green-700 whitespace-nowrap"
                         >
-                          <Check size={14} /> סמן כשולם ומחק
+                          <Check size={16} /> <span className="hidden sm:inline">סמן כשולם ומחק</span>
                         </button>
                         {supplier.is_invoiced && supplier.invoice_date && (
                           <div className="text-[10px] text-gray-400 mt-1">
@@ -267,11 +270,11 @@ export default function Suppliers() {
                           </div>
                         )}
                       </td>
-                      <td className="p-4">
-                        <div className="flex items-center justify-end gap-2">
+                      <td className="p-2 sm:p-4">
+                        <div className="flex items-center justify-end gap-1 sm:gap-2">
                           <button 
                             onClick={() => handleEdit(supplier)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            className="p-1.5 sm:p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                             title="ערוך"
                           >
                             <Edit2 size={16} />
@@ -282,7 +285,7 @@ export default function Suppliers() {
                                 deleteMutation.mutate(supplier.id);
                               }
                             }}
-                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-1.5 sm:p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                             title="מחק"
                           >
                             <Trash2 size={16} />
