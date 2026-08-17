@@ -237,7 +237,7 @@ export default function Suppliers() {
                     </td>
                     <td colSpan={2} className="bg-blue-50/80"></td>
                   </tr>
-                  {group.map(supplier => (
+                  {[...group].sort((a, b) => new Date(a.debt_date).getTime() - new Date(b.debt_date).getTime()).map(supplier => (
                     <tr key={supplier.id} className="hover:bg-gray-50/50 transition-colors bg-white">
                       <td className="p-2 sm:p-4 font-bold text-gray-300 text-sm pr-2 sm:pr-8">↳</td>
                       <td className="p-2 sm:p-4 text-gray-600 text-[11px] sm:text-sm">
