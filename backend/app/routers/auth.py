@@ -182,11 +182,36 @@ def refresh_token(
     if not user or user.status == UserStatus.inactive:
         raise credentials_exc
 
-    # Rotate: revoke old token, issue fresh pair
-    db_token.revoked = True
+    # DO NOT rotate the token! 
+    # Rotating causes logouts on mobile networks if the connection drops during refresh.
+    # Just issue a new access token and keep the existing refresh token.
+    
+    is_admin = user.role == "admin"
+    days = REFRESH_TOKEN_EXPIRE_DAYS if is_admin else 30
+    db_token.expires_at = datetime.utcnow() + timedelta(days=days)
     db.commit()
 
-    return _build_tokens_and_set_cookie(user, db, response)
+    access_token = create_access_token(data={
+        "sub": str(user.id),
+        "role": user.role,
+        "status": user.status,
+        "name": user.full_name
+    })
+
+    max_age_seconds = int((db_token.expires_at - datetime.utcnow()).total_seconds())
+    is_prod = os.getenv("ENVIRONMENT", "development") == "production"
+    
+    response.set_cookie(
+        key=REFRESH_COOKIE_NAME,
+        value=db_token.token,
+        httponly=True,
+        secure=True if is_prod else False,
+        samesite="none" if is_prod else "lax",
+        max_age=max_age_seconds,
+        path="/"
+    )
+
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 # ── Logout ────────────────────────────────────────────────────────────────────

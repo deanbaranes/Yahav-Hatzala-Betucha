@@ -62,11 +62,15 @@ axiosClient.interceptors.response.use(
 
         processQueue(null, newToken);
         return axiosClient(originalRequest);
-      } catch (refreshError) {
+      } catch (refreshError: any) {
         processQueue(refreshError, null);
-        // Refresh also failed → force logout
-        localStorage.removeItem('token');
-        window.location.href = '/login';
+        // Only force logout if the server explicitly rejected the refresh token (401/403/400).
+        // If it's a 5xx error or a Network Error (server sleeping), keep the session and let the user try again.
+        const status = refreshError.response?.status;
+        if (status === 401 || status === 403 || status === 400) {
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
