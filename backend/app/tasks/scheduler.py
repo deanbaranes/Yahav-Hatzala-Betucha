@@ -214,6 +214,16 @@ def check_ended_trips_for_reports():
             
         # If trip has ended
         if end_dt and end_dt <= now:
+            start_dt = trip.start_date
+            if start_dt and hasattr(start_dt, 'tzinfo') and start_dt.tzinfo is not None:
+                start_dt = start_dt.replace(tzinfo=None)
+            
+            duration_hours = (end_dt - start_dt).total_seconds() / 3600.0 if start_dt and end_dt else 0
+            
+            # Skip sending SMS if the trip was scheduled for less than 8 hours
+            if duration_hours < 8:
+                continue
+                
             for assignment in trip.assignments:
                 if assignment.is_confirmed and assignment.status == "assigned":
                     if not assignment.report:

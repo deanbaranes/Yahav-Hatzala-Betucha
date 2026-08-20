@@ -187,17 +187,33 @@ def get_billing_status(year: int, month: int, db: Session = Depends(get_db), cur
                 "total_overtime": 0.0,
                 "total_expenses": 0.0,
                 "roles_summary": {},
-                "all_notes": []
+                "all_notes": [],
+                "trips_details": []
             }
 
         stats = client_stats[c_id]
         stats["total_trips"] += 1
 
+        start_dt = t.start_date
+        if start_dt and hasattr(start_dt, 'tzinfo') and start_dt.tzinfo is not None:
+            start_dt = start_dt.replace(tzinfo=None)
+            
+        trip_end = t.end_date or t.start_date
+        if trip_end and hasattr(trip_end, 'tzinfo') and trip_end.tzinfo is not None:
+            trip_end = trip_end.replace(tzinfo=None)
+            
+        duration_hours = (trip_end - start_dt).total_seconds() / 3600.0 if start_dt and trip_end else 0
+        
+        stats["trips_details"].append({
+            "date": start_dt.strftime('%d.%m') if start_dt else "",
+            "location": t.location,
+            "planned_hours": round(duration_hours, 1)
+        })
+
         if t.notes and t.notes.strip():
             stats["all_notes"].append(t.notes.strip())
 
-        trip_end = t.end_date or t.start_date
-        if trip_end.replace(tzinfo=None) < now:
+        if trip_end < now:
             stats["completed_trips"] += 1
 
         if t.is_billed:

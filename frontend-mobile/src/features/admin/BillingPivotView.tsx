@@ -127,6 +127,20 @@ export default function BillingPivotView() {
                           </div>
                         )}
 
+                        {client.trips_details && client.trips_details.length > 0 && (
+                          <div className="pt-2 mt-2 border-t border-gray-200">
+                            <div className="text-xs font-bold text-gray-800 mb-1">פירוט טיולים החודש (לחישוב חריגות):</div>
+                            <ul className="list-none text-gray-600 text-xs space-y-1">
+                              {client.trips_details.map((trip: any, i: number) => (
+                                <li key={i} className="flex justify-between items-center bg-gray-50 px-2 py-1 rounded">
+                                  <span className="font-semibold">{trip.date} - {trip.location}</span>
+                                  <span className={`font-bold ${trip.planned_hours >= 8 ? 'text-red-600' : 'text-gray-500'}`}>{trip.planned_hours} שעות מתוכננות</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
                         {client.all_notes && client.all_notes.length > 0 && (
                           <div className="pt-2 mt-2 border-t border-gray-200">
                             <div className="text-xs font-bold text-gray-800 mb-1">הערות מהטיולים:</div>
