@@ -24,6 +24,7 @@ export default function Dashboard() {
   const [selectedTrip, setSelectedTrip] = React.useState<any>(null);
   const [openModalInEditMode, setOpenModalInEditMode] = React.useState(false);
   const [creatingTripDate, setCreatingTripDate] = React.useState<Date | null>(null);
+  const [listSearchTerm, setListSearchTerm] = React.useState('');
 
   const { data: employees } = useQuery<any[]>({
     queryKey: ['employees'],
@@ -64,7 +65,19 @@ export default function Dashboard() {
     .filter(t => new Date(t.start_date) >= todayStart)
     .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime()) : [];
     
-  const tripsByDate = sortedTrips.reduce((acc: any, trip: any) => {
+  const filteredSortedTrips = sortedTrips.filter(trip => {
+    if (!listSearchTerm) return true;
+    const term = listSearchTerm.toLowerCase();
+    const nameMatch = (trip.client?.name || '').toLowerCase().includes(term);
+    const locMatch = (trip.location || '').toLowerCase().includes(term);
+    const notesMatch = (trip.notes || '').toLowerCase().includes(term);
+    const employeeMatch = trip.assignments?.some((a: any) => 
+      (a.user?.full_name || '').toLowerCase().includes(term)
+    );
+    return nameMatch || locMatch || notesMatch || employeeMatch;
+  });
+    
+  const tripsByDate = filteredSortedTrips.reduce((acc: any, trip: any) => {
     const dateStr = new Date(trip.start_date).toLocaleDateString('he-IL');
     if (!acc[dateStr]) acc[dateStr] = [];
     acc[dateStr].push(trip);
@@ -161,20 +174,32 @@ export default function Dashboard() {
             <TripCalendar trips={trips || []} />
           ) : (
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-2xl font-black text-slate-800 flex items-center gap-3">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <h2 className="text-2xl font-black text-slate-800 flex items-center gap-3 whitespace-nowrap">
                   <span className="bg-blue-50 text-blue-600 p-2 rounded-lg"><List size={24} /></span>
                   טיולים לפי תאריכים
                 </h2>
-                {isYahav && (
-                  <button 
-                    onClick={() => setCreatingTripDate(new Date())}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-bold shadow transition-colors"
-                  >
-                    <Plus size={18} />
-                    הוסף טיול
-                  </button>
-                )}
+                <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
+                  <div className="relative w-full md:w-64">
+                    <input 
+                      type="text" 
+                      placeholder="חיפוש חברה, מיקום או עובד..."
+                      value={listSearchTerm}
+                      onChange={(e) => setListSearchTerm(e.target.value)}
+                      className="w-full p-2 pr-8 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm shadow-sm"
+                    />
+                    <span className="absolute right-2.5 top-2 text-gray-400">🔍</span>
+                  </div>
+                  {isYahav && (
+                    <button 
+                      onClick={() => setCreatingTripDate(new Date())}
+                      className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow transition-colors w-full md:w-auto shrink-0"
+                    >
+                      <Plus size={18} />
+                      הוסף טיול
+                    </button>
+                  )}
+                </div>
               </div>
             
             {isLoading ? (
