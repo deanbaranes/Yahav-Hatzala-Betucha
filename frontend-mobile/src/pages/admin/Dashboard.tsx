@@ -174,13 +174,22 @@ export default function Dashboard() {
             <TripCalendar trips={trips || []} />
           ) : (
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+              <div className="flex flex-col mb-8 gap-4">
                 <h2 className="text-2xl font-black text-slate-800 flex items-center gap-3 whitespace-nowrap">
                   <span className="bg-blue-50 text-blue-600 p-2 rounded-lg"><List size={24} /></span>
                   טיולים לפי תאריכים
                 </h2>
-                <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
-                  <div className="relative w-full md:w-64">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full">
+                  {isYahav && (
+                    <button 
+                      onClick={() => setCreatingTripDate(new Date())}
+                      className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow transition-colors w-full sm:w-auto shrink-0"
+                    >
+                      <Plus size={18} />
+                      הוסף טיול
+                    </button>
+                  )}
+                  <div className="relative w-full sm:w-64">
                     <input 
                       type="text" 
                       placeholder="חיפוש חברה, מיקום או עובד..."
@@ -190,15 +199,6 @@ export default function Dashboard() {
                     />
                     <span className="absolute right-2.5 top-2 text-gray-400">🔍</span>
                   </div>
-                  {isYahav && (
-                    <button 
-                      onClick={() => setCreatingTripDate(new Date())}
-                      className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow transition-colors w-full md:w-auto shrink-0"
-                    >
-                      <Plus size={18} />
-                      הוסף טיול
-                    </button>
-                  )}
                 </div>
               </div>
             
