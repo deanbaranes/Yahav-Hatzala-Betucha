@@ -25,6 +25,7 @@ export default function Dashboard() {
   const [openModalInEditMode, setOpenModalInEditMode] = React.useState(false);
   const [creatingTripDate, setCreatingTripDate] = React.useState<Date | null>(null);
   const [listSearchTerm, setListSearchTerm] = React.useState('');
+  const [showPastTrips, setShowPastTrips] = React.useState(false);
 
   const { data: employees } = useQuery<any[]>({
     queryKey: ['employees'],
@@ -62,7 +63,7 @@ export default function Dashboard() {
   todayStart.setHours(0, 0, 0, 0);
   
   const sortedTrips = trips ? [...trips]
-    .filter(t => new Date(t.start_date) >= todayStart)
+    .filter(t => showPastTrips || new Date(t.start_date) >= todayStart)
     .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime()) : [];
     
   const filteredSortedTrips = sortedTrips.filter(trip => {
@@ -208,6 +209,15 @@ export default function Dashboard() {
               <div className="text-center p-8 text-gray-500 bg-gray-50 rounded-xl">אין טיולים במערכת.</div>
             ) : (
               <div className="space-y-8">
+                {!showPastTrips && (
+                  <button 
+                    onClick={() => setShowPastTrips(true)}
+                    className="w-full bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold py-3 rounded-xl border border-gray-200 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Clock size={18} /> הצג טיולים מתאריכים שעברו
+                  </button>
+                )}
+                
                 {Object.keys(tripsByDate || {}).map((dateStr) => (
                   <div key={dateStr} className="relative pl-4">
                     <div className="sticky top-0 bg-white/90 backdrop-blur-sm z-10 py-2 border-b-2 border-blue-100 mb-4 inline-block">

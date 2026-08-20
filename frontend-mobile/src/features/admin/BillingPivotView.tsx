@@ -126,6 +126,17 @@ export default function BillingPivotView() {
                             </div>
                           </div>
                         )}
+
+                        {client.all_notes && client.all_notes.length > 0 && (
+                          <div className="pt-2 mt-2 border-t border-gray-200">
+                            <div className="text-xs font-bold text-gray-800 mb-1">הערות מהטיולים:</div>
+                            <ul className="list-disc list-inside text-gray-600 text-xs space-y-0.5">
+                              {client.all_notes.map((note: string, i: number) => (
+                                <li key={i}>{note}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                       
                       {client.status === 'מוכן לחיוב' && (

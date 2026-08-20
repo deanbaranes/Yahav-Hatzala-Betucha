@@ -186,11 +186,15 @@ def get_billing_status(year: int, month: int, db: Session = Depends(get_db), cur
                 "invoiced_trips": 0,
                 "total_overtime": 0.0,
                 "total_expenses": 0.0,
-                "roles_summary": {}
+                "roles_summary": {},
+                "all_notes": []
             }
 
         stats = client_stats[c_id]
         stats["total_trips"] += 1
+
+        if t.notes and t.notes.strip():
+            stats["all_notes"].append(t.notes.strip())
 
         trip_end = t.end_date or t.start_date
         if trip_end.replace(tzinfo=None) < now:
@@ -236,6 +240,10 @@ def get_billing_status(year: int, month: int, db: Session = Depends(get_db), cur
             status = "מוכן לחיוב"
 
         stats["status"] = status
+        
+        # Deduplicate and sort notes
+        stats["all_notes"] = sorted(list(set(stats["all_notes"])))
+        
         result.append(stats)
 
     # Sort so "מוכן לחיוב" comes first
