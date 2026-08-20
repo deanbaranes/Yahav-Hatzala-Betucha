@@ -132,9 +132,16 @@ export default function BillingPivotView() {
                             <div className="text-xs font-bold text-gray-800 mb-1">פירוט טיולים החודש (לחישוב חריגות):</div>
                             <ul className="list-none text-gray-600 text-xs space-y-1">
                               {client.trips_details.map((trip: any, i: number) => (
-                                <li key={i} className="flex justify-between items-center bg-gray-50 px-2 py-1 rounded">
-                                  <span className="font-semibold">{trip.date} - {trip.location}</span>
-                                  <span className={`font-bold ${trip.planned_hours >= 8 ? 'text-red-600' : 'text-gray-500'}`}>{trip.planned_hours} שעות מתוכננות</span>
+                                <li key={i} className="flex justify-between items-center bg-gray-50 px-2 py-1.5 rounded border border-gray-100">
+                                  <span className="font-semibold text-gray-700">{trip.date} - {trip.location}</span>
+                                  <span className="flex items-center gap-1.5">
+                                    {trip.nights > 0 && (
+                                      <span className="text-indigo-700 font-bold bg-indigo-100 px-1.5 py-0.5 rounded-md text-[10px] shadow-sm">
+                                        🌙 {trip.nights === 1 ? 'לילה אחד' : `${trip.nights} לילות`}
+                                      </span>
+                                    )}
+                                    <span className={`font-bold ${trip.planned_hours >= 8 ? 'text-red-600' : 'text-gray-500'}`}>{trip.planned_hours} שעות</span>
+                                  </span>
                                 </li>
                               ))}
                             </ul>

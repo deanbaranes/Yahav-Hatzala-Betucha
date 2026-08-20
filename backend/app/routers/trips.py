@@ -204,10 +204,17 @@ def get_billing_status(year: int, month: int, db: Session = Depends(get_db), cur
             
         duration_hours = (trip_end - start_dt).total_seconds() / 3600.0 if start_dt and trip_end else 0
         
+        nights = 0
+        if start_dt and trip_end:
+            nights = (trip_end.date() - start_dt.date()).days
+            if nights < 0:
+                nights = 0
+        
         stats["trips_details"].append({
             "date": start_dt.strftime('%d.%m') if start_dt else "",
             "location": t.location,
-            "planned_hours": round(duration_hours, 1)
+            "planned_hours": round(duration_hours, 1),
+            "nights": nights
         })
 
         if t.notes and t.notes.strip():
