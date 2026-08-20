@@ -21,6 +21,7 @@ export default function Dashboard() {
   }, [isYahav]);
 
   const [selectedTrip, setSelectedTrip] = React.useState<any>(null);
+  const [openModalInEditMode, setOpenModalInEditMode] = React.useState(false);
 
   const { data: employees } = useQuery<any[]>({
     queryKey: ['employees'],
@@ -109,16 +110,16 @@ export default function Dashboard() {
       {isYahav ? (
         <header className="mb-4 flex justify-start gap-2 border-b pb-4">
           <button 
-            onClick={() => setViewMode('calendar')}
-            className={`px-4 py-1.5 rounded-md text-sm font-bold border transition-colors ${viewMode === 'calendar' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
-          >
-            <CalendarIcon size={16} className="inline ml-1" /> יומן
-          </button>
-          <button 
             onClick={() => setViewMode('list')}
             className={`px-4 py-1.5 rounded-md text-sm font-bold border transition-colors ${viewMode === 'list' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
           >
             <List size={16} className="inline ml-1" /> רשימה
+          </button>
+          <button 
+            onClick={() => setViewMode('calendar')}
+            className={`px-4 py-1.5 rounded-md text-sm font-bold border transition-colors ${viewMode === 'calendar' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
+          >
+            <CalendarIcon size={16} className="inline ml-1" /> יומן
           </button>
         </header>
       ) : (
@@ -204,18 +205,17 @@ export default function Dashboard() {
                                 <div className="flex items-center gap-2">
                                   {isYahav && (
                                     <button 
-                                      onClick={() => setSelectedTrip(trip)} 
+                                      onClick={() => {
+                                        setSelectedTrip(trip);
+                                        setOpenModalInEditMode(true);
+                                      }} 
                                       className="text-blue-600 hover:text-blue-800 p-1.5 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
                                       title="ערוך טיול"
                                     >
                                       <Pencil size={18} />
                                     </button>
                                   )}
-                                  {trip.capacity === 0 ? (
-                                    <span className="flex items-center text-center gap-1 text-xs md:text-sm font-bold px-3 py-1.5 rounded-xl bg-red-100 text-red-800 border border-red-300">
-                                      ⚠️ חסרה הגדרת תפקידים
-                                    </span>
-                                  ) : (
+                                  {trip.capacity > 0 && (
                                     <span className={`flex items-center text-center gap-1 text-xs md:text-sm font-bold px-3 py-1.5 rounded-xl ${
                                       isFullyStaffed 
                                         ? 'bg-blue-200 text-blue-800' 
@@ -290,7 +290,11 @@ export default function Dashboard() {
         <TripDetailsModal 
           selectedTrip={selectedTrip} 
           employees={employees || []} 
-          onClose={() => setSelectedTrip(null)} 
+          onClose={() => {
+            setSelectedTrip(null);
+            setOpenModalInEditMode(false);
+          }} 
+          initialEditMode={openModalInEditMode}
         />
       )}
     </div>

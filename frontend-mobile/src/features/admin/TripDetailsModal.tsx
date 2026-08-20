@@ -11,17 +11,29 @@ interface TripDetailsModalProps {
   selectedTrip: any;
   employees: any[];
   onClose: () => void;
+  initialEditMode?: boolean;
 }
 
-export default function TripDetailsModal({ selectedTrip, employees, onClose }: TripDetailsModalProps) {
+export default function TripDetailsModal({ selectedTrip, employees, onClose, initialEditMode = false }: TripDetailsModalProps) {
   const queryClient = useQueryClient();
 
   const [reportingAssignment, setReportingAssignment] = useState<any>(null);
   const [reportDaysCount, setReportDaysCount] = useState(1);
   const [reportDailyShifts, setReportDailyShifts] = useState([{ start_time: '', end_time: '' }]);
 
-  const [quickEditMode, setQuickEditMode] = useState(false);
-  const [quickEditForm, setQuickEditForm] = useState({ client_name: '', location: '', start_date: '', end_date: '', capacity: 0, roles_requirements: {} as Record<string, number>, color: '', global_salary: '' as string | number, contact_phone: '', notes: '' });
+  const [quickEditMode, setQuickEditMode] = useState(initialEditMode);
+  const [quickEditForm, setQuickEditForm] = useState({ 
+    client_name: selectedTrip.client?.name || '', 
+    location: selectedTrip.location || '', 
+    start_date: selectedTrip.start_date?.substring(0, 16) || '', 
+    end_date: selectedTrip.end_date ? selectedTrip.end_date.substring(0, 16) : '', 
+    capacity: selectedTrip.capacity || 0, 
+    roles_requirements: selectedTrip.roles_requirements || {}, 
+    color: selectedTrip.color || '', 
+    global_salary: selectedTrip.global_salary || '', 
+    contact_phone: selectedTrip.contact_phone || '', 
+    notes: selectedTrip.notes || '' 
+  });
 
   // Prevent background scrolling when modal is open
   useEffect(() => {
