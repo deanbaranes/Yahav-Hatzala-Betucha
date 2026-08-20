@@ -188,7 +188,8 @@ def get_billing_status(year: int, month: int, db: Session = Depends(get_db), cur
                 "total_expenses": 0.0,
                 "roles_summary": {},
                 "all_notes": [],
-                "trips_details": []
+                "trips_details": [],
+                "client_notes": t.client.notes if t.client else ""
             }
 
         stats = client_stats[c_id]

@@ -163,6 +163,16 @@ export default function BillingPivotView() {
                           </div>
                         )}
                       </div>
+
+                      {client.client_notes && (
+                        <div className="mt-3 mb-1 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg flex items-start gap-2 shadow-sm">
+                          <span className="text-lg">⚠️</span>
+                          <div>
+                            <span className="font-bold text-sm block mb-0.5">הערת חיוב / הנהלת חשבונות:</span>
+                            <span className="text-xs font-bold">{client.client_notes}</span>
+                          </div>
+                        </div>
+                      )}
                       
                       {client.status === 'מוכן לחיוב' && (
                         <div className="flex flex-col gap-2 pt-3 border-t border-green-100">
