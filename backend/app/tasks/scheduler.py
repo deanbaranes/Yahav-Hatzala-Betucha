@@ -248,7 +248,7 @@ def check_ended_trips_for_reports():
                 if assignment.is_confirmed and assignment.status == "assigned":
                     if not assignment.report:
                         if assignment.user and assignment.user.phone:
-                            msg = f"היי {assignment.user.full_name}, הטיול ב-{trip.location} הסתיים. אנא היכנס לאזור האישי באפליקציה למלא דוח משמרת והוצאות."
+                            msg = f"היי {assignment.user.full_name}, הטיול ב-{trip.location} הסתיים. אנא היכנס לאזור האישי למלא דוח. שים לב: דיווח שלא ימולא עד מחר יחושב כשכר בסיס בלבד!"
                             
                             # Check if we already notified them
                             existing_notif = db.query(Notification).filter(
