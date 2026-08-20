@@ -209,14 +209,12 @@ export default function Dashboard() {
               <div className="text-center p-8 text-gray-500 bg-gray-50 rounded-xl">אין טיולים במערכת.</div>
             ) : (
               <div className="space-y-8">
-                {!showPastTrips && (
-                  <button 
-                    onClick={() => setShowPastTrips(true)}
-                    className="w-full bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold py-3 rounded-xl border border-gray-200 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Clock size={18} /> הצג טיולים מתאריכים שעברו
-                  </button>
-                )}
+                <button 
+                  onClick={() => setShowPastTrips(!showPastTrips)}
+                  className="w-full bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold py-3 rounded-xl border border-gray-200 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Clock size={18} /> {showPastTrips ? 'הסתר טיולים מתאריכים שעברו' : 'הצג טיולים מתאריכים שעברו'}
+                </button>
                 
                 {Object.keys(tripsByDate || {}).map((dateStr) => (
                   <div key={dateStr} className="relative pl-4">

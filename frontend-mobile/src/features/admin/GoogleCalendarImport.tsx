@@ -51,7 +51,7 @@ export default function GoogleCalendarImport() {
       {/* Trigger Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+        className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-lg shadow hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 w-full sm:w-auto"
       >
         <ArrowDownToLine size={18} />
         ייבוא מיומן גוגל

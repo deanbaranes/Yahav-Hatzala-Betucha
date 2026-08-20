@@ -174,21 +174,20 @@ export default function TripManagementBoard() {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md mb-8 text-right" dir="rtl">
-      <div className="mb-6 flex justify-start">
+      <div className="mb-6 flex flex-col sm:flex-row gap-3 justify-start items-start">
         <GoogleCalendarImport />
-      </div>
-
-      {isYahav && !editingTripId && !isFormVisible ? (
-        <div className="mb-8">
+        {isYahav && !editingTripId && !isFormVisible && (
           <button 
             onClick={() => setIsFormVisible(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow transition-colors"
+            className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm rounded-lg font-bold shadow transition-colors w-full sm:w-auto"
           >
-            <Plus size={20} />
+            <Plus size={18} />
             הוסף טיול חדש
           </button>
-        </div>
-      ) : (
+        )}
+      </div>
+
+      {(!isYahav || editingTripId || isFormVisible) && (
         <div id="edit-form-area">
           <div className="flex flex-col gap-3 mb-6 border-b pb-4">
             <h2 className="text-2xl font-bold text-gray-800">{editingTripId ? 'עריכת טיול' : 'יצירת טיול חדש'}</h2>
