@@ -170,7 +170,7 @@ def get_billing_status(year: int, month: int, db: Session = Depends(get_db), cur
     ).filter(
         extract('year', Trip.start_date) == year,
         extract('month', Trip.start_date) == month
-    ).all()
+    ).order_by(Trip.start_date.asc()).all()
 
     client_stats = {}
     now = datetime.now()
