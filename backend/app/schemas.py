@@ -25,6 +25,7 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
     role: UserRole
+    employment_type: Optional[str] = None
 
 class UserOut(UserBase):
     id: uuid.UUID

@@ -12,6 +12,7 @@ export default function RegisterForm() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
+  const [employmentType, setEmploymentType] = useState('שכיר');
   const [errorMsg, setErrorMsg] = useState('');
   const navigate = useNavigate();
 
@@ -57,7 +58,8 @@ export default function RegisterForm() {
         national_id: nationalId || undefined,
         password: password,
         email: email || undefined,
-        role: 'employee'
+        role: 'employee',
+        employment_type: employmentType
       });
       return res.data;
     },
@@ -161,6 +163,34 @@ export default function RegisterForm() {
               onChange={(e) => setEmail(e.target.value)}
               dir="ltr"
             />
+          </div>
+
+          <div>
+            <label className="block text-gray-700 font-bold mb-1.5 text-sm">צורת העסקה (קבלת תשלום)</label>
+            <div className="flex gap-4 p-3 bg-white/60 border border-gray-200/80 rounded-xl">
+              <label className="flex items-center gap-2 text-sm text-gray-700 font-medium cursor-pointer">
+                <input 
+                  type="radio" 
+                  name="employment_type" 
+                  value="שכיר"
+                  checked={employmentType === 'שכיר'}
+                  onChange={(e) => setEmploymentType(e.target.value)}
+                  className="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
+                />
+                שכיר (תלוש שכר)
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 font-medium cursor-pointer">
+                <input 
+                  type="radio" 
+                  name="employment_type" 
+                  value="עצמאי"
+                  checked={employmentType === 'עצמאי'}
+                  onChange={(e) => setEmploymentType(e.target.value)}
+                  className="w-4 h-4 text-emerald-600 focus:ring-emerald-500"
+                />
+                עצמאי (חשבונית/קבלה)
+              </label>
+            </div>
           </div>
 
           <button 

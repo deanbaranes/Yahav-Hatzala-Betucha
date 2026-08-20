@@ -105,7 +105,8 @@ def register(request: Request, user: UserCreate, db: Session = Depends(get_db)):
         national_id=user.national_id,
         password_hash=hashed_password,
         role=user.role,
-        status=UserStatus.pending
+        status=UserStatus.pending,
+        employment_type=user.employment_type
     )
     db.add(new_user)
     db.commit()
