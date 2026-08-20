@@ -12,7 +12,14 @@ export default function Dashboard() {
   // זמנית: הוספנו גם את דין (0504851269) כדי שתוכל לראות את השינויים
   const isYahav = user?.name?.includes('יהב') || (user as any)?.full_name?.includes('יהב') || (user as any)?.phone === '0533210777' || user?.name?.includes('דין') || (user as any)?.full_name?.includes('דין') || (user as any)?.phone === '0504851269';
 
-  const [viewMode, setViewMode] = React.useState<'calendar' | 'list'>(isYahav ? 'list' : 'calendar');
+  const [viewMode, setViewMode] = React.useState<'calendar' | 'list'>('calendar');
+  
+  React.useEffect(() => {
+    if (isYahav) {
+      setViewMode('list');
+    }
+  }, [isYahav]);
+
   const [selectedTrip, setSelectedTrip] = React.useState<any>(null);
 
   const { data: employees } = useQuery<any[]>({
@@ -100,7 +107,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-8 animate-fade-in pb-10" dir="rtl">
       {isYahav ? (
-        <header className="mb-4 flex justify-end gap-2 border-b pb-4">
+        <header className="mb-4 flex justify-start gap-2 border-b pb-4">
           <button 
             onClick={() => setViewMode('calendar')}
             className={`px-4 py-1.5 rounded-md text-sm font-bold border transition-colors ${viewMode === 'calendar' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
