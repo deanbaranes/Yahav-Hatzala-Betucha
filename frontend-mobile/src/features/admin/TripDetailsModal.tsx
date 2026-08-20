@@ -183,7 +183,7 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose, ini
                 </div>
                 <div className="mb-4 md:col-span-2">
                   <label className="block text-xs font-bold text-gray-600 mb-2 border-b pb-1">
-                    דרישות צוות (סה"כ: {Object.values(quickEditForm.roles_requirements || {}).reduce((a, b) => a + b, 0)})
+                    דרישות צוות (סה"כ: {(Object.values(quickEditForm.roles_requirements || {}) as number[]).reduce((a, b) => a + b, 0)})
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     {AVAILABLE_ROLES.map(role => (
@@ -203,7 +203,7 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose, ini
                             } else {
                               newRoles[role] = count;
                             }
-                            const newCapacity = Object.values(newRoles).reduce((a, b) => a + b, 0);
+                            const newCapacity = (Object.values(newRoles) as number[]).reduce((a, b) => a + b, 0);
                             setQuickEditForm({...quickEditForm, roles_requirements: newRoles, capacity: newCapacity});
                           }} 
                         />

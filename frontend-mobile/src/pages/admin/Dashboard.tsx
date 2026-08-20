@@ -3,9 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import StaffApprovalsTable from '../../features/admin/StaffApprovalsTable';
 import TripCalendar from '../../features/admin/TripCalendar';
-import { Calendar as CalendarIcon, CheckCircle2, Clock, List, Map, Pencil } from 'lucide-react';
+import { Calendar as CalendarIcon, CheckCircle2, Clock, List, Map, Pencil, Plus } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import TripDetailsModal from '../../features/admin/TripDetailsModal';
+import CreateManualTripModal from '../../features/admin/CreateManualTripModal';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -22,6 +23,7 @@ export default function Dashboard() {
 
   const [selectedTrip, setSelectedTrip] = React.useState<any>(null);
   const [openModalInEditMode, setOpenModalInEditMode] = React.useState(false);
+  const [creatingTripDate, setCreatingTripDate] = React.useState<Date | null>(null);
 
   const { data: employees } = useQuery<any[]>({
     queryKey: ['employees'],
@@ -159,10 +161,21 @@ export default function Dashboard() {
             <TripCalendar trips={trips || []} />
           ) : (
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
-              <h2 className="text-2xl font-black text-slate-800 mb-8 flex items-center gap-3">
-                <span className="bg-blue-50 text-blue-600 p-2 rounded-lg"><List size={24} /></span>
-                טיולים לפי תאריכים
-              </h2>
+              <div className="flex justify-between items-center mb-8">
+                <h2 className="text-2xl font-black text-slate-800 flex items-center gap-3">
+                  <span className="bg-blue-50 text-blue-600 p-2 rounded-lg"><List size={24} /></span>
+                  טיולים לפי תאריכים
+                </h2>
+                {isYahav && (
+                  <button 
+                    onClick={() => setCreatingTripDate(new Date())}
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-bold shadow transition-colors"
+                  >
+                    <Plus size={18} />
+                    הוסף טיול
+                  </button>
+                )}
+              </div>
             
             {isLoading ? (
               <div className="text-center p-8 text-gray-500">טוען נתונים...</div>
@@ -295,6 +308,13 @@ export default function Dashboard() {
             setOpenModalInEditMode(false);
           }} 
           initialEditMode={openModalInEditMode}
+        />
+      )}
+
+      {creatingTripDate && (
+        <CreateManualTripModal 
+          initialDate={creatingTripDate} 
+          onClose={() => setCreatingTripDate(null)} 
         />
       )}
     </div>
