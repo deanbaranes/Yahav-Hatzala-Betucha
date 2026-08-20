@@ -3,10 +3,25 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import StaffApprovalsTable from '../../features/admin/StaffApprovalsTable';
 import TripCalendar from '../../features/admin/TripCalendar';
-import { Calendar as CalendarIcon, CheckCircle2, Clock, List, Map } from 'lucide-react';
+import { Calendar as CalendarIcon, CheckCircle2, Clock, List, Map, Pencil } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import TripDetailsModal from '../../features/admin/TripDetailsModal';
 
 export default function Dashboard() {
-  const [viewMode, setViewMode] = React.useState<'calendar' | 'list'>('calendar');
+  const { user } = useAuth();
+  // זמנית: הוספנו גם את דין (0504851269) כדי שתוכל לראות את השינויים
+  const isYahav = user?.name?.includes('יהב') || (user as any)?.full_name?.includes('יהב') || (user as any)?.phone === '0533210777' || user?.name?.includes('דין') || (user as any)?.full_name?.includes('דין') || (user as any)?.phone === '0504851269';
+
+  const [viewMode, setViewMode] = React.useState<'calendar' | 'list'>(isYahav ? 'list' : 'calendar');
+  const [selectedTrip, setSelectedTrip] = React.useState<any>(null);
+
+  const { data: employees } = useQuery<any[]>({
+    queryKey: ['employees'],
+    queryFn: async () => {
+      const res = await axiosClient.get('/payroll/employees');
+      return res.data;
+    }
+  });
 
   const currentDate = new Date();
   const year = currentDate.getFullYear();
@@ -57,58 +72,77 @@ export default function Dashboard() {
     }
   });
 
-  return (
-    <div className="space-y-8 animate-fade-in pb-10" dir="rtl">
-      <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-gradient-to-l from-slate-900 to-slate-800 p-6 md:p-8 rounded-3xl shadow-lg text-white">
-        <div>
-          <h1 className="text-2xl md:text-4xl font-black tracking-tight mb-2 flex items-center gap-3 md:gap-4">
-            <span className="bg-white/10 p-2 md:p-3 rounded-xl backdrop-blur-md">
-              <Map className="text-blue-400 w-6 h-6 md:w-8 md:h-8" />
-            </span>
-            סקירה כללית
-          </h1>
-          <p className="text-slate-400 text-sm md:text-lg font-medium max-w-xl">מעקב יומי אחרי הטיולים, שיבוצים קרובים, וסטטוס אישורי צוות.</p>
+  const GreenBillingBar = () => (
+    <div className="bg-green-50 border-2 border-green-400 text-green-900 px-6 py-5 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm animate-fade-in text-center md:text-right">
+      <div className="flex flex-col md:flex-row items-center gap-4 w-full">
+        <div className="bg-green-100 p-3 rounded-full shadow-inner hidden md:block">
+          <span className="text-2xl">💰</span>
         </div>
-        <div className="flex flex-wrap bg-white/10 p-1.5 rounded-2xl backdrop-blur-md shadow-inner w-full md:w-auto">
-          <button 
-            onClick={() => setViewMode('calendar')}
-            className={`flex-1 md:flex-none justify-center flex items-center gap-2 px-3 md:px-5 py-2 md:py-2.5 rounded-xl font-bold text-sm md:text-base transition-all ${viewMode === 'calendar' ? 'bg-blue-500 text-white shadow-md' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}
-          >
-            <CalendarIcon size={18} /> תצוגת יומן
-          </button>
-          <button 
-            onClick={() => setViewMode('list')}
-            className={`flex-1 md:flex-none justify-center flex items-center gap-2 px-3 md:px-5 py-2 md:py-2.5 rounded-xl font-bold text-sm md:text-base transition-all ${viewMode === 'list' ? 'bg-blue-500 text-white shadow-md' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}
-          >
-            <List size={18} /> רשימה יומית
-          </button>
-        </div>
-      </header>
-
-      {readyToBill.length > 0 && (
-        <div className="bg-green-50 border-2 border-green-400 text-green-900 px-6 py-5 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm animate-fade-in text-center md:text-right">
-          <div className="flex flex-col md:flex-row items-center gap-4 w-full">
-            <div className="bg-green-100 p-3 rounded-full shadow-inner hidden md:block">
-              <span className="text-2xl">💰</span>
-            </div>
-            <div className="flex-1 flex flex-col items-center md:items-start w-full">
-              <div className="flex items-center gap-2 mb-1 justify-center md:justify-start w-full">
-                <span className="text-xl md:hidden">💰</span>
-                <h3 className="font-black text-lg md:text-xl">ישנם לקוחות שמוכנים להוצאת חשבונית לחודש זה!</h3>
-              </div>
-              <p className="text-sm font-medium opacity-90 mt-1 text-center md:text-right max-w-lg mb-3 md:mb-0">
-                {readyToBill.map(c => c.client_name).join(', ')} סיימו את כל הטיולים שלהם לחודש זה.
-              </p>
-              <a href="/admin/billing" className="bg-green-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-green-700 transition-colors shadow-sm whitespace-nowrap mt-2 md:mt-0 md:hidden block w-full sm:w-auto text-center mx-auto">
-                למעבר לדוח חיובים
-              </a>
-            </div>
+        <div className="flex-1 flex flex-col items-center md:items-start w-full">
+          <div className="flex items-center gap-2 mb-1 justify-center md:justify-start w-full">
+            <span className="text-xl md:hidden">💰</span>
+            <h3 className="font-black text-lg md:text-xl">ישנם לקוחות שמוכנים להוצאת חשבונית לחודש זה!</h3>
           </div>
-          <a href="/admin/billing" className="bg-green-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-700 transition-colors shadow-sm whitespace-nowrap hidden md:block">
+          <p className="text-sm font-medium opacity-90 mt-1 text-center md:text-right max-w-lg mb-3 md:mb-0">
+            {readyToBill.map(c => c.client_name).join(', ')} סיימו את כל הטיולים שלהם לחודש זה.
+          </p>
+          <a href="/admin/billing" className="bg-green-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-green-700 transition-colors shadow-sm whitespace-nowrap mt-2 md:mt-0 md:hidden block w-full sm:w-auto text-center mx-auto">
             למעבר לדוח חיובים
           </a>
         </div>
+      </div>
+      <a href="/admin/billing" className="bg-green-600 text-white px-5 py-2.5 rounded-xl font-bold hover:bg-green-700 transition-colors shadow-sm whitespace-nowrap hidden md:block">
+        למעבר לדוח חיובים
+      </a>
+    </div>
+  );
+
+  return (
+    <div className="space-y-8 animate-fade-in pb-10" dir="rtl">
+      {isYahav ? (
+        <header className="mb-4 flex justify-end gap-2 border-b pb-4">
+          <button 
+            onClick={() => setViewMode('calendar')}
+            className={`px-4 py-1.5 rounded-md text-sm font-bold border transition-colors ${viewMode === 'calendar' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
+          >
+            <CalendarIcon size={16} className="inline ml-1" /> יומן
+          </button>
+          <button 
+            onClick={() => setViewMode('list')}
+            className={`px-4 py-1.5 rounded-md text-sm font-bold border transition-colors ${viewMode === 'list' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}
+          >
+            <List size={16} className="inline ml-1" /> רשימה
+          </button>
+        </header>
+      ) : (
+        <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-gradient-to-l from-slate-900 to-slate-800 p-6 md:p-8 rounded-3xl shadow-lg text-white">
+          <div>
+            <h1 className="text-2xl md:text-4xl font-black tracking-tight mb-2 flex items-center gap-3 md:gap-4">
+              <span className="bg-white/10 p-2 md:p-3 rounded-xl backdrop-blur-md">
+                <Map className="text-blue-400 w-6 h-6 md:w-8 md:h-8" />
+              </span>
+              סקירה כללית
+            </h1>
+            <p className="text-slate-400 text-sm md:text-lg font-medium max-w-xl">מעקב יומי אחרי הטיולים, שיבוצים קרובים, וסטטוס אישורי צוות.</p>
+          </div>
+          <div className="flex flex-wrap bg-white/10 p-1.5 rounded-2xl backdrop-blur-md shadow-inner w-full md:w-auto">
+            <button 
+              onClick={() => setViewMode('calendar')}
+              className={`flex-1 md:flex-none justify-center flex items-center gap-2 px-3 md:px-5 py-2 md:py-2.5 rounded-xl font-bold text-sm md:text-base transition-all ${viewMode === 'calendar' ? 'bg-blue-500 text-white shadow-md' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}
+            >
+              <CalendarIcon size={18} /> תצוגת יומן
+            </button>
+            <button 
+              onClick={() => setViewMode('list')}
+              className={`flex-1 md:flex-none justify-center flex items-center gap-2 px-3 md:px-5 py-2 md:py-2.5 rounded-xl font-bold text-sm md:text-base transition-all ${viewMode === 'list' ? 'bg-blue-500 text-white shadow-md' : 'text-slate-300 hover:text-white hover:bg-white/5'}`}
+            >
+              <List size={18} /> רשימה יומית
+            </button>
+          </div>
+        </header>
       )}
+
+      {!isYahav && readyToBill.length > 0 && <GreenBillingBar />}
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Right side: Trips */}
@@ -160,20 +194,31 @@ export default function Dashboard() {
                               </div>
                               
                               <div className="flex flex-col items-end gap-2">
-                                {trip.capacity === 0 ? (
-                                  <span className="flex items-center text-center gap-1 text-xs md:text-sm font-bold px-3 py-1.5 rounded-xl bg-red-100 text-red-800 border border-red-300">
-                                    ⚠️ חסרה הגדרת תפקידים
-                                  </span>
-                                ) : (
-                                  <span className={`flex items-center text-center gap-1 text-xs md:text-sm font-bold px-3 py-1.5 rounded-xl ${
-                                    isFullyStaffed 
-                                      ? 'bg-blue-200 text-blue-800' 
-                                      : 'bg-green-200 text-green-800'
-                                  }`}>
-                                    {isFullyStaffed ? <CheckCircle2 size={16} /> : <Clock size={16} />}
-                                    {isFullyStaffed ? 'שובץ במלואו' : `חסרים ${trip.capacity - confirmedCount} אנשי צוות`}
-                                  </span>
-                                )}
+                                <div className="flex items-center gap-2">
+                                  {isYahav && (
+                                    <button 
+                                      onClick={() => setSelectedTrip(trip)} 
+                                      className="text-blue-600 hover:text-blue-800 p-1.5 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+                                      title="ערוך טיול"
+                                    >
+                                      <Pencil size={18} />
+                                    </button>
+                                  )}
+                                  {trip.capacity === 0 ? (
+                                    <span className="flex items-center text-center gap-1 text-xs md:text-sm font-bold px-3 py-1.5 rounded-xl bg-red-100 text-red-800 border border-red-300">
+                                      ⚠️ חסרה הגדרת תפקידים
+                                    </span>
+                                  ) : (
+                                    <span className={`flex items-center text-center gap-1 text-xs md:text-sm font-bold px-3 py-1.5 rounded-xl ${
+                                      isFullyStaffed 
+                                        ? 'bg-blue-200 text-blue-800' 
+                                        : 'bg-green-200 text-green-800'
+                                    }`}>
+                                      {isFullyStaffed ? <CheckCircle2 size={16} /> : <Clock size={16} />}
+                                      {isFullyStaffed ? 'שובץ במלואו' : `חסרים ${trip.capacity - confirmedCount} אנשי צוות`}
+                                    </span>
+                                  )}
+                                </div>
                                 <span className="text-sm text-gray-500 font-medium bg-white px-2 py-1 rounded-md shadow-sm">
                                   {new Date(trip.start_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})}
                                 </span>
@@ -230,8 +275,17 @@ export default function Dashboard() {
                 <StaffApprovalsTable />
              </div>
           </div>
+          {isYahav && readyToBill.length > 0 && <GreenBillingBar />}
         </div>
       </div>
+
+      {selectedTrip && (
+        <TripDetailsModal 
+          selectedTrip={selectedTrip} 
+          employees={employees || []} 
+          onClose={() => setSelectedTrip(null)} 
+        />
+      )}
     </div>
   );
 }

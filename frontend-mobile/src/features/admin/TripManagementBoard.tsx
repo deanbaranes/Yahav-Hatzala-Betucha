@@ -3,7 +3,8 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import SmartClientInput from './SmartClientInput';
 import GoogleCalendarImport from './GoogleCalendarImport';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Plus } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 
 const AVAILABLE_ROLES = ["מע\"ר", "חובש", "פראמדיק", "שומר לילה", "מע\"ר חמוש", "חובש חמוש", "מאבטח", "כללי"];
 
@@ -13,6 +14,11 @@ export default function TripManagementBoard() {
   const [formData, setFormData] = useState({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {} as Record<string, number>, color: '' as string, global_salary: '' as string | number, contact_phone: '' as string });
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedWeeks, setExpandedWeeks] = useState<Record<string, boolean>>({});
+  const [isFormVisible, setIsFormVisible] = useState(false);
+  
+  const { user } = useAuth();
+  // זמנית: הוספנו גם את דין (0504851269) כדי שתוכל לראות את השינויים
+  const isYahav = user?.name?.includes('יהב') || (user as any)?.full_name?.includes('יהב') || (user as any)?.phone === '0533210777' || user?.name?.includes('דין') || (user as any)?.full_name?.includes('דין') || (user as any)?.phone === '0504851269';
   
   const [assignEmployeeName, setAssignEmployeeName] = useState('');
   const [assignEmployeeRole, setAssignEmployeeRole] = useState('כללי');
@@ -72,6 +78,7 @@ export default function TripManagementBoard() {
       queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
       alert('הטיול נוצר בהצלחה!');
       setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_phone: '' });
+      setIsFormVisible(false);
     },
     onError: (error: any) => {
       alert('שגיאה ביצירת הטיול: ' + (error.response?.data?.detail || 'אנא ודא שכל השדות מלאים ותקינים.'));
@@ -171,11 +178,23 @@ export default function TripManagementBoard() {
         <GoogleCalendarImport />
       </div>
 
-      <div id="edit-form-area" className="flex flex-col gap-3 mb-6 border-b pb-4">
-        <h2 className="text-2xl font-bold text-gray-800">{editingTripId ? 'עריכת טיול' : 'יצירת טיול חדש'}</h2>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {isYahav && !editingTripId && !isFormVisible ? (
+        <div className="mb-8">
+          <button 
+            onClick={() => setIsFormVisible(true)}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow transition-colors"
+          >
+            <Plus size={20} />
+            הוסף טיול חדש
+          </button>
+        </div>
+      ) : (
+        <div id="edit-form-area">
+          <div className="flex flex-col gap-3 mb-6 border-b pb-4">
+            <h2 className="text-2xl font-bold text-gray-800">{editingTripId ? 'עריכת טיול' : 'יצירת טיול חדש'}</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <SmartClientInput value={formData.client_name} onChange={(v) => setFormData({...formData, client_name: v})} />
         
         <div className="mb-4">
@@ -272,7 +291,7 @@ export default function TripManagementBoard() {
           {createTrip.isPending || updateTrip.isPending ? 'שומר...' : editingTripId ? 'שמור שינויים' : 'צור טיול'}
         </button>
         
-        {editingTripId && (
+        {editingTripId ? (
           <button 
             onClick={() => {
               setEditingTripId(null);
@@ -282,8 +301,19 @@ export default function TripManagementBoard() {
           >
             ביטול עריכה
           </button>
+        ) : (
+          isYahav && (
+            <button 
+              onClick={() => setIsFormVisible(false)}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-bold shadow transition-colors"
+            >
+              ביטול
+            </button>
+          )
         )}
       </div>
+      </div>
+      )}
 
       {editingTripId && (
         <div className="mt-8 p-6 bg-blue-50/50 rounded-lg border border-blue-100">
