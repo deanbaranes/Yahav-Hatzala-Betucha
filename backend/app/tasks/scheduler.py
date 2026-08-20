@@ -220,8 +220,28 @@ def check_ended_trips_for_reports():
             
             duration_hours = (end_dt - start_dt).total_seconds() / 3600.0 if start_dt and end_dt else 0
             
-            # Skip sending SMS if the trip was scheduled for less than 8 hours
+            # If the trip was scheduled for less than 8 hours, auto-generate a report instead of sending SMS
             if duration_hours < 8:
+                for assignment in trip.assignments:
+                    if assignment.is_confirmed and assignment.status == "assigned":
+                        if not assignment.report:
+                            report_start = start_dt
+                            report_end = start_dt + timedelta(hours=8.6)
+                            
+                            new_report = TripReport(
+                                assignment_id=assignment.id,
+                                start_time=report_start,
+                                end_time=report_end,
+                                overtime_decimal=0.0,
+                                expenses=0.0,
+                                expenses_notes="דיווח נוצר אוטומטית (יום קצר)",
+                                sleeps=0,
+                                is_draft=False,
+                                manager_status="approved",
+                                billing_status="not_billed"
+                            )
+                            db.add(new_report)
+                db.commit()
                 continue
                 
             for assignment in trip.assignments:
