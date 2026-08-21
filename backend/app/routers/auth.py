@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import Optional
 from app.database import get_db
-from app.models.user import User, UserStatus
+from app.models.user import User, UserRole, UserStatus
 from app.models.refresh_token import RefreshToken
 from app.models.password_reset_token import PasswordResetToken
 from app.schemas import UserCreate, UserOut, Token, ForgotPasswordRequest, ResetPasswordRequest
@@ -104,7 +104,7 @@ def register(request: Request, user: UserCreate, db: Session = Depends(get_db)):
         email=user.email,
         national_id=user.national_id,
         password_hash=hashed_password,
-        role=user.role,
+        role=UserRole.employee,  # always employee — never trust client input for role
         status=UserStatus.pending,
         employment_type=user.employment_type
     )

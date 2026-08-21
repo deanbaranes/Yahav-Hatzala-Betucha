@@ -24,8 +24,8 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
-    role: UserRole
     employment_type: Optional[str] = None
+    # role is intentionally excluded — all self-registrations are employees
 
 class UserOut(UserBase):
     id: uuid.UUID
