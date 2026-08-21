@@ -2,10 +2,11 @@ import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
 import re
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.database import SessionLocal
 from app.models.client import Client
 from app.models.trip import Trip
+from app.models.trip_assignment import TripAssignment
 from app.models.notification import Notification
 from app.services.notification_service import NotificationService
 from app.services.storage_service import StorageService
@@ -197,93 +198,79 @@ def delete_old_business_expenses():
 def check_ended_trips_for_reports():
     """
     Check for trips that ended recently (within the last 3 days).
-    For each confirmed assignment without a report, send an SMS and notification if not already sent.
+    - Short trips (<8h): auto-generate an approved report (no SMS sent).
+    - Long trips (>=8h): send an SMS reminder to the employee to submit their report.
     """
     logger.info("Running check_ended_trips_for_reports task...")
-    db: Session = next(get_db())
-    now = datetime.now()
-    three_days_ago = now - timedelta(days=3)
-    
-    # Check trips from the last 3 days
-    recent_trips = db.query(Trip).filter(Trip.start_date >= three_days_ago).all()
-    
-    for trip in recent_trips:
-        end_dt = trip.end_date or trip.start_date
-        if end_dt and hasattr(end_dt, 'tzinfo') and end_dt.tzinfo is not None:
-            end_dt = end_dt.replace(tzinfo=None)
-            
-        # If trip has ended
-        if end_dt and end_dt <= now:
-            start_dt = trip.start_date
-            if start_dt and hasattr(start_dt, 'tzinfo') and start_dt.tzinfo is not None:
-                start_dt = start_dt.replace(tzinfo=None)
-            
-            duration_hours = (end_dt - start_dt).total_seconds() / 3600.0 if start_dt and end_dt else 0
-            
-            # If the trip was scheduled for less than 8 hours, auto-generate a report instead of sending SMS
-            if duration_hours < 8:
-                for assignment in trip.assignments:
-                    if assignment.is_confirmed and assignment.status == "assigned":
-                        if not assignment.report:
-                            report_start = start_dt
-                            report_end = start_dt + timedelta(hours=8.6)
-                            
-                            new_report = TripReport(
-                                assignment_id=assignment.id,
-                                start_time=report_start,
-                                end_time=report_end,
-                                overtime_decimal=0.0,
-                                expenses=0.0,
-                                expenses_notes="דיווח נוצר אוטומטית (יום קצר)",
-                                sleeps=0,
-                                is_draft=False,
-                                manager_status="approved",
-                                billing_status="not_billed"
-                            )
-                            db.add(new_report)
-                db.commit()
-                continue
-                
-            for assignment in trip.assignments:
-                if assignment.is_confirmed and assignment.status == "assigned":
-                    if not assignment.report:
-                        if assignment.user and assignment.user.phone:
-                            msg = f"היי {assignment.user.full_name}, הטיול ב-{trip.location} הסתיים. אנא היכנס לאזור האישי למלא דוח. שים לב: דיווח שלא ימולא עד מחר יחושב כשכר בסיס בלבד!"
-                            
-                            # Check if we already notified them
-                            existing_notif = db.query(Notification).filter(
-                                Notification.user_id == assignment.user_id,
-                                Notification.message == msg
-                            ).first()
-                            
-                            if not existing_notif:
-                                NotificationService.send_sms(
-                                    phone_number=assignment.user.phone,
-                                    message=msg,
-                                    db=db,
-                                    user_id=assignment.user_id
-                                )
     db: Session = SessionLocal()
     try:
         now = datetime.now()
-        seven_years_ago = now - timedelta(days=365 * 7)
-        
-        old_expenses = db.query(BusinessExpense).filter(
-            BusinessExpense.date < seven_years_ago
-        ).all()
-        
-        for expense in old_expenses:
-            if expense.receipt_url:
-                try:
-                    StorageService.delete_file(expense.receipt_url)
-                except Exception as e:
-                    logger.error(f"Failed to delete receipt for business expense {expense.id}: {str(e)}")
-            
-            db.delete(expense)
-            
-        if old_expenses:
-            db.commit()
-            logger.info(f"Deleted {len(old_expenses)} business expenses older than 7 years.")
+        three_days_ago = now - timedelta(days=3)
+
+        # Eagerly load assignments, their users and reports to avoid N+1 queries
+        recent_trips = db.query(Trip).options(
+            joinedload(Trip.assignments).joinedload(TripAssignment.user),
+            joinedload(Trip.assignments).joinedload(TripAssignment.report)
+        ).filter(Trip.start_date >= three_days_ago).all()
+
+        for trip in recent_trips:
+            end_dt = trip.end_date or trip.start_date
+            if end_dt and hasattr(end_dt, 'tzinfo') and end_dt.tzinfo is not None:
+                end_dt = end_dt.replace(tzinfo=None)
+
+            # Skip trips that haven't ended yet
+            if not (end_dt and end_dt <= now):
+                continue
+
+            start_dt = trip.start_date
+            if start_dt and hasattr(start_dt, 'tzinfo') and start_dt.tzinfo is not None:
+                start_dt = start_dt.replace(tzinfo=None)
+
+            duration_hours = (end_dt - start_dt).total_seconds() / 3600.0 if start_dt and end_dt else 0
+
+            if duration_hours < 8:
+                # Short trip: auto-create an approved report for 8.6 hours (full daily rate)
+                for assignment in trip.assignments:
+                    if assignment.is_confirmed and assignment.status == "assigned" and not assignment.report:
+                        new_report = TripReport(
+                            assignment_id=assignment.id,
+                            start_time=start_dt,
+                            end_time=start_dt + timedelta(hours=8.6),
+                            overtime_decimal=0.0,
+                            expenses=0.0,
+                            expenses_notes="דיווח נוצר אוטומטית (יום קצר)",
+                            sleeps=0,
+                            is_draft=False,
+                            manager_status="approved",
+                            billing_status="not_billed"
+                        )
+                        db.add(new_report)
+                db.commit()
+                continue
+
+            # Long trip: send SMS reminder to fill in the report
+            for assignment in trip.assignments:
+                if assignment.is_confirmed and assignment.status == "assigned" and not assignment.report:
+                    if assignment.user and assignment.user.phone:
+                        msg = (
+                            f"היי {assignment.user.full_name}, הטיול ב-{trip.location} הסתיים. "
+                            f"אנא היכנס לאזור האישי למלא דוח. "
+                            f"שים לב: דיווח שלא ימולא עד מחר יחושב כשכר בסיס בלבד!"
+                        )
+                        existing_notif = db.query(Notification).filter(
+                            Notification.user_id == assignment.user_id,
+                            Notification.message == msg
+                        ).first()
+                        if not existing_notif:
+                            NotificationService.send_sms(
+                                phone_number=assignment.user.phone,
+                                message=msg,
+                                db=db,
+                                user_id=assignment.user_id
+                            )
+    except Exception as e:
+        logger.error(f"check_ended_trips_for_reports failed: {e}")
+        db.rollback()
     finally:
         db.close()
 
