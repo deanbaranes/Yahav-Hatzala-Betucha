@@ -240,7 +240,7 @@ export default function Dashboard() {
                           >
                             <div className="flex justify-between items-start">
                               <div>
-                                <h4 className={`font-bold text-lg ${isFullyStaffed ? 'text-blue-900' : 'text-green-900'}`}>
+                                <h4 className={`font-bold text-lg ${trip.is_billed ? 'text-red-800' : isFullyStaffed ? 'text-blue-900' : 'text-green-900'}`}>
                                   {trip.client?.name === 'לקוח כללי' ? trip.location : (trip.client?.name || 'לקוח לא ידוע')}
                                   {trip.notes && <span className="text-sm font-normal text-gray-500 mr-2 opacity-80">({trip.notes})</span>}
                                 </h4>
@@ -263,7 +263,7 @@ export default function Dashboard() {
                                       <Pencil size={18} />
                                     </button>
                                   )}
-                                  {trip.capacity > 0 && (
+                                  {!trip.is_billed && trip.capacity > 0 && (
                                     <span className={`flex items-center text-center gap-1 text-xs md:text-sm font-bold px-3 py-1.5 rounded-xl ${
                                       isFullyStaffed 
                                         ? 'bg-blue-200 text-blue-800' 
@@ -271,6 +271,11 @@ export default function Dashboard() {
                                     }`}>
                                       {isFullyStaffed ? <CheckCircle2 size={16} /> : <Clock size={16} />}
                                       {isFullyStaffed ? 'שובץ במלואו' : `חסרים ${trip.capacity - confirmedCount} אנשי צוות`}
+                                    </span>
+                                  )}
+                                  {trip.is_billed && (
+                                    <span className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-xl bg-red-100 text-red-700">
+                                      <CheckCircle2 size={16} /> חויב
                                     </span>
                                   )}
                                 </div>
