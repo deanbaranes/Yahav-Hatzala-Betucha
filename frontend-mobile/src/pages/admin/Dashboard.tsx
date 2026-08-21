@@ -231,9 +231,11 @@ export default function Dashboard() {
                           <div 
                             key={trip.id} 
                             className={`p-4 rounded-xl border-2 transition-all ${
-                              isFullyStaffed 
-                                ? 'bg-blue-50 border-blue-200' 
-                                : 'bg-green-50 border-green-200 shadow-sm'
+                              trip.is_billed
+                                ? 'bg-red-50 border-red-200'
+                                : isFullyStaffed 
+                                  ? 'bg-blue-50 border-blue-200' 
+                                  : 'bg-green-50 border-green-200 shadow-sm'
                             }`}
                           >
                             <div className="flex justify-between items-start">
