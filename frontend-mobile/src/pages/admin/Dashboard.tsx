@@ -230,21 +230,26 @@ export default function Dashboard() {
                         return (
                           <div 
                             key={trip.id} 
-                            className={`p-4 rounded-xl border-2 transition-all ${
+                            onClick={() => setSelectedTrip(trip)}
+                            className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${
                               trip.is_billed
-                                ? 'bg-red-50 border-red-200'
+                                ? 'bg-red-50 border-red-200 hover:shadow-md'
                                 : isFullyStaffed 
-                                  ? 'bg-blue-50 border-blue-200' 
-                                  : 'bg-green-50 border-green-200 shadow-sm'
+                                  ? 'bg-blue-50 border-blue-200 hover:shadow-md' 
+                                  : 'bg-green-50 border-green-200 shadow-sm hover:shadow-md'
                             }`}
                           >
                             <div className="flex justify-between items-start">
                               <div>
                                 <h4 className={`font-bold text-lg ${trip.is_billed ? 'text-red-800' : isFullyStaffed ? 'text-blue-900' : 'text-green-900'}`}>
                                   {trip.client?.name === 'לקוח כללי' ? trip.location : (trip.client?.name || 'לקוח לא ידוע')}
-                                  {trip.notes && <span className="text-sm font-normal text-gray-500 mr-2 opacity-80">({trip.notes})</span>}
                                 </h4>
-                                <p className="text-gray-600 font-medium">
+                                {trip.notes && (
+                                  <div className="text-[13px] font-medium text-gray-600 mt-1">
+                                    {trip.notes}
+                                  </div>
+                                )}
+                                <p className="text-gray-500 text-sm mt-1">
                                   {trip.client?.name === 'לקוח כללי' ? 'מיובא מיומן גוגל' : trip.location}
                                 </p>
                               </div>
@@ -253,7 +258,8 @@ export default function Dashboard() {
                                 <div className="flex items-center gap-2">
                                   {isYahav && (
                                     <button 
-                                      onClick={() => {
+                                      onClick={(e) => {
+                                        e.stopPropagation();
                                         setSelectedTrip(trip);
                                         setOpenModalInEditMode(true);
                                       }} 
@@ -298,7 +304,8 @@ export default function Dashboard() {
                                       )}
                                       <span className="text-gray-400 font-normal mr-1">| {a.role === 'general' || !a.role ? 'כללי' : a.role}</span>
                                       <button 
-                                        onClick={() => {
+                                        onClick={(e) => {
+                                          e.stopPropagation();
                                           if (window.confirm('האם אתה בטוח שברצונך להסיר את העובד מטיול זה?')) {
                                             deleteAssignmentMutation.mutate(a.id);
                                           }
