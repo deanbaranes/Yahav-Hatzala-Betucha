@@ -572,6 +572,7 @@ export default function TripManagementBoard() {
       {viewingTrip && (
         <TripDetailsModal 
           selectedTrip={viewingTrip} 
+          employees={employees || []}
           onClose={() => setViewingTrip(null)} 
         />
       )}
