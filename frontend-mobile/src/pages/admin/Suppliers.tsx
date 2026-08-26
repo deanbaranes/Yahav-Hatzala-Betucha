@@ -25,6 +25,7 @@ export default function Suppliers() {
   const [formData, setFormData] = useState({
     name: '',
     debt_date: new Date().toISOString().split('T')[0],
+    debt_end_date: new Date().toISOString().split('T')[0],
     amount: 0,
     details: '',
     includes_vat: false,
