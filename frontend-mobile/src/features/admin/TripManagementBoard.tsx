@@ -78,6 +78,7 @@ export default function TripManagementBoard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
       alert('הטיול נוצר בהצלחה!');
       setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '' });
       setIsFormVisible(false);
@@ -97,6 +98,7 @@ export default function TripManagementBoard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
       alert('הטיול עודכן בהצלחה!');
       setEditingTripId(null);
       setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '' });
@@ -119,6 +121,7 @@ export default function TripManagementBoard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
       if (confirm('הטיול נמחק בהצלחה.')) {}
     }
   });
