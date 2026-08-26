@@ -25,10 +25,9 @@ export default function Suppliers() {
   const [formData, setFormData] = useState({
     name: '',
     debt_date: new Date().toISOString().split('T')[0],
-    debt_end_date: new Date().toISOString().split('T')[0],
     amount: 0,
     details: '',
-    includes_vat: true,
+    includes_vat: false,
   });
 
   const { data: suppliers = [], isLoading } = useQuery<Supplier[]>({
@@ -91,7 +90,7 @@ export default function Suppliers() {
   });
 
   const resetForm = () => {
-    setFormData({ name: '', debt_date: new Date().toISOString().split('T')[0], debt_end_date: new Date().toISOString().split('T')[0], amount: 0, details: '', includes_vat: true });
+    setFormData({ name: '', debt_date: new Date().toISOString().split('T')[0], debt_end_date: new Date().toISOString().split('T')[0], amount: 0, details: '', includes_vat: false });
     setEditingId(null);
   };
 
@@ -102,7 +101,7 @@ export default function Suppliers() {
       debt_end_date: supplier.debt_end_date || '',
       amount: supplier.amount,
       details: supplier.details || '',
-      includes_vat: supplier.includes_vat ?? true
+      includes_vat: supplier.includes_vat ?? false
     });
     setEditingId(supplier.id);
     setIsModalOpen(true);
@@ -383,13 +382,13 @@ export default function Suppliers() {
                   <div className="flex items-center gap-2 mt-2 mr-1">
                     <input 
                       type="checkbox" 
-                      id="includes_vat"
+                      id="add_vat_note"
                       className="rounded text-blue-600 w-4 h-4"
-                      checked={formData.includes_vat}
-                      onChange={e => setFormData({...formData, includes_vat: e.target.checked})}
+                      checked={!formData.includes_vat}
+                      onChange={e => setFormData({...formData, includes_vat: !e.target.checked})}
                     />
-                    <label htmlFor="includes_vat" className="text-sm font-bold text-gray-700 cursor-pointer select-none">
-                      כולל מע״מ <span className="font-normal text-xs text-gray-500">(הסר סימון כדי להוסיף הערת "+ מע״מ")</span>
+                    <label htmlFor="add_vat_note" className="text-sm font-bold text-gray-700 cursor-pointer select-none">
+                      הוסף הערת "+ מע״מ" <span className="font-normal text-xs text-gray-500">(הסכום לא כולל מע״מ)</span>
                     </label>
                   </div>
               </div>

@@ -207,7 +207,7 @@ class SupplierBase(BaseModel):
     debt_end_date: Optional[date] = None
     amount: float
     details: Optional[str] = None
-    includes_vat: bool = True
+    includes_vat: bool = False
     is_invoiced: bool = False
     invoice_date: Optional[date] = None
 
