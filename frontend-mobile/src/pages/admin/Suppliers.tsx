@@ -235,7 +235,7 @@ export default function Suppliers() {
                     <td colSpan={3} className="px-3 py-3 sm:px-5 sm:py-4 font-black text-blue-900 text-base sm:text-xl">
                       {name}
                     </td>
-                    <td className="px-3 py-3 sm:px-5 sm:py-4 font-black text-red-600 text-base sm:text-xl">
+                    <td className="px-3 py-3 sm:px-5 sm:py-4 font-black text-red-600 text-base sm:text-xl whitespace-nowrap">
                       סה"כ: ₪{group.reduce((sum, s) => sum + s.amount, 0).toLocaleString()}
                     </td>
                     <td colSpan={2} className="bg-blue-50/80"></td>
@@ -252,7 +252,7 @@ export default function Suppliers() {
                       <td className="p-2 sm:p-4 text-gray-600 text-xs sm:text-sm whitespace-pre-wrap min-w-[120px] sm:min-w-[200px]" title={supplier.details}>
                         {supplier.details || '-'}
                       </td>
-                      <td className="p-2 sm:p-4 font-bold text-gray-700 text-xs sm:text-sm">
+                      <td className="p-2 sm:p-4 font-bold text-gray-700 text-xs sm:text-sm whitespace-nowrap">
                         ₪{supplier.amount.toLocaleString()}
                         {supplier.includes_vat === false && <span className="text-[10px] sm:text-xs text-gray-400 font-normal mr-1 block sm:inline">(+ מע״מ)</span>}
                       </td>
@@ -354,7 +354,7 @@ export default function Suppliers() {
                   <input 
                     type="date" 
                     required
-                    className="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 transition-all text-sm font-medium"
+                    className="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 transition-all font-medium"
                     value={formData.debt_date}
                     onChange={e => setFormData({...formData, debt_date: e.target.value})}
                   />
@@ -363,7 +363,7 @@ export default function Suppliers() {
                   <label className="block text-sm font-bold text-gray-700 mb-1">עד תאריך <span className="text-gray-400 font-normal text-xs">(רשות)</span></label>
                   <input 
                     type="date" 
-                    className="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 transition-all font-medium text-left"
+                    className="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 transition-all font-medium"
                     value={formData.debt_end_date}
                     onChange={e => setFormData({...formData, debt_end_date: e.target.value})}
                   />
