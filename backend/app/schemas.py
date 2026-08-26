@@ -207,6 +207,7 @@ class SupplierBase(BaseModel):
     debt_end_date: Optional[date] = None
     amount: float
     details: Optional[str] = None
+    includes_vat: bool = True
     is_invoiced: bool = False
     invoice_date: Optional[date] = None
 
@@ -219,6 +220,7 @@ class SupplierUpdate(BaseModel):
     debt_end_date: Optional[date] = None
     amount: Optional[float] = None
     details: Optional[str] = None
+    includes_vat: Optional[bool] = None
     is_invoiced: Optional[bool] = None
     invoice_date: Optional[date] = None
 

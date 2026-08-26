@@ -11,6 +11,7 @@ interface Supplier {
   debt_end_date?: string;
   amount: number;
   details?: string;
+  includes_vat: boolean;
   is_invoiced: boolean;
   invoice_date?: string;
 }
@@ -27,6 +28,7 @@ export default function Suppliers() {
     debt_end_date: new Date().toISOString().split('T')[0],
     amount: 0,
     details: '',
+    includes_vat: true,
   });
 
   const { data: suppliers = [], isLoading } = useQuery<Supplier[]>({
@@ -89,7 +91,7 @@ export default function Suppliers() {
   });
 
   const resetForm = () => {
-    setFormData({ name: '', debt_date: new Date().toISOString().split('T')[0], debt_end_date: new Date().toISOString().split('T')[0], amount: 0, details: '' });
+    setFormData({ name: '', debt_date: new Date().toISOString().split('T')[0], debt_end_date: new Date().toISOString().split('T')[0], amount: 0, details: '', includes_vat: true });
     setEditingId(null);
   };
 
@@ -99,7 +101,8 @@ export default function Suppliers() {
       debt_date: supplier.debt_date,
       debt_end_date: supplier.debt_end_date || '',
       amount: supplier.amount,
-      details: supplier.details || ''
+      details: supplier.details || '',
+      includes_vat: supplier.includes_vat ?? true
     });
     setEditingId(supplier.id);
     setIsModalOpen(true);
@@ -136,7 +139,7 @@ export default function Suppliers() {
       new Date(s.debt_date).toLocaleDateString('he-IL'),
       s.debt_end_date ? new Date(s.debt_end_date).toLocaleDateString('he-IL') : '',
       s.details || '',
-      s.amount,
+      s.includes_vat ? s.amount : `${s.amount} (+ מע"מ)`,
       s.is_invoiced ? 'כן' : 'לא',
       s.invoice_date ? new Date(s.invoice_date).toLocaleDateString('he-IL') : ''
     ]);
@@ -251,6 +254,7 @@ export default function Suppliers() {
                       </td>
                       <td className="p-2 sm:p-4 font-bold text-gray-700 text-xs sm:text-sm">
                         ₪{supplier.amount.toLocaleString()}
+                        {supplier.includes_vat === false && <span className="text-[10px] sm:text-xs text-gray-400 font-normal mr-1 block sm:inline">(+ מע״מ)</span>}
                       </td>
                       <td className="p-2 sm:p-4 text-center">
                         <button
@@ -370,13 +374,24 @@ export default function Suppliers() {
                 <label className="block text-sm font-bold text-gray-700 mb-1">סכום (₪)</label>
                   <input 
                     type="number" 
-                    min="0"
                     step="0.01"
                     className="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 transition-all font-medium text-left"
                     value={formData.amount === 0 ? '' : formData.amount}
                     placeholder="0"
                     onChange={e => setFormData({...formData, amount: parseFloat(e.target.value) || 0})}
                   />
+                  <div className="flex items-center gap-2 mt-2 mr-1">
+                    <input 
+                      type="checkbox" 
+                      id="includes_vat"
+                      className="rounded text-blue-600 w-4 h-4"
+                      checked={formData.includes_vat}
+                      onChange={e => setFormData({...formData, includes_vat: e.target.checked})}
+                    />
+                    <label htmlFor="includes_vat" className="text-sm font-bold text-gray-700 cursor-pointer select-none">
+                      כולל מע״מ <span className="font-normal text-xs text-gray-500">(הסר סימון כדי להוסיף הערת "+ מע״מ")</span>
+                    </label>
+                  </div>
               </div>
 
               <div>

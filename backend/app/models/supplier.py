@@ -20,6 +20,7 @@ class Supplier(Base):
     debt_end_date = Column(Date, nullable=True)
     amount = Column(Numeric(10, 2), nullable=False)
     details = Column(String, nullable=True)
+    includes_vat = Column(Boolean, default=True, nullable=False)
     is_invoiced = Column(Boolean, default=False, nullable=False)
     invoice_date = Column(Date, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
