@@ -354,7 +354,7 @@ export default function Suppliers() {
                   <input 
                     type="date" 
                     required
-                    className="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 transition-all font-medium"
+                    className="w-full h-[50px] px-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 transition-all font-medium"
                     value={formData.debt_date}
                     onChange={e => setFormData({...formData, debt_date: e.target.value})}
                   />
@@ -363,7 +363,7 @@ export default function Suppliers() {
                   <label className="block text-sm font-bold text-gray-700 mb-1">עד תאריך <span className="text-gray-400 font-normal text-xs">(רשות)</span></label>
                   <input 
                     type="date" 
-                    className="w-full p-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 transition-all font-medium"
+                    className="w-full h-[50px] px-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 transition-all font-medium"
                     value={formData.debt_end_date}
                     onChange={e => setFormData({...formData, debt_end_date: e.target.value})}
                   />
