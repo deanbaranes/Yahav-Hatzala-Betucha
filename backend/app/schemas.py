@@ -83,7 +83,10 @@ class TripCreate(BaseModel):
     roles_requirements: Optional[Dict[str, int]] = {}
     color: Optional[str] = None
     global_salary: Optional[float] = None
+    contact_name: Optional[str] = None
     contact_phone: Optional[str] = None
+    employee_contact_name: Optional[str] = None
+    employee_contact_phone: Optional[str] = None
     notes: Optional[str] = None
 
 class TripOut(BaseModel):
@@ -96,7 +99,10 @@ class TripOut(BaseModel):
     roles_requirements: Optional[Dict[str, int]] = {}
     color: Optional[str] = None
     global_salary: Optional[float] = None
+    contact_name: Optional[str] = None
     contact_phone: Optional[str] = None
+    employee_contact_name: Optional[str] = None
+    employee_contact_phone: Optional[str] = None
     notes: Optional[str] = None
     is_billed: bool = False
     client: ClientOut

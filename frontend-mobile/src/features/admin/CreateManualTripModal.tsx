@@ -39,7 +39,10 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
       roles_requirements: {} as Record<string, number>,
       color: '',
       global_salary: '',
+      contact_name: '',
       contact_phone: '',
+      employee_contact_name: '',
+      employee_contact_phone: '',
       notes: ''
     };
   });
@@ -184,7 +187,7 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">שכר גלובלי לטיול (₪)</label>
+            <label className="block text-sm font-bold text-gray-700 mb-1">שכר בסיס ל-9 שעות (₪)</label>
             <input 
               type="number" 
               min="0"
@@ -195,15 +198,47 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">פרטי איש קשר (אופציונלי - שם/טלפון, לא יוצג לצוות טרם אישור)</label>
-            <input 
-              type="text" 
-              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
-              value={newTripForm.contact_phone}
-              onChange={e => setNewTripForm({...newTripForm, contact_phone: e.target.value})}
-              placeholder="לדוגמה: דוד 050-1234567"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-bold text-gray-700 mb-1">שם איש קשר (פנימי)</label>
+              <input 
+                type="text" 
+                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                value={newTripForm.contact_name}
+                onChange={e => setNewTripForm({...newTripForm, contact_name: e.target.value})}
+                placeholder="למשל: דוד"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-gray-700 mb-1">נייד איש קשר (פנימי)</label>
+              <input 
+                type="text" 
+                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                value={newTripForm.contact_phone}
+                onChange={e => setNewTripForm({...newTripForm, contact_phone: e.target.value})}
+                placeholder="למשל: 050-1234567"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-gray-700 mb-1">שם איש קשר (לעובד)</label>
+              <input 
+                type="text" 
+                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                value={newTripForm.employee_contact_name}
+                onChange={e => setNewTripForm({...newTripForm, employee_contact_name: e.target.value})}
+                placeholder="למשל: נציג שטח"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-gray-700 mb-1">נייד איש קשר (לעובד)</label>
+              <input 
+                type="text" 
+                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+                value={newTripForm.employee_contact_phone}
+                onChange={e => setNewTripForm({...newTripForm, employee_contact_phone: e.target.value})}
+                placeholder="למשל: 050-1234567"
+              />
+            </div>
           </div>
 
           <div>
@@ -279,7 +314,10 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
                 roles_requirements: newTripForm.roles_requirements,
                 color: newTripForm.color,
                 global_salary: newTripForm.global_salary ? parseFloat(newTripForm.global_salary as string) : null,
+                contact_name: newTripForm.contact_name || null,
                 contact_phone: newTripForm.contact_phone || null,
+                employee_contact_name: newTripForm.employee_contact_name || null,
+                employee_contact_phone: newTripForm.employee_contact_phone || null,
                 notes: newTripForm.notes || null
               });
             }}

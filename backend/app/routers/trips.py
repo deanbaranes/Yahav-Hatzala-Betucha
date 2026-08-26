@@ -41,6 +41,11 @@ def get_trips(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), ad
             "roles_requirements": t.roles_requirements or {},
             "is_billed": t.is_billed,
             "color": t.color,
+            "global_salary": t.global_salary,
+            "contact_name": t.contact_name,
+            "contact_phone": t.contact_phone,
+            "employee_contact_name": t.employee_contact_name,
+            "employee_contact_phone": t.employee_contact_phone,
             "notes": t.notes,
             "client": {
                 "id": str(t.client.id),
@@ -157,7 +162,8 @@ def get_my_trips(db: Session = Depends(get_db), current_user: User = Depends(get
             "role": a.role,
             "is_confirmed": a.is_confirmed,
             "employee_confirmed_arrival": getattr(a, 'employee_confirmed_arrival', False),
-            "contact_phone": t.contact_phone if a.is_confirmed else None,
+            "employee_contact_name": t.employee_contact_name if a.is_confirmed else None,
+            "employee_contact_phone": t.employee_contact_phone if a.is_confirmed else None,
             "client": {"name": t.client.name} if t.client else None
         })
     return result
@@ -284,7 +290,7 @@ def create_trip(trip_data: TripCreate, db: Session = Depends(get_db), current_us
     # Soft Client Creation
     client = db.query(Client).filter(Client.name == trip_data.client_name).first()
     if not client:
-        client = Client(name=trip_data.client_name, contact_person=trip_data.client_contact_person)
+        client = Client(name=trip_data.client_name, contact_person=trip_data.contact_name, phone=trip_data.contact_phone)
         db.add(client)
         db.commit()
         db.refresh(client)
@@ -298,7 +304,10 @@ def create_trip(trip_data: TripCreate, db: Session = Depends(get_db), current_us
         roles_requirements=trip_data.roles_requirements,
         color=trip_data.color,
         global_salary=trip_data.global_salary,
+        contact_name=trip_data.contact_name,
         contact_phone=trip_data.contact_phone,
+        employee_contact_name=trip_data.employee_contact_name,
+        employee_contact_phone=trip_data.employee_contact_phone,
         notes=trip_data.notes
     )
     db.add(new_trip)
@@ -451,7 +460,7 @@ def update_trip(trip_id: str, trip_data: TripCreate, db: Session = Depends(get_d
 
     client = db.query(Client).filter(Client.name == trip_data.client_name).first()
     if not client:
-        client = Client(name=trip_data.client_name, contact_person=trip_data.client_contact_person)
+        client = Client(name=trip_data.client_name, contact_person=trip_data.contact_name, phone=trip_data.contact_phone)
         db.add(client)
         db.commit()
         db.refresh(client)
@@ -464,7 +473,10 @@ def update_trip(trip_id: str, trip_data: TripCreate, db: Session = Depends(get_d
     trip.roles_requirements = trip_data.roles_requirements
     trip.color = trip_data.color
     trip.global_salary = trip_data.global_salary
+    trip.contact_name = trip_data.contact_name
     trip.contact_phone = trip_data.contact_phone
+    trip.employee_contact_name = trip_data.employee_contact_name
+    trip.employee_contact_phone = trip_data.employee_contact_phone
     trip.notes = trip_data.notes
 
     db.commit()

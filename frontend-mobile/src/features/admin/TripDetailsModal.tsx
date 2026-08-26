@@ -31,7 +31,10 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose, ini
     roles_requirements: selectedTrip.roles_requirements || {}, 
     color: selectedTrip.color || '', 
     global_salary: selectedTrip.global_salary || '', 
+    contact_name: selectedTrip.contact_name || '', 
     contact_phone: selectedTrip.contact_phone || '', 
+    employee_contact_name: selectedTrip.employee_contact_name || '',
+    employee_contact_phone: selectedTrip.employee_contact_phone || '',
     notes: selectedTrip.notes || '' 
   });
 
@@ -117,11 +120,18 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose, ini
   });
 
   return createPortal(
-        <div className="fixed inset-0 z-50 p-3 sm:p-6 bg-gray-900/60 backdrop-blur-sm overflow-y-auto" onClick={onClose}>
+        <div className="fixed inset-0 z-50 p-2 sm:p-4 bg-gray-900/60 backdrop-blur-sm overflow-y-auto" onClick={onClose}>
           <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-2xl max-w-md w-full mx-auto animate-fade-in text-right my-4 sm:my-10" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-2xl font-bold text-gray-800">{selectedTrip.client?.name === 'לקוח כללי' ? selectedTrip.location : (selectedTrip.client?.name || 'לקוח לא ידוע')}</h3>
-              <div className="flex items-center gap-2">
+            <div className="flex justify-between items-start mb-4 gap-2">
+              <div className="flex flex-col gap-1 w-full max-w-[65%]">
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-800 leading-tight">
+                  {selectedTrip.client?.name === 'לקוח כללי' ? selectedTrip.location : (selectedTrip.client?.name || 'לקוח לא ידוע')}
+                </h3>
+                {!quickEditMode && selectedTrip.notes && (
+                  <div className="text-sm text-gray-600 font-medium whitespace-pre-wrap">{selectedTrip.notes}</div>
+                )}
+              </div>
+              <div className="flex flex-wrap justify-end items-center gap-1.5 shrink-0">
                 {!quickEditMode && (
                   <>
                     <button 
@@ -145,7 +155,10 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose, ini
                         roles_requirements: selectedTrip.roles_requirements || {},
                         color: selectedTrip.color || '',
                         global_salary: selectedTrip.global_salary || '',
+                        contact_name: selectedTrip.contact_name || '',
                         contact_phone: selectedTrip.contact_phone || '',
+                        employee_contact_name: selectedTrip.employee_contact_name || '',
+                        employee_contact_phone: selectedTrip.employee_contact_phone || '',
                         notes: selectedTrip.notes || ''
                       });
                       setQuickEditMode(true);
@@ -177,9 +190,23 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose, ini
                   <label className="block text-xs font-bold text-gray-600 mb-1">שעת סיום</label>
                   <input type="datetime-local" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.end_date} onChange={e => setQuickEditForm({...quickEditForm, end_date: e.target.value})} />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">איש קשר לטיול (אופציונלי - שם/טלפון)</label>
-                  <input type="text" placeholder="לדוגמה: דוד 050-1234567" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.contact_phone} onChange={e => setQuickEditForm({...quickEditForm, contact_phone: e.target.value})} />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-600 mb-1">שם איש קשר (פנימי)</label>
+                    <input type="text" placeholder="למשל: דוד" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.contact_name} onChange={e => setQuickEditForm({...quickEditForm, contact_name: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-600 mb-1">נייד איש קשר (פנימי)</label>
+                    <input type="text" placeholder="למשל: 050-1234567" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.contact_phone} onChange={e => setQuickEditForm({...quickEditForm, contact_phone: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-600 mb-1">שם איש קשר (לעובד)</label>
+                    <input type="text" placeholder="למשל: נציג שטח" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.employee_contact_name} onChange={e => setQuickEditForm({...quickEditForm, employee_contact_name: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-600 mb-1">נייד איש קשר (לעובד)</label>
+                    <input type="text" placeholder="למשל: 050-1234567" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.employee_contact_phone} onChange={e => setQuickEditForm({...quickEditForm, employee_contact_phone: e.target.value})} />
+                  </div>
                 </div>
                 <div className="mb-4 md:col-span-2">
                   <label className="block text-xs font-bold text-gray-600 mb-2 border-b pb-1">
@@ -212,7 +239,7 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose, ini
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">שכר גלובלי לטיול</label>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">שכר בסיס ל-9 שעות</label>
                   <input 
                     type="number" 
                     min="0"
@@ -271,15 +298,6 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose, ini
               </div>
             ) : (
               <div className="space-y-4 mb-6">
-                {selectedTrip.notes && (
-                  <div className="flex items-start gap-3 bg-amber-50 p-3 rounded-lg border border-amber-100">
-                    <div className="text-amber-600 mt-0.5">📝</div>
-                    <div>
-                      <div className="text-xs text-amber-700 font-bold mb-0.5">הערות / פרטים נוספים</div>
-                      <div className="text-amber-900 font-medium whitespace-pre-wrap text-sm">{selectedTrip.notes}</div>
-                    </div>
-                  </div>
-                )}
 
                 <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
                   <div className="text-blue-600">📍</div>
@@ -303,7 +321,7 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose, ini
                   <div className="flex items-center gap-3 bg-green-50 p-3 rounded-lg border border-green-100">
                     <div className="text-green-600">💰</div>
                     <div>
-                      <div className="text-xs text-green-700 font-bold">שכר גלובלי לטיול</div>
+                      <div className="text-xs text-green-700 font-bold">שכר בסיס ל-9 שעות</div>
                       <div className="text-green-800 font-black">₪{selectedTrip.global_salary}</div>
                     </div>
                   </div>

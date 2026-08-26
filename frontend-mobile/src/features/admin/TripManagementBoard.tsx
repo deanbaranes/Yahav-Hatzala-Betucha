@@ -11,7 +11,8 @@ const AVAILABLE_ROLES = ["מע\"ר", "חובש", "פראמדיק", "שומר ל�
 export default function TripManagementBoard() {
   const queryClient = useQueryClient();
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {} as Record<string, number>, color: '' as string, global_salary: '' as string | number, contact_phone: '' as string });
+  const [viewingTrip, setViewingTrip] = useState<any>(null);
+  const [formData, setFormData] = useState({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {} as Record<string, number>, color: '' as string, global_salary: '' as string | number, contact_name: '' as string, contact_phone: '' as string, employee_contact_name: '' as string, employee_contact_phone: '' as string });
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedWeeks, setExpandedWeeks] = useState<Record<string, boolean>>({});
   const [isFormVisible, setIsFormVisible] = useState(false);
@@ -77,7 +78,7 @@ export default function TripManagementBoard() {
       queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
       alert('הטיול נוצר בהצלחה!');
-      setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_phone: '' });
+      setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '' });
       setIsFormVisible(false);
     },
     onError: (error: any) => {
@@ -97,7 +98,7 @@ export default function TripManagementBoard() {
       queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
       alert('הטיול עודכן בהצלחה!');
       setEditingTripId(null);
-      setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_phone: '' });
+      setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '' });
     },
     onError: (error: any) => {
       alert('שגיאה בעדכון הטיול: ' + (error.response?.data?.detail || 'אנא ודא שכל השדות מלאים ותקינים.'));
@@ -215,17 +216,37 @@ export default function TripManagementBoard() {
         </div>
 
         <div className="mb-4">
-          <label className="block text-gray-700 font-bold mb-2">שכר גלובלי לטיול (₪)</label>
+          <label className="block text-gray-700 font-bold mb-2">שכר בסיס ל-9 שעות (₪)</label>
           <input type="number" min="0" className="w-full p-2 border border-gray-300 rounded placeholder:text-sm" 
             placeholder="הזן סכום גלובלי (אופציונלי)"
             value={formData.global_salary} onChange={e => setFormData({...formData, global_salary: e.target.value})} />
         </div>
 
-        <div className="mb-4">
-          <label className="block text-gray-700 font-bold mb-2">פרטי איש קשר (אופציונלי - שם/טלפון, לא יוצג טרם אישור)</label>
-          <input type="text" className="w-full p-2 border border-gray-300 rounded placeholder:text-sm" 
-            placeholder="לדוגמה: דוד 050-1234567"
-            value={formData.contact_phone} onChange={e => setFormData({...formData, contact_phone: e.target.value})} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 md:col-span-2">
+          <div>
+            <label className="block text-[11px] font-bold text-gray-700 mb-1">שם איש קשר (פנימי)</label>
+            <input type="text" className="w-full p-2 border border-gray-300 rounded placeholder:text-sm" 
+              placeholder="למשל: דוד"
+              value={formData.contact_name} onChange={e => setFormData({...formData, contact_name: e.target.value})} />
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold text-gray-700 mb-1">נייד איש קשר (פנימי)</label>
+            <input type="text" className="w-full p-2 border border-gray-300 rounded placeholder:text-sm" 
+              placeholder="למשל: 050-1234567"
+              value={formData.contact_phone} onChange={e => setFormData({...formData, contact_phone: e.target.value})} />
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold text-gray-700 mb-1">שם איש קשר (לעובד)</label>
+            <input type="text" className="w-full p-2 border border-gray-300 rounded placeholder:text-sm" 
+              placeholder="למשל: נציג שטח"
+              value={formData.employee_contact_name} onChange={e => setFormData({...formData, employee_contact_name: e.target.value})} />
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold text-gray-700 mb-1">נייד איש קשר (לעובד)</label>
+            <input type="text" className="w-full p-2 border border-gray-300 rounded placeholder:text-sm" 
+              placeholder="למשל: 050-1234567"
+              value={formData.employee_contact_phone} onChange={e => setFormData({...formData, employee_contact_phone: e.target.value})} />
+          </div>
         </div>
           
         <div className="mb-4 md:col-span-2">
@@ -294,7 +315,7 @@ export default function TripManagementBoard() {
           <button 
             onClick={() => {
               setEditingTripId(null);
-              setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_phone: '' });
+              setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '' });
             }}
             className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-bold shadow transition-colors"
           >
@@ -433,13 +454,18 @@ export default function TripManagementBoard() {
                       {expandedWeeks[weekGroup.weekName] && (
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 mt-3">
                           {weekGroup.trips.map(trip => (
-                            <div key={trip.id} className="border border-gray-200 rounded-xl p-3 sm:p-4 bg-white shadow-sm hover:shadow transition-shadow">
+                            <div 
+                              key={trip.id} 
+                              onClick={() => setViewingTrip(trip)}
+                              className="border border-gray-200 rounded-xl p-3 sm:p-4 bg-white shadow-sm hover:shadow transition-shadow cursor-pointer"
+                            >
                               {/* Header: Title and Actions */}
                               <div className="flex flex-col sm:flex-row justify-between items-start gap-3 mb-3">
                                 <div className="flex items-start gap-3 w-full sm:w-auto">
                                   <div className="flex shrink-0 gap-1 mt-0.5">
                                     <button 
-                                      onClick={() => {
+                                      onClick={(e) => {
+                                        e.stopPropagation();
                                         setEditingTripId(trip.id);
                                         setFormData({
                                           client_name: trip.client?.name || '',
@@ -449,7 +475,10 @@ export default function TripManagementBoard() {
                                           roles_requirements: trip.roles_requirements || {},
                                           color: trip.color || '',
                                           global_salary: trip.global_salary || '',
-                                          contact_phone: trip.contact_phone || ''
+                                          contact_name: trip.contact_name || '',
+                                          contact_phone: trip.contact_phone || '',
+                                          employee_contact_name: trip.employee_contact_name || '',
+                                          employee_contact_phone: trip.employee_contact_phone || ''
                                         });
                                           setTimeout(() => {
                                           document.getElementById('edit-form-area')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -461,7 +490,8 @@ export default function TripManagementBoard() {
                                       ✎
                                     </button>
                                     <button 
-                                      onClick={() => {
+                                      onClick={(e) => {
+                                        e.stopPropagation();
                                         if (window.confirm('האם אתה בטוח שברצונך למחוק טיול זה לצמיתות?')) {
                                           deleteTrip.mutate(trip.id);
                                         }
@@ -537,6 +567,13 @@ export default function TripManagementBoard() {
           </div>
         )}
       </div>
+
+      {viewingTrip && (
+        <TripDetailsModal 
+          selectedTrip={viewingTrip} 
+          onClose={() => setViewingTrip(null)} 
+        />
+      )}
     </div>
   );
 }
