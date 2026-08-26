@@ -294,6 +294,17 @@ def create_trip(trip_data: TripCreate, db: Session = Depends(get_db), current_us
         db.add(client)
         db.commit()
         db.refresh(client)
+    else:
+        updated = False
+        if trip_data.contact_name and client.contact_person != trip_data.contact_name:
+            client.contact_person = trip_data.contact_name
+            updated = True
+        if trip_data.contact_phone and client.phone != trip_data.contact_phone:
+            client.phone = trip_data.contact_phone
+            updated = True
+        if updated:
+            db.commit()
+            db.refresh(client)
 
     new_trip = Trip(
         client_id=client.id,
@@ -464,6 +475,17 @@ def update_trip(trip_id: str, trip_data: TripCreate, db: Session = Depends(get_d
         db.add(client)
         db.commit()
         db.refresh(client)
+    else:
+        updated = False
+        if trip_data.contact_name and client.contact_person != trip_data.contact_name:
+            client.contact_person = trip_data.contact_name
+            updated = True
+        if trip_data.contact_phone and client.phone != trip_data.contact_phone:
+            client.phone = trip_data.contact_phone
+            updated = True
+        if updated:
+            db.commit()
+            db.refresh(client)
 
     trip.client_id = client.id
     trip.location = trip_data.location
