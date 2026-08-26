@@ -5,6 +5,7 @@ import SmartClientInput from './SmartClientInput';
 import GoogleCalendarImport from './GoogleCalendarImport';
 import { CheckCircle2, Plus } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import TripDetailsModal from './TripDetailsModal';
 
 const AVAILABLE_ROLES = ["מע\"ר", "חובש", "פראמדיק", "שומר לילה", "מע\"ר חמוש", "חובש חמוש", "מאבטח", "כללי"];
 
