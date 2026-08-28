@@ -5,7 +5,7 @@ import axiosClient from '../../api/axiosClient';
 import { CheckCircle2 } from 'lucide-react';
 import AssignEmployeeForm from './AssignEmployeeForm';
 
-const AVAILABLE_ROLES = ["מע\"ר", "חובש", "פראמדיק", "שומר לילה", "מע\"ר חמוש", "חובש חמוש", "מאבטח"];
+const AVAILABLE_ROLES = ["מע\"ר", "חובש", "פראמדיק", "שומר לילה", "מע\"ר חמוש", "חובש חמוש", "מאבטח", "מדריך"];
 
 interface TripDetailsModalProps {
   selectedTrip: any;

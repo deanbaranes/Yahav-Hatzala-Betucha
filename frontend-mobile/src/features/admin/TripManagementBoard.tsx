@@ -7,7 +7,7 @@ import { CheckCircle2, Plus } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import TripDetailsModal from './TripDetailsModal';
 
-const AVAILABLE_ROLES = ["מע\"ר", "חובש", "פראמדיק", "שומר לילה", "מע\"ר חמוש", "חובש חמוש", "מאבטח", "כללי"];
+const AVAILABLE_ROLES = ["מע\"ר", "חובש", "פראמדיק", "שומר לילה", "מע\"ר חמוש", "חובש חמוש", "מאבטח", "מדריך", "כללי"];
 
 export default function TripManagementBoard() {
   const queryClient = useQueryClient();
