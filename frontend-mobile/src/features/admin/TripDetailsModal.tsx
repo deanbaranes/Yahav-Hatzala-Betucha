@@ -308,11 +308,11 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose, ini
                 </div>
                 
                 <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
-                  <div className="text-blue-600">⏰</div>
+                  <div className="text-blue-600">📅</div>
                   <div>
-                    <div className="text-xs text-gray-500 font-bold">שעות התחלה וסיום</div>
+                    <div className="text-xs text-gray-500 font-bold">תאריך ושעות</div>
                     <div className="text-gray-800 font-medium">
-                      {new Date(selectedTrip.start_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})} - {selectedTrip.end_date ? new Date(selectedTrip.end_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'}) : 'לא הוגדר'}
+                      {new Date(selectedTrip.start_date).toLocaleDateString('he-IL')} • {new Date(selectedTrip.start_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})} - {selectedTrip.end_date ? new Date(selectedTrip.end_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'}) : 'לא הוגדר'}
                     </div>
                   </div>
                 </div>

@@ -278,7 +278,7 @@ export default function Clients() {
                 <th className="px-2 py-2 font-extrabold rounded-tr-lg whitespace-nowrap">שם לקוח</th>
                 <th className="px-2 py-2 font-bold whitespace-nowrap w-[100px]">איש קשר</th>
                 <th className="px-2 py-2 font-bold whitespace-nowrap w-[140px]">אימייל</th>
-                <th className="px-2 py-2 font-bold whitespace-nowrap w-[110px]">טלפון</th>
+                <th className="px-2 py-2 font-bold whitespace-nowrap w-[130px]">טלפון</th>
                 <th className="px-2 py-2 font-bold cursor-pointer hover:bg-white/20 transition-colors whitespace-nowrap" onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')} title="לחץ לשינוי סדר המיון">
                   <div className="flex items-center gap-1">יתרה/חוב {sortOrder === 'asc' ? '↓' : sortOrder === 'desc' ? '↑' : ''}</div>
                 </th>
@@ -339,7 +339,7 @@ export default function Clients() {
                       </div>
                     ) : '-')}
                   </td>
-                  <td className="px-2 py-1.5 text-slate-600 font-medium max-w-[110px]" dir="ltr" style={{textAlign: 'right'}}>
+                  <td className="px-2 py-1.5 text-slate-600 font-medium max-w-[130px]" dir="ltr" style={{textAlign: 'right'}}>
                     {editingId === client.id ? (
                       <input 
                         type="tel" 
@@ -349,21 +349,29 @@ export default function Clients() {
                         dir="ltr"
                       />
                     ) : (client.phone ? (
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => copyPhone(client.phone)}
-                          className={`flex-shrink-0 p-1 rounded transition-all duration-200 ${
-                            copiedPhone === client.phone
-                              ? 'text-green-600 bg-green-50'
-                              : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
-                          }`}
-                          title="העתק טלפון"
-                        >
-                          {copiedPhone === client.phone
-                            ? <Check size={13} />
-                            : <Copy size={13} />}
-                        </button>
-                        <a href={`tel:${client.phone}`} className="hover:text-blue-600 hover:underline">{client.phone}</a>
+                      <div className="flex flex-col items-end gap-1.5">
+                        {client.phone.split(/[,/]+/).map((num: string, idx: number) => {
+                          const cleanNum = num.trim();
+                          if (!cleanNum) return null;
+                          return (
+                            <div key={idx} className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => copyPhone(cleanNum)}
+                                className={`flex-shrink-0 p-1 rounded transition-all duration-200 ${
+                                  copiedPhone === cleanNum
+                                    ? 'text-green-600 bg-green-50'
+                                    : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                                }`}
+                                title="העתק טלפון"
+                              >
+                                {copiedPhone === cleanNum
+                                  ? <Check size={13} />
+                                  : <Copy size={13} />}
+                              </button>
+                              <a href={`tel:${cleanNum}`} className="hover:text-blue-600 hover:underline">{cleanNum}</a>
+                            </div>
+                          );
+                        })}
                       </div>
                     ) : '-')}
                   </td>
@@ -518,19 +526,27 @@ export default function Clients() {
                       <div className="text-sm text-gray-600 flex flex-wrap gap-x-2 gap-y-1 items-center">
                         {client.contact_person && <span className="font-medium bg-gray-100 px-2 py-0.5 rounded text-gray-700">{client.contact_person}</span>}
                         {client.phone && (
-                          <div className="flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded" dir="ltr">
-                            <a href={`tel:${client.phone}`} className="text-blue-600 hover:underline font-medium">{client.phone}</a>
-                            <button
-                              onClick={() => copyPhone(client.phone)}
-                              className={`flex-shrink-0 p-1 rounded transition-all duration-200 ${
-                                copiedPhone === client.phone
-                                  ? 'text-green-600'
-                                  : 'text-gray-400 hover:text-blue-600'
-                              }`}
-                              title="העתק טלפון"
-                            >
-                              {copiedPhone === client.phone ? <Check size={13} /> : <Copy size={13} />}
-                            </button>
+                          <div className="flex flex-wrap gap-2 justify-end" dir="ltr">
+                            {client.phone.split(/[,/]+/).map((num: string, idx: number) => {
+                              const cleanNum = num.trim();
+                              if (!cleanNum) return null;
+                              return (
+                                <div key={idx} className="flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded">
+                                  <a href={`tel:${cleanNum}`} className="text-blue-600 hover:underline font-medium">{cleanNum}</a>
+                                  <button
+                                    onClick={() => copyPhone(cleanNum)}
+                                    className={`flex-shrink-0 p-1 rounded transition-all duration-200 ${
+                                      copiedPhone === cleanNum
+                                        ? 'text-green-600'
+                                        : 'text-gray-400 hover:text-blue-600'
+                                    }`}
+                                    title="העתק טלפון"
+                                  >
+                                    {copiedPhone === cleanNum ? <Check size={13} /> : <Copy size={13} />}
+                                  </button>
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
