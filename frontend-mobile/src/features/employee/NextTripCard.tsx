@@ -39,10 +39,13 @@ export default function NextTripCard() {
         </div>
       )}
       <h3 className="text-xl font-bold mb-2">{trip.location}</h3>
-      <p className="text-gray-600 mb-4" dir="ltr" style={{ textAlign: 'right' }}>
-        {new Date(trip.start_date).toLocaleDateString('he-IL')} • {new Date(trip.start_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})}
-        {trip.end_date ? ` - ${new Date(trip.end_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})}` : ''}
-      </p>
+      <div className="text-gray-600 mb-4">
+        <div>{new Date(trip.start_date).toLocaleDateString('he-IL')}</div>
+        <div dir="ltr" style={{ textAlign: 'right' }}>
+          {new Date(trip.start_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})}
+          {trip.end_date ? ` - ${new Date(trip.end_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})}` : ''}
+        </div>
+      </div>
       
       <div className="flex flex-col gap-3 mt-4">
         {isUrgent && (
