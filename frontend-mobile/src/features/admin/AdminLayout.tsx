@@ -40,6 +40,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
+  const handleNotificationClick = (notif: any) => {
+    if (!notif.is_read) {
+      markReadMutation.mutate(notif.id);
+    }
+    setShowNotifications(false);
+
+    const msg = notif.message || "";
+    if (msg.includes("נרשם/ה למערכת וממתין/ה לאישור")) {
+      navigate('/admin/payroll');
+    } else if (msg.includes("הגיש/ה דיווח")) {
+      navigate('/admin/reports');
+    } else if (msg.includes("אישר/ה הגעה") || msg.includes("נרשם לטיול") || msg.includes("ביטל את הרישום") || msg.includes("אין עובדים משובצים")) {
+      navigate('/admin');
+    }
+  };
+
   const navItems = [
     { to: '/admin', icon: Home, label: 'יומן שיבוצים' },
     { to: '/admin/trips', icon: Map, label: 'ניהול טיולים' },
@@ -191,11 +207,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     <div className="p-4 text-center text-gray-500 text-sm">אין התראות כרגע</div>
                   ) : (
                     notifications.map(notif => (
-                      <div key={notif.id} className={`p-3 border-b border-gray-50 text-right ${!notif.is_read ? 'bg-blue-50/50' : 'opacity-70'}`}>
+                      <div 
+                        key={notif.id} 
+                        onClick={() => handleNotificationClick(notif)}
+                        className={`p-3 border-b border-gray-50 text-right cursor-pointer hover:bg-gray-100 transition-colors ${!notif.is_read ? 'bg-blue-50/50' : 'opacity-70'}`}
+                      >
                         <div className="flex justify-between items-start gap-2 mb-1">
                           <strong className="text-xs text-blue-900">{notif.title}</strong>
                           {!notif.is_read && (
-                            <button onClick={() => markReadMutation.mutate(notif.id)} className="text-blue-400 hover:text-blue-600" title="סמן כנקרא">
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); markReadMutation.mutate(notif.id); }} 
+                              className="text-blue-400 hover:text-blue-600" 
+                              title="סמן כנקרא"
+                            >
                               <CheckCircle2 size={14} />
                             </button>
                           )}
