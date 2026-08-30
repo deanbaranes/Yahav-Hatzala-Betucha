@@ -47,19 +47,31 @@ class NotificationService:
         clean_phone = "".join(filter(str.isdigit, phone_number))
 
         try:
-            url = "https://api.itnewsletter.co.il/api/restApiSms/sendSmsToRecipients"
-            payload = {
-                "ApiKey": GLOBALSMS_API_KEY,
-                "txtOriginator": GLOBALSMS_SENDER,
-                "destinations": clean_phone,
-                "txtSMSmessage": message,
-                "dteToDeliver": "",
-                "txtAddInf": f"user_{user_id}" if user_id else ""
+            url = "https://sapi.itnewsletter.co.il/webservices/wssms.asmx"
+            
+            # Using the SOAP endpoint (sapi) which bypasses IP restrictions
+            xml_payload = f"""<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <sendSmsToRecipients xmlns="apiGlobalSms">
+      <ApiKey>{GLOBALSMS_API_KEY}</ApiKey>
+      <txtOriginator>{GLOBALSMS_SENDER}</txtOriginator>
+      <destinations>{clean_phone}</destinations>
+      <txtSMSmessage>{message}</txtSMSmessage>
+      <dteToDeliver></dteToDeliver>
+      <txtAddInf>{f"user_{user_id}" if user_id else ""}</txtAddInf>
+    </sendSmsToRecipients>
+  </soap:Body>
+</soap:Envelope>"""
+
+            headers = {
+                "Content-Type": "text/xml; charset=utf-8",
+                "SOAPAction": '"apiGlobalSms/sendSmsToRecipients"'
             }
             
-            response = requests.post(url, json=payload, timeout=10)
+            response = requests.post(url, data=xml_payload.encode('utf-8'), headers=headers, timeout=10)
             
-            if response.status_code == 200:
+            if response.status_code == 200 and "sendSmsToRecipientsResult" in response.text:
                 logger.info(f"[SMS] Successfully sent to {clean_phone}")
                 return True
             else:
