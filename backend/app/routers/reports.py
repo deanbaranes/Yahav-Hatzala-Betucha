@@ -37,7 +37,10 @@ def get_all_pending_reports(db: Session = Depends(get_db), current_user: User = 
     # Find all assignments that are confirmed and do not have a report already
     reported_assignment_ids = db.query(TripReport.assignment_id).subquery()
     
-    pending_assignments = db.query(TripAssignment).join(Trip).join(User, TripAssignment.user_id == User.id).filter(
+    pending_assignments = db.query(TripAssignment).options(
+        joinedload(TripAssignment.user),
+        joinedload(TripAssignment.trip)
+    ).join(Trip).join(User, TripAssignment.user_id == User.id).filter(
         TripAssignment.status == "assigned",
         TripAssignment.is_confirmed == True,
         not_(TripAssignment.id.in_(reported_assignment_ids))
@@ -62,7 +65,9 @@ def get_my_pending_reports(db: Session = Depends(get_db), current_user: User = D
         TripReport.is_draft == False
     ).subquery()
     
-    pending_assignments = db.query(TripAssignment).join(Trip).filter(
+    pending_assignments = db.query(TripAssignment).options(
+        joinedload(TripAssignment.trip)
+    ).join(Trip).filter(
         TripAssignment.user_id == current_user.id,
         TripAssignment.status == "assigned",
         TripAssignment.is_confirmed == True,
@@ -104,7 +109,9 @@ def get_my_draft(assignment_id: str, db: Session = Depends(get_db), current_user
 
 @router.get("/my-reports")
 def get_my_reports(db: Session = Depends(get_db), current_user: User = Depends(get_employee_user)):
-    reports = db.query(TripReport).join(TripAssignment).join(Trip).filter(
+    reports = db.query(TripReport).options(
+        joinedload(TripReport.assignment).joinedload(TripAssignment.trip)
+    ).join(TripAssignment).join(Trip).filter(
         TripAssignment.user_id == current_user.id,
         TripReport.is_draft == False
     ).order_by(Trip.start_date.desc()).all()
@@ -289,7 +296,10 @@ def reject_report(report_id: str, db: Session = Depends(get_db), current_user: U
 @router.get("/matrix/{year}/{month}")
 def get_reports_matrix(year: int, month: int, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
     # Fetch all assignments in this month that are "assigned" for active/pending users
-    assignments = db.query(TripAssignment).join(Trip).join(User, TripAssignment.user_id == User.id).filter(
+    assignments = db.query(TripAssignment).options(
+        joinedload(TripAssignment.user),
+        joinedload(TripAssignment.trip)
+    ).join(Trip).join(User, TripAssignment.user_id == User.id).filter(
         TripAssignment.status == "assigned",
         User.status != "inactive",
         User.employment_type == "שכיר",

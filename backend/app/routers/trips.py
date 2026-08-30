@@ -143,7 +143,9 @@ def get_next_trip(db: Session = Depends(get_db), current_user: User = Depends(ge
 
 @router.get("/my")
 def get_my_trips(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    assignments = db.query(TripAssignment).join(Trip).filter(
+    assignments = db.query(TripAssignment).options(
+        joinedload(TripAssignment.trip).joinedload(Trip.client)
+    ).join(Trip).filter(
         TripAssignment.user_id == current_user.id,
         TripAssignment.status.in_(["assigned", "waitlisted"])
     ).order_by(Trip.start_date.desc()).all()
