@@ -450,12 +450,14 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose, ini
                     )}
                   </div>
 
-                  {/* Employee Assignment moved out of Quick Edit */}
-                  <AssignEmployeeForm 
-                    tripId={selectedTrip.id} 
-                    employees={employees || []} 
-                    onAssignSuccess={() => onClose()} 
-                  />
+                  {/* Employee Assignment */}
+                  {quickEditMode && (
+                    <AssignEmployeeForm 
+                      tripId={selectedTrip.id} 
+                      employees={employees || []} 
+                      onAssignSuccess={() => onClose()} 
+                    />
+                  )}
                 </div>
 
             {reportingAssignment && (
