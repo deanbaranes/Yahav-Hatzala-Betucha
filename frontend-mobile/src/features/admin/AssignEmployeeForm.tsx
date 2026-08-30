@@ -14,6 +14,7 @@ export default function AssignEmployeeForm({ tripId, employees, onAssignSuccess 
   const [assignEmployeeRole, setAssignEmployeeRole] = useState('כללי');
   const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
   const [filteredEmployees, setFilteredEmployees] = useState<any[]>([]);
+  const [sendSms, setSendSms] = useState(true);
 
   useEffect(() => {
     if (assignEmployeeName && employees) {
@@ -24,7 +25,7 @@ export default function AssignEmployeeForm({ tripId, employees, onAssignSuccess 
   }, [assignEmployeeName, employees]);
 
   const assignEmployeeMutation = useMutation({
-    mutationFn: async (payload: { trip_id: string, user_id?: string, new_user_name?: string, role: string }) => {
+    mutationFn: async (payload: { trip_id: string, user_id?: string, new_user_name?: string, role: string, send_sms: boolean }) => {
       let finalUserId = payload.user_id;
       if (!finalUserId && payload.new_user_name) {
          const res = await axiosClient.post('/payroll/employees', {
@@ -41,7 +42,8 @@ export default function AssignEmployeeForm({ tripId, employees, onAssignSuccess 
         user_id: finalUserId,
         role: payload.role,
         status: 'assigned',
-        is_confirmed: true
+        is_confirmed: true,
+        send_sms: payload.send_sms
       });
     },
     onSuccess: () => {
@@ -109,6 +111,18 @@ export default function AssignEmployeeForm({ tripId, employees, onAssignSuccess 
         <option value="שומר לילה">שומר לילה</option>
         <option value="נהג">נהג</option>
       </select>
+      <div className="flex items-center gap-2 mb-3 mt-1">
+        <input
+          type="checkbox"
+          id="sendSmsCheckbox"
+          checked={sendSms}
+          onChange={(e) => setSendSms(e.target.checked)}
+          className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+        />
+        <label htmlFor="sendSmsCheckbox" className="text-xs font-bold text-gray-700 cursor-pointer">
+          שלח סמס לעובד
+        </label>
+      </div>
       <button 
         disabled={!assignEmployeeName || assignEmployeeMutation.isPending}
         onClick={() => {
@@ -117,7 +131,8 @@ export default function AssignEmployeeForm({ tripId, employees, onAssignSuccess 
             trip_id: tripId,
             user_id: existing?.id,
             new_user_name: !existing ? assignEmployeeName : undefined,
-            role: assignEmployeeRole
+            role: assignEmployeeRole,
+            send_sms: sendSms
           });
         }}
         className="mt-2 w-full px-3 py-2 text-sm bg-indigo-600 text-white hover:bg-indigo-700 rounded font-bold disabled:opacity-50"
