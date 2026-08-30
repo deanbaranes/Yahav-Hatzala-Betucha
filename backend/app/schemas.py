@@ -86,10 +86,10 @@ class TripCreate(BaseModel):
     contact_name: Optional[str] = None
     contact_phone: Optional[str] = None
     employee_contact_name: Optional[str] = None
-    employee_contact_phone: Optional[str] = None
-    notes: Optional[str] = None
     recurring_type: Optional[str] = None
     recurring_end_date: Optional[datetime] = None
+    assigned_user_id: Optional[str] = None
+    assigned_role: Optional[str] = None
 
 class TripOut(BaseModel):
     id: uuid.UUID

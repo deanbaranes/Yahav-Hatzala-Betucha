@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import SmartClientInput from './SmartClientInput';
 
@@ -17,6 +17,17 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringType, setRecurringType] = useState('weekly');
   const [recurringEndDate, setRecurringEndDate] = useState('');
+  
+  const [assignedUserId, setAssignedUserId] = useState<string>('');
+  const [assignedRole, setAssignedRole] = useState<string>('כללי');
+
+  const { data: employees = [] } = useQuery<any[]>({
+    queryKey: ['employees'],
+    queryFn: async () => {
+      const res = await axiosClient.get('/payroll/employees');
+      return res.data;
+    }
+  });
 
   // Prevent background scrolling when modal is open
   useEffect(() => {
@@ -193,6 +204,49 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
             )}
           </div>
           
+          <div className="bg-green-50/50 p-3 rounded-lg border border-green-100">
+            <h4 className="text-sm font-bold text-green-900 mb-2">שיבוץ עובד אוטומטי (אופציונלי)</h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">בחר עובד</label>
+                <select 
+                  className="w-full p-2 border border-gray-300 rounded text-sm bg-white"
+                  value={assignedUserId}
+                  onChange={(e) => setAssignedUserId(e.target.value)}
+                >
+                  <option value="">ללא שיבוץ מראש</option>
+                  {employees.map(emp => (
+                    <option key={emp.id} value={emp.id}>{emp.full_name}</option>
+                  ))}
+                </select>
+              </div>
+              {assignedUserId && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">תפקיד לשיבוץ</label>
+                  <select 
+                    className="w-full p-2 border border-gray-300 rounded text-sm bg-white"
+                    value={assignedRole}
+                    onChange={(e) => setAssignedRole(e.target.value)}
+                  >
+                    <option value="כללי">כללי</option>
+                    <option value="חובש">חובש</option>
+                    <option value='מע"ר'>מע"ר</option>
+                    <option value='מע"ר חמוש'>מע"ר חמוש</option>
+                    <option value="פראמדיק">פראמדיק</option>
+                    <option value="רופא">רופא</option>
+                    <option value="מלווה נשק">מלווה נשק</option>
+                    <option value="שומר לילה">שומר לילה</option>
+                    <option value="נהג">נהג</option>
+                  </select>
+                </div>
+              )}
+            </div>
+            {assignedUserId && isRecurring && (
+              <p className="text-xs text-green-700 mt-2 font-medium bg-green-100/50 p-1.5 rounded">
+                שים לב: העובד ישובץ אוטומטית לכל הטיולים בסדרה שתיווצר.
+              </p>
+            )}
+          </div>
           
           {/* תאריכים נוספים לשכפול */}
           <div>
@@ -363,7 +417,9 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
                 employee_contact_phone: newTripForm.employee_contact_phone || null,
                 notes: newTripForm.notes || null,
                 recurring_type: isRecurring ? recurringType : null,
-                recurring_end_date: (isRecurring && recurringEndDate) ? `${recurringEndDate}T00:00:00Z` : null
+                recurring_end_date: (isRecurring && recurringEndDate) ? `${recurringEndDate}T00:00:00Z` : null,
+                assigned_user_id: assignedUserId || null,
+                assigned_role: assignedRole || null
               });
             }}
             className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm"

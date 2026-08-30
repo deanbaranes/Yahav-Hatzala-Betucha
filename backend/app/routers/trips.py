@@ -341,6 +341,16 @@ def create_trip(trip_data: TripCreate, db: Session = Depends(get_db), current_us
         db.add(new_trip)
         db.flush()
         
+        if trip_data.assigned_user_id:
+            new_assignment = TripAssignment(
+                trip_id=new_trip.id,
+                user_id=trip_data.assigned_user_id,
+                role=trip_data.assigned_role or "כללי",
+                status="assigned",
+                is_confirmed=True
+            )
+            db.add(new_assignment)
+        
         if not first_trip:
             first_trip = new_trip
             
@@ -353,6 +363,20 @@ def create_trip(trip_data: TripCreate, db: Session = Depends(get_db), current_us
         current_end += timedelta(days=delta_days)
 
     db.commit()
+    
+    if trip_data.assigned_user_id and created_count > 0:
+        assigned_user = db.query(User).filter(User.id == trip_data.assigned_user_id).first()
+        if assigned_user:
+            if created_count > 1:
+                msg = f"שובצת לסדרת אירועים (סך הכל {created_count} מפגשים) במיקום {trip_data.location} בתפקיד {trip_data.assigned_role or 'כללי'}."
+            else:
+                date_str = first_trip.start_date.strftime("%d/%m/%Y %H:%M") if first_trip.start_date else ""
+                msg = f"שובצת לטיול ב-{first_trip.location} בתאריך {date_str} בתפקיד {trip_data.assigned_role or 'כללי'}."
+            
+            NotificationService.create_in_app_notification(msg, db, user_id=assigned_user.id)
+            if assigned_user.phone and assigned_user.role != 'admin':
+                NotificationService.send_sms(assigned_user.phone, msg)
+
     db.refresh(first_trip)
     return first_trip
 
