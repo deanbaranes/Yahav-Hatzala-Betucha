@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
-import { CheckCircle2 } from 'lucide-react';
+
 import AssignEmployeeForm from './AssignEmployeeForm';
 import TripTeamList from './TripTeamList';
 import TripQuickEditForm from './TripQuickEditForm';
