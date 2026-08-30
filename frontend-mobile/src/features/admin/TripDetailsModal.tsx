@@ -101,7 +101,6 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose, ini
       onClose();
     },
     onError: (err: any) => {
-    onError: (err: any) => {
       alert('שגיאה בעדכון הטיול: ' + (err.response?.data?.detail || 'בדוק את הנתונים ונסה שוב.'));
     }
   });
