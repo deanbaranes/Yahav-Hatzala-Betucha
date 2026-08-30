@@ -1,8 +1,13 @@
+import os
+import requests
 import logging
 from sqlalchemy.orm import Session
 from app.models.notification import Notification
 
 logger = logging.getLogger(__name__)
+
+GLOBALSMS_API_KEY = os.getenv("GLOBALSMS_API_KEY", "")
+GLOBALSMS_SENDER = os.getenv("GLOBALSMS_SENDER", "YAHAV")
 
 class NotificationService:
     @staticmethod
@@ -23,20 +28,44 @@ class NotificationService:
     @staticmethod
     def send_sms(phone_number: str, message: str, db: Session = None, user_id: str = None) -> bool:
         """
-        Mock function to send an SMS.
-        Currently prints to the console for testing.
+        Sends an SMS using Global SMS REST API.
+        Falls back to console mock if API key is not configured.
         """
-        logger.info("=========================================")
-        logger.info(f"📱 SMS MOCK SENDER")
-        logger.info(f"To: {phone_number}")
-        logger.info(f"Message:\n{message}")
-        logger.info("=========================================")
-        
         # Save to database if session is provided (in-app notification)
         if db:
             NotificationService.create_in_app_notification(message, db, user_id)
-        
-        # TODO: Implement real SMS provider integration here (e.g. SMS2010 API)
-        # response = requests.post("https://api.sms-provider.co.il/send", json={...})
-        
-        return True
+
+        if not GLOBALSMS_API_KEY:
+            logger.info("=========================================")
+            logger.info(f"📱 SMS MOCK SENDER (No API Key set)")
+            logger.info(f"To: {phone_number}")
+            logger.info(f"Message:\n{message}")
+            logger.info("=========================================")
+            return True
+
+        # Clean the phone number (remove hyphens, spaces)
+        clean_phone = "".join(filter(str.isdigit, phone_number))
+
+        try:
+            url = "https://api.itnewsletter.co.il/api/restApiSms/sendSmsToRecipients"
+            payload = {
+                "ApiKey": GLOBALSMS_API_KEY,
+                "txtOriginator": GLOBALSMS_SENDER,
+                "destinations": clean_phone,
+                "txtSMSmessage": message,
+                "dteToDeliver": "",
+                "txtAddInf": f"user_{user_id}" if user_id else ""
+            }
+            
+            response = requests.post(url, json=payload, timeout=10)
+            
+            if response.status_code == 200:
+                logger.info(f"[SMS] Successfully sent to {clean_phone}")
+                return True
+            else:
+                logger.error(f"[SMS] Failed to send. Status: {response.status_code}, Response: {response.text}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"[SMS] Exception during SMS sending: {str(e)}")
+            return False
