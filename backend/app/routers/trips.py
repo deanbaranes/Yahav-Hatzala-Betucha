@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from datetime import datetime, timezone, time
+from datetime import datetime, timezone, time, timedelta
 from urllib.parse import urlparse
 from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
@@ -306,25 +306,55 @@ def create_trip(trip_data: TripCreate, db: Session = Depends(get_db), current_us
             db.commit()
             db.refresh(client)
 
-    new_trip = Trip(
-        client_id=client.id,
-        location=trip_data.location,
-        start_date=trip_data.start_date,
-        end_date=trip_data.end_date,
-        capacity=trip_data.capacity,
-        roles_requirements=trip_data.roles_requirements,
-        color=trip_data.color,
-        global_salary=trip_data.global_salary,
-        contact_name=trip_data.contact_name,
-        contact_phone=trip_data.contact_phone,
-        employee_contact_name=trip_data.employee_contact_name,
-        employee_contact_phone=trip_data.employee_contact_phone,
-        notes=trip_data.notes
-    )
-    db.add(new_trip)
+    # Calculate recurring delta if specified
+    delta_days = 0
+    if trip_data.recurring_type == 'weekly':
+        delta_days = 7
+    elif trip_data.recurring_type == 'biweekly':
+        delta_days = 14
+
+    current_start = trip_data.start_date
+    current_end = trip_data.end_date
+    end_date_limit = trip_data.recurring_end_date or trip_data.start_date
+    
+    # Max safety limit to prevent infinite loops (approx 2 years weekly)
+    max_trips = 104
+    created_count = 0
+    first_trip = None
+
+    while current_start <= end_date_limit and created_count < max_trips:
+        new_trip = Trip(
+            client_id=client.id,
+            location=trip_data.location,
+            start_date=current_start,
+            end_date=current_end,
+            capacity=trip_data.capacity,
+            roles_requirements=trip_data.roles_requirements,
+            color=trip_data.color,
+            global_salary=trip_data.global_salary,
+            contact_name=trip_data.contact_name,
+            contact_phone=trip_data.contact_phone,
+            employee_contact_name=trip_data.employee_contact_name,
+            employee_contact_phone=trip_data.employee_contact_phone,
+            notes=trip_data.notes
+        )
+        db.add(new_trip)
+        db.flush()
+        
+        if not first_trip:
+            first_trip = new_trip
+            
+        created_count += 1
+        
+        if delta_days == 0:
+            break
+            
+        current_start += timedelta(days=delta_days)
+        current_end += timedelta(days=delta_days)
+
     db.commit()
-    db.refresh(new_trip)
-    return new_trip
+    db.refresh(first_trip)
+    return first_trip
 
 @router.post("/import-ical")
 def import_from_ical(

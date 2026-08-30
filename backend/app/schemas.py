@@ -88,6 +88,8 @@ class TripCreate(BaseModel):
     employee_contact_name: Optional[str] = None
     employee_contact_phone: Optional[str] = None
     notes: Optional[str] = None
+    recurring_type: Optional[str] = None
+    recurring_end_date: Optional[datetime] = None
 
 class TripOut(BaseModel):
     id: uuid.UUID

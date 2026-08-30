@@ -14,6 +14,9 @@ interface CreateManualTripModalProps {
 export default function CreateManualTripModal({ initialDate, onClose }: CreateManualTripModalProps) {
   const queryClient = useQueryClient();
   const [additionalDates, setAdditionalDates] = useState<string[]>([]);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringType, setRecurringType] = useState('weekly');
+  const [recurringEndDate, setRecurringEndDate] = useState('');
 
   // Prevent background scrolling when modal is open
   useEffect(() => {
@@ -150,6 +153,46 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
               />
             </div>
           </div>
+
+          <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+            <div className="flex items-center gap-2 mb-2">
+              <input 
+                type="checkbox" 
+                id="isRecurring"
+                checked={isRecurring}
+                onChange={(e) => setIsRecurring(e.target.checked)}
+                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+              />
+              <label htmlFor="isRecurring" className="text-sm font-bold text-blue-900 cursor-pointer">אירוע חוזר (שכפול אוטומטי לתקופה)</label>
+            </div>
+            
+            {isRecurring && (
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">תדירות</label>
+                  <select 
+                    className="w-full p-2 border border-gray-300 rounded text-sm bg-white"
+                    value={recurringType}
+                    onChange={(e) => setRecurringType(e.target.value)}
+                  >
+                    <option value="weekly">כל שבוע</option>
+                    <option value="biweekly">כל שבועיים</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">עד תאריך</label>
+                  <input 
+                    type="date"
+                    className="w-full p-2 border border-gray-300 rounded text-sm"
+                    value={recurringEndDate}
+                    onChange={(e) => setRecurringEndDate(e.target.value)}
+                    min={newTripForm.start_date.split('T')[0]}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+          
           
           {/* תאריכים נוספים לשכפול */}
           <div>
@@ -318,7 +361,9 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
                 contact_phone: newTripForm.contact_phone || null,
                 employee_contact_name: newTripForm.employee_contact_name || null,
                 employee_contact_phone: newTripForm.employee_contact_phone || null,
-                notes: newTripForm.notes || null
+                notes: newTripForm.notes || null,
+                recurring_type: isRecurring ? recurringType : null,
+                recurring_end_date: (isRecurring && recurringEndDate) ? `${recurringEndDate}T00:00:00Z` : null
               });
             }}
             className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm"
