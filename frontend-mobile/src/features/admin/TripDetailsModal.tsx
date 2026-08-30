@@ -289,12 +289,6 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose, ini
                     {updateTripMutation.isPending ? 'שומר...' : 'שמור שינויים'}
                   </button>
                 </div>
-                
-                <AssignEmployeeForm 
-                  tripId={selectedTrip.id} 
-                  employees={employees || []} 
-                  onAssignSuccess={() => onClose()} 
-                />
               </div>
             ) : (
               <div className="space-y-4 mb-6">
