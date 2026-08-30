@@ -115,9 +115,10 @@ export default function AssignEmployeeForm({ tripId, employees, onAssignSuccess 
         <input
           type="checkbox"
           id="sendSmsCheckbox"
-          checked={sendSms}
+          disabled={assignEmployeeName === 'יהב כלפון' || assignEmployeeName === 'דין ברנס'}
+          checked={(assignEmployeeName === 'יהב כלפון' || assignEmployeeName === 'דין ברנס') ? false : sendSms}
           onChange={(e) => setSendSms(e.target.checked)}
-          className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+          className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 disabled:opacity-50"
         />
         <label htmlFor="sendSmsCheckbox" className="text-xs font-bold text-gray-700 cursor-pointer">
           שלח סמס לעובד
@@ -132,7 +133,7 @@ export default function AssignEmployeeForm({ tripId, employees, onAssignSuccess 
             user_id: existing?.id,
             new_user_name: !existing ? assignEmployeeName : undefined,
             role: assignEmployeeRole,
-            send_sms: sendSms
+            send_sms: (assignEmployeeName === 'יהב כלפון' || assignEmployeeName === 'דין ברנס') ? false : sendSms
           });
         }}
         className="mt-2 w-full px-3 py-2 text-sm bg-indigo-600 text-white hover:bg-indigo-700 rounded font-bold disabled:opacity-50"

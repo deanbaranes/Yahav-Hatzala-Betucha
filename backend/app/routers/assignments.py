@@ -255,7 +255,7 @@ def admin_assign_trip(trip_id: str, request: AdminAssignRequest, db: Session = D
         date_str = trip.start_date.strftime("%d/%m/%Y %H:%M") if trip.start_date else ""
         msg = f"שובצת לטיול ב-{trip.location} בתאריך {date_str} בתפקיד {request.role}. {contact_str}\nלפרטים ואישור: https://yahav-hatzala-betucha.vercel.app/employee"
         NotificationService.create_in_app_notification(msg, db, user_id=user.id)
-        if getattr(request, 'send_sms', True) and user.phone and user.role != 'admin':
+        if getattr(request, 'send_sms', True) and user.phone and user.role != 'admin' and user.full_name not in ["יהב כלפון", "דין ברנס"]:
             NotificationService.send_sms(user.phone, msg)
 
     return {"message": "Assigned and reported successfully"}
