@@ -7,7 +7,7 @@ from app.models.trip import Trip
 from app.models.client import Client
 from app.models.user import User
 from app.models.trip_assignment import TripAssignment
-from app.schemas import TripCreate, TripOut, JoinTripRequest, AdminAssignRequest, IcalImportRequest
+from app.schemas import TripCreate, TripOut, JoinTripRequest, AdminAssignRequest, IcalImportRequest, DuplicateRecurringRequest
 from app.dependencies import get_admin_user, get_current_user
 from app.services.notification_service import NotificationService
 import requests as http_requests
@@ -558,6 +558,85 @@ def update_trip(trip_id: str, trip_data: TripCreate, db: Session = Depends(get_d
     db.commit()
     db.refresh(trip)
     return trip
+
+@router.post("/{trip_id}/duplicate-recurring")
+def duplicate_trip_recurring(
+    trip_id: str,
+    request: DuplicateRecurringRequest,
+    db: Session = Depends(get_db),
+    admin_user: User = Depends(get_admin_user)
+):
+    base_trip = db.query(Trip).filter(Trip.id == trip_id).first()
+    if not base_trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+
+    if request.recurring_type == 'weekly':
+        delta_days = 7
+    elif request.recurring_type == 'biweekly':
+        delta_days = 14
+    else:
+        raise HTTPException(status_code=400, detail="Invalid recurring_type")
+
+    end_date_limit = request.recurring_end_date
+    if end_date_limit.tzinfo is not None:
+        end_date_limit = end_date_limit.astimezone(timezone.utc).replace(tzinfo=None)
+
+    current_start = base_trip.start_date + timedelta(days=delta_days)
+    if base_trip.end_date:
+        current_end = base_trip.end_date + timedelta(days=delta_days)
+    else:
+        current_end = current_start
+
+    max_trips = 104
+    created_count = 0
+
+    base_assignments = db.query(TripAssignment).filter(TripAssignment.trip_id == base_trip.id, TripAssignment.status == "assigned").all()
+
+    while current_start <= end_date_limit and created_count < max_trips:
+        new_trip = Trip(
+            client_id=base_trip.client_id,
+            location=base_trip.location,
+            start_date=current_start,
+            end_date=current_end,
+            capacity=base_trip.capacity,
+            roles_requirements=base_trip.roles_requirements,
+            color=base_trip.color,
+            global_salary=base_trip.global_salary,
+            contact_name=base_trip.contact_name,
+            contact_phone=base_trip.contact_phone,
+            employee_contact_name=base_trip.employee_contact_name,
+            employee_contact_phone=base_trip.employee_contact_phone,
+            notes=base_trip.notes
+        )
+        db.add(new_trip)
+        db.flush()
+
+        for a in base_assignments:
+            new_a = TripAssignment(
+                trip_id=new_trip.id,
+                user_id=a.user_id,
+                role=a.role,
+                status="assigned",
+                is_confirmed=True
+            )
+            db.add(new_a)
+        
+        created_count += 1
+        current_start += timedelta(days=delta_days)
+        current_end += timedelta(days=delta_days)
+
+    db.commit()
+
+    if created_count > 0:
+        for a in base_assignments:
+            user = db.query(User).filter(User.id == a.user_id).first()
+            if user:
+                msg = f"שובצת לסדרת אירועים (סך הכל {created_count} מפגשים נוספים) במיקום {base_trip.location} בתפקיד {a.role}."
+                NotificationService.create_in_app_notification(msg, db, user_id=user.id)
+                if user.phone and user.role != 'admin' and user.full_name not in ["יהב כלפון", "דין ברנס"]:
+                    NotificationService.send_sms(user.phone, msg)
+
+    return {"message": f"Successfully created {created_count} recurring trips"}
 
 @router.put("/{trip_id}/mark-billed")
 def mark_trip_billed(trip_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):

@@ -100,6 +100,10 @@ class TripOut(BaseModel):
     start_date: datetime
     end_date: datetime
     capacity: int
+
+class DuplicateRecurringRequest(BaseModel):
+    recurring_type: str
+    recurring_end_date: datetime
     roles_requirements: Optional[Dict[str, int]] = {}
     color: Optional[str] = None
     global_salary: Optional[float] = None

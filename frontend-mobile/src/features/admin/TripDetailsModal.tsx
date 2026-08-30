@@ -22,6 +22,10 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose, ini
   const [reportDailyShifts, setReportDailyShifts] = useState([{ start_time: '', end_time: '' }]);
 
   const [quickEditMode, setQuickEditMode] = useState(initialEditMode);
+  
+  const [isRecurringDuplicate, setIsRecurringDuplicate] = useState(false);
+  const [recurringType, setRecurringType] = useState('weekly');
+  const [recurringEndDate, setRecurringEndDate] = useState('');
   const [quickEditForm, setQuickEditForm] = useState({ 
     client_name: selectedTrip.client?.name || '', 
     location: selectedTrip.location || '', 
@@ -97,7 +101,24 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose, ini
       onClose();
     },
     onError: (err: any) => {
+    onError: (err: any) => {
       alert('שגיאה בעדכון הטיול: ' + (err.response?.data?.detail || 'בדוק את הנתונים ונסה שוב.'));
+    }
+  });
+
+  const duplicateRecurringMutation = useMutation({
+    mutationFn: async (payload: any) => {
+      await axiosClient.post(`/trips/${selectedTrip.id}/duplicate-recurring`, payload);
+    },
+    onSuccess: () => {
+      alert('הטיול שוכפל לסדרה בהצלחה!');
+      queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
+      setIsRecurringDuplicate(false);
+      onClose();
+    },
+    onError: (err: any) => {
+      alert('שגיאה בשכפול הטיול: ' + (err.response?.data?.detail || 'בדוק את הנתונים ונסה שוב.'));
     }
   });
 
@@ -166,12 +187,60 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose, ini
                     }} className="text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-1 rounded text-xs font-bold transition-colors">
                       ✏️ עריכה
                     </button>
+                    <button 
+                      onClick={() => setIsRecurringDuplicate(!isRecurringDuplicate)} 
+                      className="text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2 py-1 rounded text-xs font-bold transition-colors"
+                      title="שכפל לסדרה חוזרת"
+                    >
+                      🔁 שכפל
+                    </button>
                   </>
                 )}
                 <button onClick={() => { onClose(); }} className="text-gray-400 hover:text-gray-600 p-1">✕</button>
               </div>
             </div>
             
+            {isRecurringDuplicate && !quickEditMode && (
+              <div className="mb-4 bg-indigo-50/50 p-3 rounded-lg border border-indigo-100 animate-fade-in text-right">
+                <h4 className="text-sm font-bold text-indigo-900 mb-2">🔁 יצירת אירוע חוזר מטיול זה</h4>
+                <p className="text-xs text-indigo-700 mb-3">
+                  המערכת תשכפל את הטיול הנוכחי (כולל שעות, מיקום ועובדים ששובצו) לסדרה שבועית/דו-שבועית.
+                </p>
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">תדירות</label>
+                    <select 
+                      className="w-full p-2 border border-gray-300 rounded text-sm bg-white"
+                      value={recurringType}
+                      onChange={(e) => setRecurringType(e.target.value)}
+                    >
+                      <option value="weekly">כל שבוע</option>
+                      <option value="biweekly">כל שבועיים</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">תאריך סיום</label>
+                    <input 
+                      type="date"
+                      className="w-full p-2 border border-gray-300 rounded text-sm bg-white"
+                      value={recurringEndDate}
+                      onChange={(e) => setRecurringEndDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    disabled={!recurringEndDate || duplicateRecurringMutation.isPending}
+                    onClick={() => duplicateRecurringMutation.mutate({ recurring_type: recurringType, recurring_end_date: `${recurringEndDate}T00:00:00Z` })}
+                    className="flex-1 px-3 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded font-bold text-sm disabled:opacity-50"
+                  >
+                    {duplicateRecurringMutation.isPending ? 'משכפל...' : 'שכפל כעת'}
+                  </button>
+                  <button onClick={() => setIsRecurringDuplicate(false)} className="px-3 py-2 text-sm text-gray-600 hover:bg-gray-200 rounded">ביטול</button>
+                </div>
+              </div>
+            )}
+
             {quickEditMode ? (
               <div className="space-y-4 mb-6 p-4 bg-blue-50/30 rounded-lg border border-blue-100">
                 <div>
