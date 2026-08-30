@@ -20,11 +20,14 @@ export default function Home() {
           <div>
             <h3 className="font-bold text-blue-900 text-lg">טופס 101 מקוון (לשכירים בלבד)</h3>
             <p className="text-sm text-blue-800">על מנת למנוע עיכובי שכר, אנא ודא שמילאת טופס 101 לשנת המס הנוכחית.</p>
-            <span className="block mt-1.5 text-[11px] font-bold bg-blue-100/50 px-2 py-1 rounded-md text-blue-900 w-fit leading-relaxed">
-              * קבלנים עצמאיים אינם נדרשים למלא טופס זה. 
-              <br className="hidden sm:block" />
-              מי שכבר מילא עבור השנה הנוכחית, אין צורך למלא שוב.
-            </span>
+            <div className="mt-3 text-xs font-bold bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg text-amber-800 w-fit leading-relaxed flex items-start gap-2 shadow-sm">
+              <span className="text-amber-500 text-sm">⚠️</span>
+              <div>
+                <span className="font-black text-amber-900">שימו לב:</span> קבלנים עצמאיים אינם נדרשים למלא טופס זה. 
+                <br className="hidden sm:block" />
+                מי שכבר מילא עבור השנה הנוכחית, אין צורך למלא שוב.
+              </div>
+            </div>
           </div>
         </div>
         <a 
