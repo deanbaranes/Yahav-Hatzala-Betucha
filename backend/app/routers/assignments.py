@@ -55,7 +55,7 @@ def confirm_assignment(assignment_id: str, db: Session = Depends(get_db), admin_
         date_str = trip.start_date.strftime("%d/%m/%Y %H:%M") if trip.start_date else ""
         msg = f"הטיול אושר! שובצת סופית לטיול ב-{trip.location} בתאריך {date_str} בתפקיד {assignment.role}. {contact_str}\nלפרטים נוספים: https://yahav-hatzala-betucha.vercel.app"
         NotificationService.create_in_app_notification(msg, db, user_id=user.id)
-        if user.phone:
+        if user.phone and user.role != 'admin':
             NotificationService.send_sms(user.phone, msg)
 
     return {"message": "Assignment confirmed"}
@@ -215,7 +215,7 @@ def cancel_trip(trip_id: str, db: Session = Depends(get_db), current_user: User 
             if next_in_line.user:
                 promoted_msg = f"הודעת מערכת: קודמת לרשימת המשובצים לטיול ב-{trip.location}. נא לוודא שאתה מגיע!"
                 NotificationService.create_in_app_notification(promoted_msg, db, user_id=next_in_line.user_id)
-                if next_in_line.user.phone:
+                if next_in_line.user.phone and next_in_line.user.role != 'admin':
                     NotificationService.send_sms(next_in_line.user.phone, promoted_msg)
 
     return {"message": "Cancelled successfully", "promoted_user": str(promoted_user) if promoted_user else None}
@@ -255,7 +255,7 @@ def admin_assign_trip(trip_id: str, request: AdminAssignRequest, db: Session = D
         date_str = trip.start_date.strftime("%d/%m/%Y %H:%M") if trip.start_date else ""
         msg = f"שובצת לטיול ב-{trip.location} בתאריך {date_str} בתפקיד {request.role}. {contact_str}\nלפרטים ואישור: https://yahav-hatzala-betucha.vercel.app/employee"
         NotificationService.create_in_app_notification(msg, db, user_id=user.id)
-        if user.phone:
+        if user.phone and user.role != 'admin':
             NotificationService.send_sms(user.phone, msg)
 
     return {"message": "Assigned and reported successfully"}
