@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import TripCard from './TripCard';
-import { ChevronDown, ChevronUp, Calendar as CalendarIcon, List } from 'lucide-react';
+import { ChevronDown, ChevronUp, Calendar as CalendarIcon, List, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function TripFeed() {
   const { data: trips, isLoading } = useQuery<any>({
@@ -124,9 +124,25 @@ export default function TripFeed() {
       <div className="animate-fade-in">
         <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6">
           <div className="flex justify-between items-center mb-4 px-2">
-            <button onClick={() => setCurrentMonth(new Date(year, month + 1, 1))} className="text-gray-500 hover:text-blue-600 font-bold p-2 bg-gray-50 rounded-lg">הבא</button>
+            {year < new Date().getFullYear() || (year === new Date().getFullYear() && month <= new Date().getMonth()) ? (
+              <div className="w-20"></div>
+            ) : (
+              <button 
+                onClick={() => setCurrentMonth(new Date(year, month - 1, 1))} 
+                className="text-gray-500 hover:text-blue-600 font-bold p-2 bg-gray-50 rounded-lg flex items-center gap-1 w-20 justify-center"
+              >
+                <ChevronRight size={16} />
+                הקודם
+              </button>
+            )}
             <span className="font-bold text-lg text-blue-900">{currentMonth.toLocaleString('he-IL', { month: 'long', year: 'numeric' })}</span>
-            <button onClick={() => setCurrentMonth(new Date(year, month - 1, 1))} className="text-gray-500 hover:text-blue-600 font-bold p-2 bg-gray-50 rounded-lg">הקודם</button>
+            <button 
+              onClick={() => setCurrentMonth(new Date(year, month + 1, 1))} 
+              className="text-gray-500 hover:text-blue-600 font-bold p-2 bg-gray-50 rounded-lg flex items-center gap-1 w-20 justify-center"
+            >
+              הבא
+              <ChevronLeft size={16} />
+            </button>
           </div>
           <div className="grid grid-cols-7 gap-1 text-center mb-2">
             {['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'].map(day => <div key={day} className="text-xs text-gray-400 font-bold">{day}</div>)}
