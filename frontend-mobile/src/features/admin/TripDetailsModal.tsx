@@ -329,8 +329,7 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose, ini
               </div>
             )}
 
-              {selectedTrip.capacity > 0 && (
-                <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="text-sm text-gray-500 font-bold mb-2">
                     צוות מאושר בטיול ({selectedTrip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned').length || 0} מתוך {selectedTrip.capacity})
                     {selectedTrip.roles_requirements && Object.keys(selectedTrip.roles_requirements).length > 0 ? (
@@ -396,7 +395,6 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose, ini
                     onAssignSuccess={() => onClose()} 
                   />
                 </div>
-              )}
 
             {reportingAssignment && (
               <div className="mt-4 p-4 border border-blue-200 bg-blue-50/50 rounded-lg">

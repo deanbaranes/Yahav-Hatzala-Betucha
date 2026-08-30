@@ -53,7 +53,7 @@ def confirm_assignment(assignment_id: str, db: Session = Depends(get_db), admin_
     if user:
         contact_str = f"איש קשר לטיול: {trip.contact_phone}" if trip.contact_phone else ""
         date_str = trip.start_date.strftime("%d/%m/%Y %H:%M") if trip.start_date else ""
-        msg = f"הטיול אושר! שובצת סופית לטיול ב-{trip.location} בתאריך {date_str} בתפקיד {assignment.role}. {contact_str}\nלפרטים נוספים היכנס לאפליקציה."
+        msg = f"הטיול אושר! שובצת סופית לטיול ב-{trip.location} בתאריך {date_str} בתפקיד {assignment.role}. {contact_str}\nלפרטים נוספים: https://yahav-hatzala-betucha.vercel.app"
         NotificationService.create_in_app_notification(msg, db, user_id=user.id)
         if user.phone:
             NotificationService.send_sms(user.phone, msg)
@@ -253,7 +253,7 @@ def admin_assign_trip(trip_id: str, request: AdminAssignRequest, db: Session = D
     if user:
         contact_str = f"איש קשר לטיול: {trip.contact_phone}" if trip.contact_phone else ""
         date_str = trip.start_date.strftime("%d/%m/%Y %H:%M") if trip.start_date else ""
-        msg = f"שובצת לטיול ב-{trip.location} בתאריך {date_str} בתפקיד {request.role}. {contact_str}\nלפרטים ואישור היכנס לאפליקציה."
+        msg = f"שובצת לטיול ב-{trip.location} בתאריך {date_str} בתפקיד {request.role}. {contact_str}\nלפרטים ואישור: https://yahav-hatzala-betucha.vercel.app/employee"
         NotificationService.create_in_app_notification(msg, db, user_id=user.id)
         if user.phone:
             NotificationService.send_sms(user.phone, msg)
