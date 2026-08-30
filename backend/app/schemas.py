@@ -86,6 +86,8 @@ class TripCreate(BaseModel):
     contact_name: Optional[str] = None
     contact_phone: Optional[str] = None
     employee_contact_name: Optional[str] = None
+    employee_contact_phone: Optional[str] = None
+    notes: Optional[str] = None
     recurring_type: Optional[str] = None
     recurring_end_date: Optional[datetime] = None
     assigned_user_id: Optional[str] = None
@@ -120,6 +122,7 @@ class AdminAssignRequest(BaseModel):
     role: str = "כללי"
     status: str = "assigned"
     is_confirmed: bool = True
+    send_sms: bool = True
 
 class IcalImportRequest(BaseModel):
     ical_url: str
