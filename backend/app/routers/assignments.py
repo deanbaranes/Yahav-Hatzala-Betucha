@@ -50,12 +50,12 @@ def confirm_assignment(assignment_id: str, db: Session = Depends(get_db), admin_
     # Send notification to assigned user
     user = assignment.user
     trip = assignment.trip
-    if user:
+    if user and user.role != 'admin':
         contact_str = f"איש קשר לטיול: {trip.contact_phone}" if trip.contact_phone else ""
         date_str = trip.start_date.strftime("%d/%m/%Y %H:%M") if trip.start_date else ""
         msg = f"הטיול אושר! שובצת סופית לטיול ב-{trip.location} בתאריך {date_str} בתפקיד {assignment.role}. {contact_str}\nלפרטים נוספים: https://yahav-hatzala-betucha.vercel.app"
         NotificationService.create_in_app_notification(msg, db, user_id=user.id)
-        if user.phone and user.role != 'admin':
+        if user.phone:
             NotificationService.send_sms(user.phone, msg)
 
     return {"message": "Assignment confirmed"}
@@ -212,10 +212,10 @@ def cancel_trip(trip_id: str, db: Session = Depends(get_db), current_user: User 
             promoted_user = next_in_line.user_id
 
             # Send notification to the newly promoted user
-            if next_in_line.user:
+            if next_in_line.user and next_in_line.user.role != 'admin':
                 promoted_msg = f"הודעת מערכת: קודמת לרשימת המשובצים לטיול ב-{trip.location}. נא לוודא שאתה מגיע!"
                 NotificationService.create_in_app_notification(promoted_msg, db, user_id=next_in_line.user_id)
-                if next_in_line.user.phone and next_in_line.user.role != 'admin':
+                if next_in_line.user.phone:
                     NotificationService.send_sms(next_in_line.user.phone, promoted_msg)
 
     return {"message": "Cancelled successfully", "promoted_user": str(promoted_user) if promoted_user else None}
@@ -250,12 +250,12 @@ def admin_assign_trip(trip_id: str, request: AdminAssignRequest, db: Session = D
 
     # Send notification to assigned user
     user = db.query(User).filter(User.id == request.user_id).first()
-    if user:
+    if user and user.role != 'admin':
         contact_str = f"איש קשר לטיול: {trip.contact_phone}" if trip.contact_phone else ""
         date_str = trip.start_date.strftime("%d/%m/%Y %H:%M") if trip.start_date else ""
         msg = f"שובצת לטיול ב-{trip.location} בתאריך {date_str} בתפקיד {request.role}. {contact_str}\nלפרטים ואישור: https://yahav-hatzala-betucha.vercel.app/employee"
         NotificationService.create_in_app_notification(msg, db, user_id=user.id)
-        if user.phone and user.role != 'admin':
+        if user.phone:
             NotificationService.send_sms(user.phone, msg)
 
     return {"message": "Assigned and reported successfully"}
