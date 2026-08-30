@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Home, Map, FileText, LogOut, Menu, X, ChevronRight, ChevronLeft, CalendarDays, Wallet, User as UserIcon, FileSignature, Settings, Bell, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
@@ -12,6 +12,19 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showNotifications, setShowNotifications] = useState(false);
+  const notificationRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const { data: notifications = [] } = useQuery<any[]>({
     queryKey: ['notifications'],
@@ -189,7 +202,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
             <h1 className="text-lg font-black text-indigo-700 md:hidden">יהב הצלה - אזור אישי</h1>
           </div>
           
-          <div className="flex items-center gap-4 mr-auto relative">
+          <div className="flex items-center gap-4 mr-auto relative" ref={notificationRef}>
             <button 
               onClick={() => setShowNotifications(!showNotifications)}
               className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors"

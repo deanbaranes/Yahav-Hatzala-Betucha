@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Home, Map, FileText, LogOut, Menu, X, Users, ChevronRight, ChevronLeft, Calculator, CalendarDays, Receipt, Truck, Bell, CheckCircle2, FolderDown } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -18,6 +18,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const queryClient = useQueryClient();
   const [showNotifications, setShowNotifications] = useState(false);
+  const notificationRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const { data: notifications = [] } = useQuery<any[]>({
     queryKey: ['notifications'],
@@ -177,7 +190,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <h1 className="text-lg font-black text-blue-700 md:hidden">יהב הצלה בטוחה</h1>
           </div>
           
-          <div className="flex items-center gap-4 mr-auto relative">
+          <div className="flex items-center gap-4 mr-auto relative" ref={notificationRef}>
             <button 
               onClick={() => setShowNotifications(!showNotifications)}
               className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors"
