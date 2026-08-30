@@ -53,6 +53,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       navigate('/admin/reports');
     } else if (msg.includes("אישר/ה הגעה") || msg.includes("נרשם לטיול") || msg.includes("ביטל את הרישום") || msg.includes("אין עובדים משובצים")) {
       navigate('/admin');
+    } else if (msg.includes("שובצת לטיול") || msg.includes("קודמת לרשימת המשובצים") || msg.includes("הטיול אושר!")) {
+      navigate('/employee');
     }
   };
 
