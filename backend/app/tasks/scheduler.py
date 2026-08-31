@@ -42,24 +42,20 @@ def check_client_debts():
     now = datetime.now()
     
     for client in clients:
-        # Simplistic parsing of payment terms: "שוטף + 30" -> 30, "שוטף + 60" -> 60
-        # If no terms or unrecognized, default to 30
-        days = 30
-        if client.payment_terms:
-            match = re.search(r'\d+', client.payment_terms)
-            if match:
-                days = int(match.group(0))
-        
-        # Calculate due date: end of the month of debt_start_date + days
         debt_start = client.debt_start_date
-        # End of the month of debt_start
-        if debt_start.month == 12:
-            next_month = debt_start.replace(year=debt_start.year + 1, month=1, day=1)
-        else:
-            next_month = debt_start.replace(month=debt_start.month + 1, day=1)
-        end_of_month = next_month - timedelta(days=1)
         
-        due_date = end_of_month + timedelta(days=days)
+        if client.payment_terms and re.search(r'\d+', client.payment_terms):
+            # Special payment terms (e.g., "שוטף + 30") -> Calculate End of Month + X days
+            days = int(re.search(r'\d+', client.payment_terms).group(0))
+            if debt_start.month == 12:
+                next_month = debt_start.replace(year=debt_start.year + 1, month=1, day=1)
+            else:
+                next_month = debt_start.replace(month=debt_start.month + 1, day=1)
+            end_of_month = next_month - timedelta(days=1)
+            due_date = end_of_month + timedelta(days=days)
+        else:
+            # Default behavior: exactly 30 days (1 month) from the debt start date
+            due_date = debt_start + timedelta(days=30)
         
         if now > due_date:
             msg = f"התראת חוב: הלקוח '{client.name}' עבר את תאריך התשלום ({due_date.strftime('%d/%m/%Y')}). הגיע הזמן לגבות!"
