@@ -106,7 +106,7 @@ def upload_supplier_receipt(
         new_expense = BusinessExpense(
             file_url=url,
             file_name=file.filename or f"supplier_receipt_{supplier.name}_{now.date()}_{i}.jpg",
-            status="processed",
+            status="pending",
             expense_month=now.month,
             expense_year=now.year,
             notes=notes,
