@@ -171,7 +171,7 @@ class PayrollService:
             report_text += f"\nתוספות שונות: {other_adjs.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)} ₪"
 
         if trip_global_bonus > 0:
-            report_text += f"\nהשלמה לשכר גלובלי (טיולים): {trip_global_bonus.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)} ₪"
+            report_text += f"\nמענק התמדה: {trip_global_bonus.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)} ₪"
 
         report_text += f"\n-----------------------------\n"
         report_text += f"סה\"כ ברוטו: {gross_total.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)} ₪"
