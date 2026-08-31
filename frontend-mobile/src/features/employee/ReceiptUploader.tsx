@@ -19,9 +19,7 @@ export default function ReceiptUploader({ onUploadComplete, onRemove }: { onUplo
       const formData = new FormData();
       formData.append('file', file);
 
-      const { data } = await axiosClient.post('/reports/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const { data } = await axiosClient.post('/reports/upload', formData);
 
       onUploadComplete(data.url);
       setUploadState('success');

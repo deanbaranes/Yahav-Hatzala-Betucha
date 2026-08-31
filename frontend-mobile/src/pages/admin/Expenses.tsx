@@ -75,9 +75,7 @@ export default function Expenses() {
         formData.append('file', file);
         formData.append('expense_month', currentMonth.toString());
         formData.append('expense_year', currentYear.toString());
-        await axiosClient.post('/expenses/', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        await axiosClient.post('/expenses/', formData);
       }
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       alert('ההוצאות הועלו בהצלחה!');

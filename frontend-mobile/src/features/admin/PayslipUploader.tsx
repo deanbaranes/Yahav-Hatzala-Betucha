@@ -98,9 +98,7 @@ export default function PayslipUploader() {
         formData.append('year', year.toString());
         formData.append('file', f.file);
         
-        await axiosClient.post('/payroll/payslips', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        await axiosClient.post('/payroll/payslips', formData);
         
         updatedFiles[i].status = 'success';
       } catch (err: any) {
