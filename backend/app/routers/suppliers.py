@@ -97,7 +97,7 @@ def upload_supplier_receipt(
     # Create Business Expense
     new_expense = BusinessExpense(
         file_url=url,
-        file_name=f"supplier_receipt_{supplier.name}_{now.date()}.jpg",
+        file_name=file.filename or f"supplier_receipt_{supplier.name}_{now.date()}.jpg",
         status="processed",
         expense_month=now.month,
         expense_year=now.year,
