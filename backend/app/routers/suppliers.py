@@ -96,14 +96,13 @@ def upload_supplier_receipt(
     
     # Create Business Expense
     new_expense = BusinessExpense(
-        title=f"תשלום לספק: {supplier.name}{details_str}{vat_note}",
-        amount=supplier.amount,
-        expense_date=now.date(),
+        file_url=url,
+        file_name=f"supplier_receipt_{supplier.name}_{now.date()}.jpg",
+        status="processed",
         expense_month=now.month,
         expense_year=now.year,
-        file_url=url,
-        expense_type="ספקים",
-        is_paid=True
+        notes=f"תשלום לספק: {supplier.name} | סכום: {supplier.amount}{vat_note}{details_str}",
+        uploaded_by_id=admin_user.id
     )
     db.add(new_expense)
     
