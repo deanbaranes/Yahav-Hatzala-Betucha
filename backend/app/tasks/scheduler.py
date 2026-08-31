@@ -34,8 +34,11 @@ def check_client_debts():
     logger.info("Running check_client_debts task...")
     db: Session = next(get_db())
     
-    # Clients with a debt_start_date where payment terms have passed
-    clients = db.query(Client).filter(Client.debt_start_date.isnot(None)).all()
+    # Clients with a debt_start_date where payment terms have passed, and they actually have a debt
+    clients = db.query(Client).filter(
+        Client.debt_start_date.isnot(None),
+        Client.numeric_balance < 0
+    ).all()
     now = datetime.now()
     
     for client in clients:
