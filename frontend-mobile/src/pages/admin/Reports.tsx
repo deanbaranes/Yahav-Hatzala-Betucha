@@ -297,6 +297,18 @@ export default function Reports() {
                               </div>
                             </>
                           )}
+                          <div className="pt-2 border-t border-gray-100 mt-2">
+                            <label className="text-[10px] text-gray-700 font-bold block mb-1">מספר לילות (ידני):</label>
+                            <input 
+                              type="number" 
+                              min="0" 
+                              step="1" 
+                              value={editForm.sleeps} 
+                              onChange={e => setEditForm({...editForm, sleeps: Number(e.target.value)})} 
+                              className="w-[140px] text-[10px] p-1 border rounded bg-white shadow-sm"
+                              title="ערוך מספר לילות כדי לדרוס את החישוב האוטומטי"
+                            />
+                          </div>
                         </div>
                       ) : (
                         <>

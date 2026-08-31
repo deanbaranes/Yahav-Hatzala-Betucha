@@ -312,7 +312,8 @@ class TripService:
                 contact_phone=trip_data.contact_phone,
                 employee_contact_name=trip_data.employee_contact_name,
                 employee_contact_phone=trip_data.employee_contact_phone,
-                notes=trip_data.notes
+                notes=trip_data.notes,
+                has_accommodation=trip_data.has_accommodation
             )
             db.add(new_trip)
             db.flush()
@@ -510,6 +511,7 @@ class TripService:
         trip.employee_contact_name = trip_data.employee_contact_name
         trip.employee_contact_phone = trip_data.employee_contact_phone
         trip.notes = trip_data.notes
+        trip.has_accommodation = trip_data.has_accommodation
 
         db.commit()
         db.refresh(trip)
@@ -557,7 +559,8 @@ class TripService:
                 contact_phone=base_trip.contact_phone,
                 employee_contact_name=base_trip.employee_contact_name,
                 employee_contact_phone=base_trip.employee_contact_phone,
-                notes=base_trip.notes
+                notes=base_trip.notes,
+                has_accommodation=base_trip.has_accommodation
             )
             db.add(new_trip)
             db.flush()

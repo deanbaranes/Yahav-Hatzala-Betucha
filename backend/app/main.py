@@ -53,6 +53,13 @@ try:
                 conn.execute(text("ALTER TABLE suppliers ADD COLUMN debt_end_date DATE"))
             if 'report_id' not in sup_cols:
                 conn.execute(text("ALTER TABLE suppliers ADD COLUMN report_id UUID UNIQUE"))
+    # Check trips table
+    if 'trips' in inspector.get_table_names():
+        trip_cols = {col['name'] for col in inspector.get_columns('trips')}
+        with engine.begin() as conn:
+            if 'has_accommodation' not in trip_cols:
+                conn.execute(text("ALTER TABLE trips ADD COLUMN has_accommodation BOOLEAN DEFAULT TRUE NOT NULL"))
+
 except Exception as e:
     import logging
     logging.getLogger(__name__).warning(f"Auto-migration failed: {e}")

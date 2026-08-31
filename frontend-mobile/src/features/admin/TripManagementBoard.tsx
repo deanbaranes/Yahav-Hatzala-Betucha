@@ -13,7 +13,7 @@ export default function TripManagementBoard() {
   const queryClient = useQueryClient();
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
   const [viewingTrip, setViewingTrip] = useState<any>(null);
-  const [formData, setFormData] = useState({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {} as Record<string, number>, color: '' as string, global_salary: '' as string | number, contact_name: '' as string, contact_phone: '' as string, employee_contact_name: '' as string, employee_contact_phone: '' as string });
+  const [formData, setFormData] = useState({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {} as Record<string, number>, color: '' as string, global_salary: '' as string | number, contact_name: '' as string, contact_phone: '' as string, employee_contact_name: '' as string, employee_contact_phone: '' as string, has_accommodation: true });
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedWeeks, setExpandedWeeks] = useState<Record<string, boolean>>({});
   const [isFormVisible, setIsFormVisible] = useState(false);
@@ -80,7 +80,7 @@ export default function TripManagementBoard() {
       queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       alert('הטיול נוצר בהצלחה!');
-      setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '' });
+      setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '', has_accommodation: true });
       setIsFormVisible(false);
     },
     onError: (error: any) => {
@@ -101,7 +101,7 @@ export default function TripManagementBoard() {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       alert('הטיול עודכן בהצלחה!');
       setEditingTripId(null);
-      setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '' });
+      setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '', has_accommodation: true });
     },
     onError: (error: any) => {
       alert('שגיאה בעדכון הטיול: ' + (error.response?.data?.detail || 'אנא ודא שכל השדות מלאים ותקינים.'));
@@ -252,6 +252,19 @@ export default function TripManagementBoard() {
               value={formData.employee_contact_phone} onChange={e => setFormData({...formData, employee_contact_phone: e.target.value})} />
           </div>
         </div>
+
+        <div className="mb-4 md:col-span-2 flex items-center gap-2">
+          <input 
+            type="checkbox" 
+            id="has_accommodation"
+            checked={formData.has_accommodation}
+            onChange={e => setFormData({...formData, has_accommodation: e.target.checked})}
+            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          />
+          <label htmlFor="has_accommodation" className="block text-gray-700 font-bold">
+            כולל לינה (אם מסומן, המערכת תחשב אוטומטית לילות לעובדים לפי תאריכי הטיול)
+          </label>
+        </div>
           
         <div className="mb-4 md:col-span-2">
           <label className="block text-gray-700 font-bold mb-2">צבע הטיול ביומן</label>
@@ -319,7 +332,7 @@ export default function TripManagementBoard() {
           <button 
             onClick={() => {
               setEditingTripId(null);
-              setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '' });
+              setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '', has_accommodation: true });
             }}
             className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-bold shadow transition-colors"
           >
@@ -482,7 +495,8 @@ export default function TripManagementBoard() {
                                           contact_name: trip.contact_name || '',
                                           contact_phone: trip.contact_phone || '',
                                           employee_contact_name: trip.employee_contact_name || '',
-                                          employee_contact_phone: trip.employee_contact_phone || ''
+                                          employee_contact_phone: trip.employee_contact_phone || '',
+                                          has_accommodation: trip.has_accommodation ?? true
                                         });
                                           setTimeout(() => {
                                           document.getElementById('edit-form-area')?.scrollIntoView({ behavior: 'smooth', block: 'start' });

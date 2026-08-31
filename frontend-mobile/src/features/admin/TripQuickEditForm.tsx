@@ -117,6 +117,18 @@ export default function TripQuickEditForm({ quickEditForm, setQuickEditForm, set
           ))}
         </div>
       </div>
+      <div className="flex items-center gap-2">
+        <input 
+          type="checkbox" 
+          id="has_accommodation_quick"
+          checked={quickEditForm.has_accommodation}
+          onChange={e => setQuickEditForm({...quickEditForm, has_accommodation: e.target.checked})}
+          className="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+        />
+        <label htmlFor="has_accommodation_quick" className="block text-xs font-bold text-gray-700">
+          כולל לינה (מסומן = יחשב לילות אוטומטית לעובדים)
+        </label>
+      </div>
       <div className="flex justify-end gap-2 mt-4 pt-2 border-t border-blue-100">
         <button onClick={() => setQuickEditMode(false)} className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200 rounded">ביטול</button>
         <button 

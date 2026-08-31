@@ -92,6 +92,7 @@ class TripCreate(BaseModel):
     recurring_end_date: Optional[datetime] = None
     assigned_user_id: Optional[str] = None
     assigned_role: Optional[str] = None
+    has_accommodation: bool = True
 
 class TripOut(BaseModel):
     id: uuid.UUID
@@ -108,6 +109,7 @@ class TripOut(BaseModel):
     employee_contact_name: Optional[str] = None
     employee_contact_phone: Optional[str] = None
     notes: Optional[str] = None
+    has_accommodation: bool = True
     is_billed: bool = False
     client: ClientOut
 
