@@ -213,7 +213,7 @@ export default function Reports() {
               </thead>
               <tbody>
                 {filteredReports?.map((report) => (
-                  <tr key={report.id} className="border-b border-gray-100 hover:bg-indigo-50/30 transition-colors">
+                  <tr key={report.id} className="border-b-2 border-gray-200 hover:bg-indigo-50/30 transition-colors">
                     <td className="p-2 md:p-3 break-words align-top">
                       <div className="font-bold text-gray-800 text-sm">{report?.employee?.full_name || 'עובד לא ידוע'}</div>
                       <div className="text-[10px] md:text-xs text-gray-500">{report?.employee?.phone || ''}</div>
