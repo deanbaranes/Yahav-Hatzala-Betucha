@@ -71,7 +71,7 @@ logger = logging.getLogger(__name__)
 @router.post("/{supplier_id}/upload-receipt")
 def upload_supplier_receipt(
     supplier_id: uuid.UUID, 
-    file: UploadFile = File(...), 
+    files: List[UploadFile] = File(...), 
     db: Session = Depends(get_db), 
     admin_user: User = Depends(get_admin_user)
 ):
@@ -79,35 +79,43 @@ def upload_supplier_receipt(
     if not supplier:
         raise HTTPException(status_code=404, detail="ספק לא נמצא")
         
-    try:
-        url = StorageService.upload_file(
-            file.file,
-            folder="yahav_receipts",
-            content_type=file.content_type or "",
-        )
-    except RuntimeError as e:
-        logger.error(f"Receipt upload failed: {e}")
-        raise HTTPException(status_code=500, detail="שגיאה בהעלאת הקובץ. אנא נסה שנית.")
-        
     now = datetime.now()
-    
     vat_note = "" if supplier.includes_vat else " (+ מע\"מ)"
     details_str = f" - {supplier.details}" if supplier.details else ""
+    urls = []
     
-    # Create Business Expense
-    new_expense = BusinessExpense(
-        file_url=url,
-        file_name=file.filename or f"supplier_receipt_{supplier.name}_{now.date()}.jpg",
-        status="processed",
-        expense_month=now.month,
-        expense_year=now.year,
-        notes=f"תשלום לספק: {supplier.name} | סכום: {supplier.amount}{vat_note}{details_str}",
-        uploaded_by_id=admin_user.id
-    )
-    db.add(new_expense)
+    for i, file in enumerate(files):
+        try:
+            url = StorageService.upload_file(
+                file.file,
+                folder="yahav_receipts",
+                content_type=file.content_type or "",
+            )
+            urls.append(url)
+        except RuntimeError as e:
+            logger.error(f"Receipt upload failed: {e}")
+            raise HTTPException(status_code=500, detail="שגיאה בהעלאת הקובץ. אנא נסה שנית.")
+            
+        # Create Business Expense
+        # First file gets the amount, subsequent files get a zero-amount continuation note
+        if i == 0:
+            notes = f"תשלום לספק: {supplier.name} (קובץ 1 מתוך {len(files)}) | סכום: {supplier.amount}{vat_note}{details_str}"
+        else:
+            notes = f"תשלום לספק: {supplier.name} (קובץ {i+1} מתוך {len(files)}) | המשך מסמכים (ללא סכום נוסף)"
+            
+        new_expense = BusinessExpense(
+            file_url=url,
+            file_name=file.filename or f"supplier_receipt_{supplier.name}_{now.date()}_{i}.jpg",
+            status="processed",
+            expense_month=now.month,
+            expense_year=now.year,
+            notes=notes,
+            uploaded_by_id=admin_user.id
+        )
+        db.add(new_expense)
     
-    # Delete Supplier
+    # Delete Supplier only after all files are processed
     db.delete(supplier)
     db.commit()
     
-    return {"message": "הקבלה הועלתה והספק הועבר להוצאות", "url": url}
+    return {"message": f"הועלו {len(files)} קבלות והספק הועבר להוצאות", "urls": urls}

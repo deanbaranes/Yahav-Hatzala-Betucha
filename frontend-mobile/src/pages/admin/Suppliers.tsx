@@ -91,9 +91,9 @@ export default function Suppliers() {
   });
 
   const uploadReceiptMutation = useMutation({
-    mutationFn: async ({ id, file }: { id: string, file: File }) => {
+    mutationFn: async ({ id, files }: { id: string, files: File[] }) => {
       const formData = new FormData();
-      formData.append('file', file);
+      files.forEach(file => formData.append('files', file));
       return axiosClient.post(`/suppliers/${id}/upload-receipt`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
@@ -308,11 +308,12 @@ export default function Suppliers() {
                             <input 
                               type="file" 
                               className="hidden" 
-                              accept="image/*,.pdf" 
+                              accept="image/*,.pdf"
+                              multiple
                               onChange={(e) => {
-                                if (e.target.files && e.target.files[0]) {
-                                  if (window.confirm("האם להעלות את הקבלה? פעולה זו תמחק את הספק מכאן ותעביר אותו למסך הוצאות.")) {
-                                    uploadReceiptMutation.mutate({ id: supplier.id, file: e.target.files[0] });
+                                if (e.target.files && e.target.files.length > 0) {
+                                  if (window.confirm("האם להעלות את הקבלות? פעולה זו תמחק את הספק מכאן ותעביר אותו למסך הוצאות.")) {
+                                    uploadReceiptMutation.mutate({ id: supplier.id, files: Array.from(e.target.files) });
                                   }
                                   e.target.value = ''; // Reset
                                 }
