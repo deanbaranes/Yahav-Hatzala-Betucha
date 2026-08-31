@@ -94,9 +94,7 @@ export default function Suppliers() {
     mutationFn: async ({ id, files }: { id: string, files: File[] }) => {
       const formData = new FormData();
       files.forEach(file => formData.append('files', file));
-      return axiosClient.post(`/suppliers/${id}/upload-receipt`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      return axiosClient.post(`/suppliers/${id}/upload-receipt`, formData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
