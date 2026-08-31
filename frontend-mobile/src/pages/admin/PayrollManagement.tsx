@@ -20,6 +20,9 @@ export default function PayrollManagement() {
   // Add adjustment state
   const [adjForm, setAdjForm] = useState({ type: 'מענק התמדה', amount: '', notes: '' });
 
+  // Editable report state
+  const [editableReport, setEditableReport] = useState('');
+
   const { data: employees, isLoading } = useQuery<any[]>({
     queryKey: ['payroll-employees', showAllEmployees ? 'all' : `${selectedMonth}-${selectedYear}`],
     queryFn: async () => {
@@ -77,6 +80,14 @@ export default function PayrollManagement() {
     },
     enabled: !!selectedUser
   });
+
+  React.useEffect(() => {
+    if (reportData?.report) {
+      setEditableReport(reportData.report);
+    } else {
+      setEditableReport('');
+    }
+  }, [reportData]);
 
   const updateRatesMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -188,8 +199,8 @@ export default function PayrollManagement() {
   });
 
   const handleCopy = () => {
-    if (reportData?.report) {
-      navigator.clipboard.writeText(reportData.report);
+    if (editableReport) {
+      navigator.clipboard.writeText(editableReport);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -531,9 +542,13 @@ export default function PayrollManagement() {
                   <div className="h-4 bg-slate-700 rounded w-3/4 mb-2"></div>
                 </div>
               ) : (
-                <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-blue-50" dir="rtl">
-                  {reportData?.report || 'לא ניתן לייצר דוח. בדוק הגדרות עובד.'}
-                </pre>
+                <textarea 
+                  value={editableReport}
+                  onChange={(e) => setEditableReport(e.target.value)}
+                  className="w-full bg-slate-800/50 text-blue-50 p-4 rounded-xl border border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none whitespace-pre-wrap font-mono text-sm leading-relaxed resize-y min-h-[300px] transition-all"
+                  dir="rtl"
+                  placeholder="לא ניתן לייצר דוח. בדוק הגדרות עובד."
+                />
               )}
             </div>
 
