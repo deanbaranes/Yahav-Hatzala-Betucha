@@ -19,7 +19,7 @@ async def upload_expense(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_admin_user)
 ):
-    ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp", "application/pdf"}
+    ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf", "image/heic", "image/heif", "application/octet-stream"}
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(status_code=400, detail="סוג קובץ לא נתמך. יש להעלות תמונה או PDF.")
 
