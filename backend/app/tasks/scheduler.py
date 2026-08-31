@@ -169,6 +169,13 @@ def delete_old_business_expenses():
     (e.g., on Oct 15th, deletes all expenses in the August folder and older).
     """
     logger.info("Running delete_old_business_expenses task...")
+    
+    # Check if today is the 15th
+    now = datetime.now()
+    if now.day != 15:
+        logger.info("Not the 15th of the month. Skipping delete_old_business_expenses.")
+        return
+        
     db: Session = next(get_db())
     now = datetime.now()
     
@@ -185,14 +192,15 @@ def delete_old_business_expenses():
     ).all()
     
     deleted_count = 0
-    for expense in old_expenses:
-        if expense.file_url:
-            StorageService.delete_file(expense.file_url)
-        db.delete(expense)
+    for exp in old_expenses:
+        if exp.file_url:
+            StorageService.delete_file(exp.file_url)
+        db.delete(exp)
         deleted_count += 1
         
     db.commit()
     logger.info(f"Deleted {deleted_count} old business expenses.")
+
 
 def check_ended_trips_for_reports():
     """
