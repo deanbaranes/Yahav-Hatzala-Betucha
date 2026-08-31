@@ -280,16 +280,16 @@ export default function Suppliers() {
                               toggleInvoiceMutation.mutate(supplier);
                             }
                           }}
-                          title={supplier.is_invoiced ? "טרם שולם" : "סמן כשולם"}
+                          title={supplier.is_invoiced ? "בטל תשלום" : "סמן כשולם"}
                           className={`inline-flex items-center justify-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap ${
                             supplier.is_invoiced 
                               ? "bg-green-100 text-green-700 hover:bg-red-50 hover:text-red-600" 
                               : "bg-gray-100 text-gray-600 hover:bg-green-100 hover:text-green-700"
                           }`}
                         >
-                          {supplier.is_invoiced ? <X size={16} className="sm:hidden" /> : <Check size={16} />}
-                          <span className="hidden sm:inline">
-                            {supplier.is_invoiced ? "טרם שולם" : "סמן כשולם"}
+                          {supplier.is_invoiced ? <Check size={16} /> : <X size={16} className="text-gray-400" />}
+                          <span>
+                            {supplier.is_invoiced ? "שולם" : "טרם שולם"}
                           </span>
                         </button>
                         {supplier.is_invoiced && supplier.invoice_date && (
