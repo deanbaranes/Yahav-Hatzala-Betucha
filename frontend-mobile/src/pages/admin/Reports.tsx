@@ -244,8 +244,25 @@ export default function Reports() {
                         <div className="space-y-2">
                           {editForm.daily_shifts && editForm.daily_shifts.length > 0 ? (
                             editForm.daily_shifts.map((shift: any, idx: number) => (
-                              <div key={idx} className="border-b border-indigo-100 pb-2 mb-2 last:border-0">
-                                <label className="text-[10px] text-indigo-500 font-bold block">יום {idx + 1}</label>
+                              <div key={idx} className="border-b border-indigo-100 pb-2 mb-2 last:border-0 relative bg-white p-1 rounded-md shadow-sm border border-gray-100">
+                                <div className="flex justify-between items-center mb-1.5 border-b border-gray-50 pb-1">
+                                  <label className="text-[10px] text-indigo-600 font-bold block">יום {idx + 1}</label>
+                                  <button 
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      if (window.confirm(`האם למחוק את יום ${idx + 1}?`)) {
+                                        const newShifts = [...editForm.daily_shifts];
+                                        newShifts.splice(idx, 1);
+                                        setEditForm({...editForm, daily_shifts: newShifts});
+                                      }
+                                    }}
+                                    className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-md p-1 transition-all flex items-center gap-1"
+                                    title="מחק יום דיווח זה"
+                                  >
+                                    <Trash2 size={12} />
+                                    <span className="text-[10px] font-bold">מחק</span>
+                                  </button>
+                                </div>
                                 <div className="flex flex-col gap-2">
                                   <div>
                                     <label className="text-[9px] text-gray-400 block mb-0.5">התחלה:</label>
