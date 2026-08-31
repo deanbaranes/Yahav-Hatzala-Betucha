@@ -219,7 +219,7 @@ export default function Suppliers() {
                 <th className="p-2 sm:p-4 font-bold text-gray-600 text-xs sm:text-sm whitespace-nowrap">תאריכים</th>
                 <th className="p-2 sm:p-4 font-bold text-gray-600 text-xs sm:text-sm whitespace-nowrap">פירוט</th>
                 <th className="p-2 sm:p-4 font-bold text-gray-600 text-xs sm:text-sm whitespace-nowrap">סכום</th>
-                <th className="p-2 sm:p-4 font-bold text-gray-600 text-xs sm:text-sm text-center whitespace-nowrap">שולם? (מחיקה)</th>
+                <th className="p-2 sm:p-4 font-bold text-gray-600 text-xs sm:text-sm text-center whitespace-nowrap">מצב תשלום</th>
                 <th className="p-2 sm:p-4 font-bold text-gray-600 text-xs sm:text-sm text-left whitespace-nowrap">פעולות</th>
               </tr>
             </thead>
