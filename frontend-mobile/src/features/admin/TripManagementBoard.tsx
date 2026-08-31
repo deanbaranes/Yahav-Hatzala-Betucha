@@ -226,6 +226,18 @@ export default function TripManagementBoard() {
             value={formData.global_salary} onChange={e => setFormData({...formData, global_salary: e.target.value})} />
         </div>
 
+        <div className="mb-4 flex items-center h-full pt-6">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input 
+              type="checkbox" 
+              className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
+              checked={formData.has_accommodation}
+              onChange={e => setFormData({...formData, has_accommodation: e.target.checked})}
+            />
+            <span className="font-bold text-gray-700">כולל לינה (חיוב אוטומטי על לילות)</span>
+          </label>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 md:col-span-2">
           <div>
             <label className="block text-[11px] font-bold text-gray-700 mb-1">שם איש קשר (פנימי)</label>
