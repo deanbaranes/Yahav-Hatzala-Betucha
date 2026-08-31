@@ -57,7 +57,8 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
       contact_phone: '',
       employee_contact_name: '',
       employee_contact_phone: '',
-      notes: ''
+      notes: '',
+      has_accommodation: true
     };
   });
 
@@ -163,6 +164,19 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
                 onChange={e => setNewTripForm({...newTripForm, end_date: e.target.value})}
               />
             </div>
+          </div>
+
+          <div className="flex items-center gap-2 mb-2">
+            <input 
+              type="checkbox" 
+              id="has_accommodation_manual"
+              checked={newTripForm.has_accommodation}
+              onChange={e => setNewTripForm({...newTripForm, has_accommodation: e.target.checked})}
+              className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
+            />
+            <label htmlFor="has_accommodation_manual" className="text-sm font-bold text-gray-700 cursor-pointer select-none">
+              כולל לינה (חיוב אוטומטי על לילות)
+            </label>
           </div>
 
           <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100">
@@ -419,7 +433,8 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
                 recurring_type: isRecurring ? recurringType : null,
                 recurring_end_date: (isRecurring && recurringEndDate) ? `${recurringEndDate}T00:00:00Z` : null,
                 assigned_user_id: assignedUserId || null,
-                assigned_role: assignedRole || null
+                assigned_role: assignedRole || null,
+                has_accommodation: newTripForm.has_accommodation
               });
             }}
             className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm"
