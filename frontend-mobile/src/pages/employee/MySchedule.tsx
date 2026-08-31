@@ -32,12 +32,15 @@ export default function MySchedule() {
     const tripDate = new Date(t.end_date || t.start_date);
     // Include trips happening today or in the future (subtracting 1 day to be safe with timezones)
     return tripDate.getTime() >= now.getTime() - 24 * 60 * 60 * 1000;
-  });
+  }).sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
 
   const pastTrips = assignedTrips.filter(t => {
     const tripDate = new Date(t.end_date || t.start_date);
     return tripDate.getTime() < now.getTime() - 24 * 60 * 60 * 1000;
-  });
+  }).sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
+
+  // Waitlisted trips should also show closest first
+  waitlistedTrips.sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
 
   return (
     <div className="animate-fade-in pb-10 space-y-6">
