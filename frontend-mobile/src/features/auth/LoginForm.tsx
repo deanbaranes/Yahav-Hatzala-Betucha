@@ -23,6 +23,7 @@ export default function LoginForm() {
     onSuccess: (data) => {
       // Store token and redirect to trigger useAuth check
       localStorage.setItem('token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
       localStorage.setItem('role', data.role); // In a real app we decode the JWT, but saving here for quick mock
       
       // Reload or navigate to root so the App Router processes the redirect correctly

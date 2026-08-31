@@ -12,6 +12,7 @@ from app.models.trip_report import ManagerStatus, BillingStatus
 class Token(BaseModel):
     access_token: str
     token_type: str
+    refresh_token: Optional[str] = None
 
 class TokenData(BaseModel):
     phone: Optional[str] = None

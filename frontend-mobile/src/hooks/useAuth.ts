@@ -28,14 +28,18 @@ export function useAuth() {
           // If token is expired, try to refresh it silently before giving up
           if (decoded.exp && decoded.exp * 1000 < Date.now()) {
             try {
-              const res = await axiosClient.post('/auth/refresh');
+              const rToken = localStorage.getItem('refresh_token');
+              const res = await axiosClient.post('/auth/refresh', { refresh_token: rToken });
               token = res.data.access_token;
+              const newRToken = res.data.refresh_token;
               if (token) {
                   localStorage.setItem('token', token);
+                  if (newRToken) localStorage.setItem('refresh_token', newRToken);
                   decoded = jwtDecode(token);
               }
             } catch (err) {
               localStorage.removeItem('token');
+              localStorage.removeItem('refresh_token');
               token = null;
             }
           }

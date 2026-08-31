@@ -52,11 +52,13 @@ axiosClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // Refresh token is in the HttpOnly cookie — just call the endpoint
-        const { data } = await axiosClient.post<{ access_token: string }>('/auth/refresh');
+        const rToken = localStorage.getItem('refresh_token');
+        const { data } = await axiosClient.post<{ access_token: string, refresh_token: string }>('/auth/refresh', { refresh_token: rToken });
         const newToken = data.access_token;
+        const newRToken = data.refresh_token;
 
         localStorage.setItem('token', newToken);
+        if (newRToken) localStorage.setItem('refresh_token', newRToken);
         axiosClient.defaults.headers.common.Authorization = `Bearer ${newToken}`;
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
 
@@ -69,6 +71,7 @@ axiosClient.interceptors.response.use(
         const status = refreshError.response?.status;
         if (status === 401 || status === 403 || status === 400) {
           localStorage.removeItem('token');
+          localStorage.removeItem('refresh_token');
           window.location.href = '/login';
         }
         return Promise.reject(refreshError);

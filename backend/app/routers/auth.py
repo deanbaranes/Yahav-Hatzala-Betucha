@@ -76,7 +76,7 @@ def _build_tokens_and_set_cookie(user: User, db: Session, response: Response) ->
         path="/"
     )
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "refresh_token": raw_token, "token_type": "bearer"}
 
 
 # ── Register ──────────────────────────────────────────────────────────────────
@@ -146,11 +146,16 @@ def login(
 
 
 # ── Refresh ───────────────────────────────────────────────────────────────────
+from pydantic import BaseModel
+class RefreshRequest(BaseModel):
+    refresh_token: Optional[str] = None
+
 @router.post("/refresh", response_model=Token)
 def refresh_token(
     response: Response,
+    body: Optional[RefreshRequest] = None,
     db: Session = Depends(get_db),
-    refresh_token: Optional[str] = Cookie(default=None, alias=REFRESH_COOKIE_NAME)
+    refresh_cookie: Optional[str] = Cookie(default=None, alias=REFRESH_COOKIE_NAME)
 ):
     """
     Validates the refresh token from the HttpOnly cookie.
@@ -161,12 +166,13 @@ def refresh_token(
         detail="פג תוקף החיבור למערכת, אנא התחבר מחדש."
     )
 
-    if not refresh_token:
+    active_refresh_token = (body.refresh_token if body else None) or refresh_cookie
+    if not active_refresh_token:
         raise credentials_exc
 
     # Look up in DB
     db_token = db.query(RefreshToken).filter(
-        RefreshToken.token == refresh_token,
+        RefreshToken.token == active_refresh_token,
         RefreshToken.revoked == False
     ).first()
 
@@ -212,20 +218,22 @@ def refresh_token(
         path="/"
     )
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "refresh_token": db_token.token, "token_type": "bearer"}
 
 
 # ── Logout ────────────────────────────────────────────────────────────────────
 @router.post("/logout")
 def logout(
     response: Response,
+    body: Optional[RefreshRequest] = None,
     db: Session = Depends(get_db),
-    refresh_token: Optional[str] = Cookie(default=None, alias=REFRESH_COOKIE_NAME)
+    refresh_cookie: Optional[str] = Cookie(default=None, alias=REFRESH_COOKIE_NAME)
 ):
     """Revoke the refresh token and clear the cookie."""
-    if refresh_token:
+    active_refresh_token = (body.refresh_token if body else None) or refresh_cookie
+    if active_refresh_token:
         db_token = db.query(RefreshToken).filter(
-            RefreshToken.token == refresh_token
+            RefreshToken.token == active_refresh_token
         ).first()
         if db_token:
             db_token.revoked = True
