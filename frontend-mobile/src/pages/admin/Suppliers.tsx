@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
-import { Plus, Search, Trash2, Edit2, Check, X, Truck, Download } from 'lucide-react';
+import { Plus, Search, Trash2, Edit2, Check, X, Truck, Download, Upload } from 'lucide-react';
 import { exportToCSV } from '../../utils/csvExport';
 
 interface Supplier {
@@ -88,6 +88,23 @@ export default function Suppliers() {
       });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['suppliers'] })
+  });
+
+  const uploadReceiptMutation = useMutation({
+    mutationFn: async ({ id, file }: { id: string, file: File }) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return axiosClient.post(`/suppliers/${id}/upload-receipt`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      alert("הקבלה הועלתה בהצלחה, וההוצאה נרשמה במסך הוצאות!");
+    },
+    onError: () => {
+      alert("שגיאה בהעלאת הקבלה. אנא נסה שנית.");
+    }
   });
 
   const resetForm = () => {
@@ -283,6 +300,25 @@ export default function Suppliers() {
                       </td>
                       <td className="p-2 sm:p-4">
                         <div className="flex items-center justify-end gap-1 sm:gap-2">
+                          <label 
+                            className={`p-1.5 sm:p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer ${uploadReceiptMutation.isPending ? 'opacity-50 pointer-events-none' : ''}`}
+                            title="העלה קבלה (ימחק ויעביר להוצאות)"
+                          >
+                            <Upload size={16} />
+                            <input 
+                              type="file" 
+                              className="hidden" 
+                              accept="image/*,.pdf" 
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  if (window.confirm("האם להעלות את הקבלה? פעולה זו תמחק את הספק מכאן ותעביר אותו למסך הוצאות.")) {
+                                    uploadReceiptMutation.mutate({ id: supplier.id, file: e.target.files[0] });
+                                  }
+                                  e.target.value = ''; // Reset
+                                }
+                              }} 
+                            />
+                          </label>
                           <button 
                             onClick={() => handleEdit(supplier)}
                             className="p-1.5 sm:p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"

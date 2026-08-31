@@ -59,3 +59,56 @@ def delete_supplier(supplier_id: uuid.UUID, db: Session = Depends(get_db), admin
     db.delete(db_supplier)
     db.commit()
     return {"detail": "ספק נמחק בהצלחה"}
+
+from fastapi import UploadFile, File
+from datetime import datetime
+from app.services.storage_service import StorageService
+from app.models.business_expense import BusinessExpense
+import logging
+
+logger = logging.getLogger(__name__)
+
+@router.post("/{supplier_id}/upload-receipt")
+def upload_supplier_receipt(
+    supplier_id: uuid.UUID, 
+    file: UploadFile = File(...), 
+    db: Session = Depends(get_db), 
+    admin_user: User = Depends(get_admin_user)
+):
+    supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
+    if not supplier:
+        raise HTTPException(status_code=404, detail="ספק לא נמצא")
+        
+    try:
+        url = StorageService.upload_file(
+            file.file,
+            folder="yahav_receipts",
+            content_type=file.content_type or "",
+        )
+    except RuntimeError as e:
+        logger.error(f"Receipt upload failed: {e}")
+        raise HTTPException(status_code=500, detail="שגיאה בהעלאת הקובץ. אנא נסה שנית.")
+        
+    now = datetime.now()
+    
+    vat_note = "" if supplier.includes_vat else " (+ מע\"מ)"
+    details_str = f" - {supplier.details}" if supplier.details else ""
+    
+    # Create Business Expense
+    new_expense = BusinessExpense(
+        title=f"תשלום לספק: {supplier.name}{details_str}{vat_note}",
+        amount=supplier.amount,
+        expense_date=now.date(),
+        expense_month=now.month,
+        expense_year=now.year,
+        file_url=url,
+        expense_type="ספקים",
+        is_paid=True
+    )
+    db.add(new_expense)
+    
+    # Delete Supplier
+    db.delete(supplier)
+    db.commit()
+    
+    return {"message": "הקבלה הועלתה והספק הועבר להוצאות", "url": url}
