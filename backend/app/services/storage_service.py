@@ -76,8 +76,14 @@ class StorageService:
 
         # ── Cloudinary upload ──
         try:
+            if hasattr(file_obj, "read"):
+                file_obj.seek(0)
+                file_data = file_obj.read()
+            else:
+                file_data = file_obj
+                
             result = cloudinary.uploader.upload(
-                file_obj,
+                file_data,
                 folder=folder,
                 resource_type="auto",  # auto-detect image vs raw (pdf)
             )
