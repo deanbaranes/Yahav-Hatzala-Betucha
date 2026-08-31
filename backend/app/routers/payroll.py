@@ -219,9 +219,9 @@ def export_payroll(employee_id: str, month: int, year: int, db: Session = Depend
         raise HTTPException(status_code=404, detail="משתמש לא נמצא")
 
     payroll_service = PayrollService(db)
-    report_text = payroll_service.generate_employee_report(user, month, year)
+    report_result = payroll_service.generate_employee_report(user, month, year)
 
-    return {"report": report_text}
+    return {"report": report_result["text"], "data": report_result["data"]}
 
 @router.get("/export-all/{month}/{year}")
 def export_all_payroll(month: int, year: int, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
@@ -248,8 +248,8 @@ def export_all_payroll(month: int, year: int, db: Session = Depends(get_db), adm
     full_report = f"--- דוח שכר מרוכז: {month}/{year} ---\n\n"
     for emp in employees:
         try:
-            report_text = payroll_service.generate_employee_report(emp, month, year)
-            full_report += report_text + "\n\n=============================\n\n"
+            report_result = payroll_service.generate_employee_report(emp, month, year)
+            full_report += report_result["text"] + "\n\n=============================\n\n"
         except ValueError:
             pass 
             
@@ -261,8 +261,8 @@ def export_all_payroll(month: int, year: int, db: Session = Depends(get_db), adm
 @router.get("/my_payroll/{month}/{year}")
 def get_my_payroll(month: int, year: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     payroll_service = PayrollService(db)
-    report_text = payroll_service.generate_employee_report(current_user, month, year)
-    return {"report": report_text}
+    report_result = payroll_service.generate_employee_report(current_user, month, year)
+    return {"report": report_result["text"], "data": report_result["data"]}
 
 @router.post("/payslips")
 async def upload_payslip(

@@ -21,7 +21,7 @@ class PayrollService:
     def __init__(self, db: Session):
         self.db = db
 
-    def generate_employee_report(self, user: User, month: int, year: int) -> str:
+    def generate_employee_report(self, user: User, month: int, year: int) -> dict:
         if user.status == "inactive":
             raise ValueError(f"Cannot generate payroll for inactive user {user.full_name}")
             
@@ -151,11 +151,31 @@ class PayrollService:
 
         gross_total = base_salary + ot_total + recovery_pay + travel_pay + accom_pay + other_adjs + trip_global_bonus
 
-        return self._format_report(
+        report_text = self._format_report(
             user.full_name, days_worked, total_hours, base_salary, 
             ot_hours, hourly_rate, ot_total, recovery_pay, travel_pay, 
             accom_nights, accom_pay, other_adjs, trip_global_bonus, gross_total
         )
+        
+        return {
+            "text": report_text,
+            "data": {
+                "full_name": user.full_name,
+                "days_worked": float(days_worked),
+                "total_hours": float(total_hours),
+                "base_salary": float(base_salary),
+                "ot_hours": float(ot_hours),
+                "hourly_rate": float(hourly_rate),
+                "ot_total": float(ot_total),
+                "recovery_pay": float(recovery_pay),
+                "travel_pay": float(travel_pay),
+                "accom_nights": float(accom_nights),
+                "accom_pay": float(accom_pay),
+                "other_adjs": float(other_adjs),
+                "trip_global_bonus": float(trip_global_bonus),
+                "gross_total": float(gross_total)
+            }
+        }
 
     def _format_report(self, full_name, days_worked, total_hours, base_salary, ot_hours, 
                        hourly_rate, ot_total, recovery_pay, travel_pay, accom_nights, 

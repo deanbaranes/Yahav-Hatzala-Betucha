@@ -21,7 +21,7 @@ export default function PayrollManagement() {
   const [adjForm, setAdjForm] = useState({ type: 'מענק התמדה', amount: '', notes: '' });
 
   // Editable report state
-  const [editableReport, setEditableReport] = useState('');
+  const [reportValues, setReportValues] = useState<any>(null);
 
   const { data: employees, isLoading } = useQuery<any[]>({
     queryKey: ['payroll-employees', showAllEmployees ? 'all' : `${selectedMonth}-${selectedYear}`],
@@ -82,12 +82,43 @@ export default function PayrollManagement() {
   });
 
   React.useEffect(() => {
-    if (reportData?.report) {
-      setEditableReport(reportData.report);
+    if (reportData?.data) {
+      setReportValues(reportData.data);
     } else {
-      setEditableReport('');
+      setReportValues(null);
     }
   }, [reportData]);
+
+  const handleValueChange = (field: string, value: string) => {
+    const num = value === '' ? 0 : parseFloat(value);
+    setReportValues((prev: any) => {
+      const next = { ...prev, [field]: num };
+      // Recalculate gross_total
+      const newGross = next.base_salary + next.ot_total + next.recovery_pay + next.travel_pay + next.accom_pay + next.other_adjs + next.trip_global_bonus;
+      next.gross_total = newGross;
+      return next;
+    });
+  };
+
+  const generateReportText = () => {
+    if (!reportValues) return "";
+    const v = reportValues;
+    let text = `שם עובד: ${v.full_name}\n`;
+    text += `ימי עבודה: ${v.days_worked}\n`;
+    text += `שעות עבודה בחודש: ${Number(v.total_hours).toFixed(2)}\n`;
+    text += `שכר בסיס: ${Number(v.base_salary).toFixed(2)} ₪\n`;
+    text += `שעות נוספות: ${Number(v.ot_hours).toFixed(2)} × ${v.hourly_rate} × 1.5 = ${Number(v.ot_total).toFixed(2)} ₪\n`;
+    text += `הבראה: ${Number(v.recovery_pay).toFixed(2)} ₪\n`;
+    text += `נסיעות: ${Number(v.travel_pay).toFixed(2)} ₪`;
+
+    if (v.accom_pay > 0) text += `\nלינה (${v.accom_nights} לילות): ${Number(v.accom_pay).toFixed(2)} ₪`;
+    if (v.other_adjs > 0) text += `\nתוספות שונות: ${Number(v.other_adjs).toFixed(2)} ₪`;
+    if (v.trip_global_bonus > 0) text += `\nמענק התמדה: ${Number(v.trip_global_bonus).toFixed(2)} ₪`;
+    
+    text += `\n-----------------------------\n`;
+    text += `סה"כ ברוטו: ${Number(v.gross_total).toFixed(2)} ₪`;
+    return text;
+  };
 
   const updateRatesMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -199,8 +230,9 @@ export default function PayrollManagement() {
   });
 
   const handleCopy = () => {
-    if (editableReport) {
-      navigator.clipboard.writeText(editableReport);
+    const text = generateReportText();
+    if (text) {
+      navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -541,14 +573,55 @@ export default function PayrollManagement() {
                 <div className="animate-pulse flex space-x-4">
                   <div className="h-4 bg-slate-700 rounded w-3/4 mb-2"></div>
                 </div>
+              ) : reportValues ? (
+                <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700 font-mono text-sm space-y-3" dir="rtl">
+                  <div className="flex justify-between items-center pb-2 border-b border-slate-700/50">
+                    <span className="text-gray-400">שם עובד:</span>
+                    <span className="font-bold">{reportValues.full_name}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">ימי עבודה:</span>
+                    <input type="number" value={reportValues.days_worked} onChange={e => handleValueChange('days_worked', e.target.value)} className="bg-slate-900 border border-slate-600 rounded px-2 py-1 w-24 text-left" />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">שעות עבודה בחודש:</span>
+                    <input type="number" value={reportValues.total_hours} onChange={e => handleValueChange('total_hours', e.target.value)} className="bg-slate-900 border border-slate-600 rounded px-2 py-1 w-24 text-left" />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">שכר בסיס (₪):</span>
+                    <input type="number" value={reportValues.base_salary} onChange={e => handleValueChange('base_salary', e.target.value)} className="bg-slate-900 border border-slate-600 rounded px-2 py-1 w-24 text-left font-bold text-blue-300" />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400" title={`שעות נוספות: ${reportValues.ot_hours} × ${reportValues.hourly_rate} × 1.5`}>שעות נוספות (₪):</span>
+                    <input type="number" value={reportValues.ot_total} onChange={e => handleValueChange('ot_total', e.target.value)} className="bg-slate-900 border border-slate-600 rounded px-2 py-1 w-24 text-left text-blue-300" />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">הבראה (₪):</span>
+                    <input type="number" value={reportValues.recovery_pay} onChange={e => handleValueChange('recovery_pay', e.target.value)} className="bg-slate-900 border border-slate-600 rounded px-2 py-1 w-24 text-left text-blue-300" />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">נסיעות (₪):</span>
+                    <input type="number" value={reportValues.travel_pay} onChange={e => handleValueChange('travel_pay', e.target.value)} className="bg-slate-900 border border-slate-600 rounded px-2 py-1 w-24 text-left text-blue-300" />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">לינה (₪):</span>
+                    <input type="number" value={reportValues.accom_pay} onChange={e => handleValueChange('accom_pay', e.target.value)} className="bg-slate-900 border border-slate-600 rounded px-2 py-1 w-24 text-left text-blue-300" />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">תוספות שונות (₪):</span>
+                    <input type="number" value={reportValues.other_adjs} onChange={e => handleValueChange('other_adjs', e.target.value)} className="bg-slate-900 border border-slate-600 rounded px-2 py-1 w-24 text-left text-blue-300" />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">מענק התמדה (₪):</span>
+                    <input type="number" value={reportValues.trip_global_bonus} onChange={e => handleValueChange('trip_global_bonus', e.target.value)} className="bg-slate-900 border border-slate-600 rounded px-2 py-1 w-24 text-left text-blue-300" />
+                  </div>
+                  <div className="pt-4 border-t border-slate-700 flex justify-between items-center">
+                    <span className="font-bold text-lg text-white">סה"כ ברוטו:</span>
+                    <span className="font-black text-xl text-green-400">{Number(reportValues.gross_total).toFixed(2)} ₪</span>
+                  </div>
+                </div>
               ) : (
-                <textarea 
-                  value={editableReport}
-                  onChange={(e) => setEditableReport(e.target.value)}
-                  className="w-full bg-slate-800/50 text-blue-50 p-4 rounded-xl border border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none whitespace-pre-wrap font-mono text-sm leading-relaxed resize-y min-h-[300px] transition-all"
-                  dir="rtl"
-                  placeholder="לא ניתן לייצר דוח. בדוק הגדרות עובד."
-                />
+                <div className="text-gray-500">לא ניתן לייצר דוח. בדוק הגדרות עובד.</div>
               )}
             </div>
 
