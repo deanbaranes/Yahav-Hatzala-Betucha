@@ -259,14 +259,21 @@ export default function Suppliers() {
                       <td className="p-2 sm:p-4 text-center">
                         <button
                           onClick={() => {
-                            if (window.confirm("האם שולם? האם אתה בטוח שברצונך למחוק חוב זה מהמערכת? (לא ניתן לשחזור)")) {
-                              deleteMutation.mutate(supplier.id);
+                            if (window.confirm(supplier.is_invoiced ? "האם לבטל סימון 'שולם'?" : "האם שולם? (החוב יישאר במערכת עד למחיקה ידנית)")) {
+                              toggleInvoiceMutation.mutate(supplier);
                             }
                           }}
-                          title="סמן כשולם ומחק"
-                          className="inline-flex items-center justify-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold transition-colors bg-gray-100 text-gray-600 hover:bg-green-100 hover:text-green-700 whitespace-nowrap"
+                          title={supplier.is_invoiced ? "בטל שולם" : "סמן כשולם"}
+                          className={`inline-flex items-center justify-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap ${
+                            supplier.is_invoiced 
+                              ? "bg-green-100 text-green-700 hover:bg-red-50 hover:text-red-600" 
+                              : "bg-gray-100 text-gray-600 hover:bg-green-100 hover:text-green-700"
+                          }`}
                         >
-                          <Check size={16} /> <span className="hidden sm:inline">סמן כשולם ומחק</span>
+                          {supplier.is_invoiced ? <X size={16} className="sm:hidden" /> : <Check size={16} />}
+                          <span className="hidden sm:inline">
+                            {supplier.is_invoiced ? "בטל שולם" : "סמן כשולם"}
+                          </span>
                         </button>
                         {supplier.is_invoiced && supplier.invoice_date && (
                           <div className="text-[10px] text-gray-400 mt-1">
