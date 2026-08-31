@@ -46,6 +46,13 @@ class NotificationService:
         # Clean the phone number (remove hyphens, spaces)
         clean_phone = "".join(filter(str.isdigit, phone_number))
 
+        # Exclude Yahav from receiving employee-targeted SMS (assignments, confirmations, report reminders)
+        if clean_phone == "0533210777":
+            employee_keywords = ["תזכורת שיבוץ", "שובצת לטיול", "לאשר הגעה סופית", "למלא דוח", "הסתיים"]
+            if any(keyword in message for keyword in employee_keywords):
+                logger.info("[SMS] Skipped sending employee SMS to Yahav (0533210777) based on user preference.")
+                return True
+
         try:
             url = "https://sapi.itnewsletter.co.il/webservices/wssms.asmx"
             
