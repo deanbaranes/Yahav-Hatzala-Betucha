@@ -163,11 +163,19 @@ export default function Suppliers() {
 
   if (isLoading) return <div className="p-8 text-center text-gray-500 font-bold">טוען נתונים...</div>;
 
-  const groupedSuppliers = filteredSuppliers.reduce((acc: Record<string, Supplier[]>, supplier) => {
-    if (!acc[supplier.name]) acc[supplier.name] = [];
-    acc[supplier.name].push(supplier);
+  const groupedByMonth = filteredSuppliers.reduce((acc: Record<string, Record<string, Supplier[]>>, supplier) => {
+    const d = new Date(supplier.debt_date);
+    const sortKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const displayMonth = d.toLocaleString('he-IL', { month: 'long', year: 'numeric' });
+    const monthKey = `${sortKey}|${displayMonth}`;
+
+    if (!acc[monthKey]) acc[monthKey] = {};
+    if (!acc[monthKey][supplier.name]) acc[monthKey][supplier.name] = [];
+    acc[monthKey][supplier.name].push(supplier);
     return acc;
   }, {});
+
+  const sortedMonths = Object.keys(groupedByMonth).sort((a, b) => a.localeCompare(b));
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -239,109 +247,119 @@ export default function Suppliers() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {Object.entries(groupedSuppliers).map(([name, group], index) => (
-                <React.Fragment key={name}>
-                  {index > 0 && (
+              {sortedMonths.map((monthKey) => {
+                const displayMonth = monthKey.split('|')[1];
+                const suppliersInMonth = groupedByMonth[monthKey];
+                
+                return (
+                  <React.Fragment key={monthKey}>
                     <tr>
-                      <td colSpan={6} className="h-8 bg-gray-100 border-y-4 border-white"></td>
+                      <td colSpan={6} className="bg-gray-100 text-gray-800 font-black text-lg py-4 px-6 text-center border-y-4 border-white shadow-inner rounded-lg">
+                        {displayMonth}
+                      </td>
                     </tr>
-                  )}
-                  <tr className="bg-blue-50/80 border-t-2 border-blue-200">
-                    <td colSpan={3} className="px-3 py-3 sm:px-5 sm:py-4 font-black text-blue-900 text-base sm:text-xl">
-                      {name}
-                    </td>
-                    <td className="px-3 py-3 sm:px-5 sm:py-4 font-black text-red-600 text-base sm:text-xl whitespace-nowrap">
-                      סה"כ: ₪{group.reduce((sum, s) => sum + s.amount, 0).toLocaleString()}
-                    </td>
-                    <td colSpan={2} className="bg-blue-50/80"></td>
-                  </tr>
-                  {[...group].sort((a, b) => new Date(a.debt_date).getTime() - new Date(b.debt_date).getTime()).map(supplier => (
-                    <tr key={supplier.id} className="hover:bg-gray-50/50 transition-colors bg-white">
-                      <td className="p-2 sm:p-4 font-bold text-gray-300 text-sm pr-2 sm:pr-8">↳</td>
-                      <td className="p-2 sm:p-4 text-gray-600 text-[11px] sm:text-sm">
-                        {new Date(supplier.debt_date).toLocaleDateString('he-IL')}
-                        {supplier.debt_end_date && <br className="sm:hidden" />}
-                        {supplier.debt_end_date && <span className="hidden sm:inline"> - </span>}
-                        {supplier.debt_end_date && new Date(supplier.debt_end_date).toLocaleDateString('he-IL')}
-                      </td>
-                      <td className="p-2 sm:p-4 text-gray-600 text-xs sm:text-sm whitespace-pre-wrap min-w-[120px] sm:min-w-[200px]" title={supplier.details}>
-                        {supplier.details || '-'}
-                      </td>
-                      <td className="p-2 sm:p-4 font-bold text-gray-700 text-xs sm:text-sm whitespace-nowrap">
-                        ₪{supplier.amount.toLocaleString()}
-                        {supplier.includes_vat === false && <span className="text-[10px] sm:text-xs text-gray-400 font-normal mr-1 block sm:inline">(+ מע״מ)</span>}
-                      </td>
-                      <td className="p-2 sm:p-4 text-center">
-                        <button
-                          onClick={() => {
-                            if (window.confirm(supplier.is_invoiced ? "האם לסמן כ'טרם שולם'?" : "האם שולם? (החוב יישאר במערכת עד למחיקה ידנית)")) {
-                              toggleInvoiceMutation.mutate(supplier);
-                            }
-                          }}
-                          title={supplier.is_invoiced ? "בטל תשלום" : "סמן כשולם"}
-                          className={`inline-flex items-center justify-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap ${
-                            supplier.is_invoiced 
-                              ? "bg-green-100 text-green-700 hover:bg-red-50 hover:text-red-600" 
-                              : "bg-gray-100 text-gray-600 hover:bg-green-100 hover:text-green-700"
-                          }`}
-                        >
-                          {supplier.is_invoiced ? <Check size={16} /> : <X size={16} className="text-gray-400" />}
-                          <span>
-                            {supplier.is_invoiced ? "שולם" : "טרם שולם"}
-                          </span>
-                        </button>
-                        {supplier.is_invoiced && supplier.invoice_date && (
-                          <div className="text-[10px] text-gray-400 mt-1">
-                            {new Date(supplier.invoice_date).toLocaleDateString('he-IL')}
-                          </div>
-                        )}
-                      </td>
-                      <td className="p-2 sm:p-4">
-                        <div className="flex items-center justify-end gap-1 sm:gap-2">
-                          <label 
-                            className={`p-1.5 sm:p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer ${uploadReceiptMutation.isPending ? 'opacity-50 pointer-events-none' : ''}`}
-                            title="העלה קבלה (ימחק ויעביר להוצאות)"
-                          >
-                            <Upload size={16} />
-                            <input 
-                              type="file" 
-                              className="hidden" 
-                              accept="image/*,.pdf"
-                              multiple
-                              onChange={(e) => {
-                                if (e.target.files && e.target.files.length > 0) {
-                                  if (window.confirm("האם להעלות את הקבלות? פעולה זו תמחק את הספק מכאן ותעביר אותו למסך הוצאות.")) {
-                                    uploadReceiptMutation.mutate({ id: supplier.id, files: Array.from(e.target.files) });
+                    
+                    {Object.entries(suppliersInMonth).map(([name, group]) => (
+                      <React.Fragment key={`${monthKey}-${name}`}>
+                        <tr className="bg-blue-50/80 border-t-2 border-blue-200">
+                          <td colSpan={3} className="px-3 py-3 sm:px-5 sm:py-4 font-black text-blue-900 text-base sm:text-xl">
+                            {name}
+                          </td>
+                          <td className="px-3 py-3 sm:px-5 sm:py-4 font-black text-red-600 text-base sm:text-xl whitespace-nowrap">
+                            סה"כ לחודש: ₪{group.reduce((sum, s) => sum + s.amount, 0).toLocaleString()}
+                          </td>
+                          <td colSpan={2} className="bg-blue-50/80"></td>
+                        </tr>
+                        {[...group].sort((a, b) => new Date(a.debt_date).getTime() - new Date(b.debt_date).getTime()).map(supplier => (
+                          <tr key={supplier.id} className="hover:bg-gray-50/50 transition-colors bg-white">
+                            <td className="p-2 sm:p-4 font-bold text-gray-300 text-sm pr-2 sm:pr-8">↳</td>
+                            <td className="p-2 sm:p-4 text-gray-600 text-[11px] sm:text-sm">
+                              {new Date(supplier.debt_date).toLocaleDateString('he-IL')}
+                              {supplier.debt_end_date && <br className="sm:hidden" />}
+                              {supplier.debt_end_date && <span className="hidden sm:inline"> - </span>}
+                              {supplier.debt_end_date && new Date(supplier.debt_end_date).toLocaleDateString('he-IL')}
+                            </td>
+                            <td className="p-2 sm:p-4 text-gray-600 text-xs sm:text-sm whitespace-pre-wrap min-w-[120px] sm:min-w-[200px]" title={supplier.details}>
+                              {supplier.details || '-'}
+                            </td>
+                            <td className="p-2 sm:p-4 font-bold text-gray-700 text-xs sm:text-sm whitespace-nowrap">
+                              ₪{supplier.amount.toLocaleString()}
+                              {supplier.includes_vat === false && <span className="text-[10px] sm:text-xs text-gray-400 font-normal mr-1 block sm:inline">(+ מע״מ)</span>}
+                            </td>
+                            <td className="p-2 sm:p-4 text-center">
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(supplier.is_invoiced ? "האם לסמן כ'טרם שולם'?" : "האם שולם? (החוב יישאר במערכת עד למחיקה ידנית)")) {
+                                    toggleInvoiceMutation.mutate(supplier);
                                   }
-                                  e.target.value = ''; // Reset
-                                }
-                              }} 
-                            />
-                          </label>
-                          <button 
-                            onClick={() => handleEdit(supplier)}
-                            className="p-1.5 sm:p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="ערוך"
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          <button 
-                            onClick={() => {
-                              if (window.confirm('האם אתה בטוח שברצונך למחוק ספק/דיווח זה?')) {
-                                deleteMutation.mutate(supplier.id);
-                              }
-                            }}
-                            className="p-1.5 sm:p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                            title="מחק"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </React.Fragment>
-              ))}
+                                }}
+                                title={supplier.is_invoiced ? "בטל תשלום" : "סמן כשולם"}
+                                className={`inline-flex items-center justify-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap ${
+                                  supplier.is_invoiced 
+                                    ? "bg-green-100 text-green-700 hover:bg-red-50 hover:text-red-600" 
+                                    : "bg-gray-100 text-gray-600 hover:bg-green-100 hover:text-green-700"
+                                }`}
+                              >
+                                {supplier.is_invoiced ? <Check size={16} /> : <X size={16} className="text-gray-400" />}
+                                <span>
+                                  {supplier.is_invoiced ? "שולם" : "טרם שולם"}
+                                </span>
+                              </button>
+                              {supplier.is_invoiced && supplier.invoice_date && (
+                                <div className="text-[10px] text-gray-400 mt-1">
+                                  {new Date(supplier.invoice_date).toLocaleDateString('he-IL')}
+                                </div>
+                              )}
+                            </td>
+                            <td className="p-2 sm:p-4">
+                              <div className="flex items-center justify-end gap-1 sm:gap-2">
+                                <label 
+                                  className={`p-1.5 sm:p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer ${uploadReceiptMutation.isPending ? 'opacity-50 pointer-events-none' : ''}`}
+                                  title="העלה קבלה (ימחק ויעביר להוצאות)"
+                                >
+                                  <Upload size={16} />
+                                  <input 
+                                    type="file" 
+                                    className="hidden" 
+                                    accept="image/*,.pdf"
+                                    multiple
+                                    onChange={(e) => {
+                                      if (e.target.files && e.target.files.length > 0) {
+                                        if (window.confirm("האם להעלות את הקבלות? פעולה זו תמחק את הספק מכאן ותעביר אותו למסך הוצאות.")) {
+                                          uploadReceiptMutation.mutate({ id: supplier.id, files: Array.from(e.target.files) });
+                                        }
+                                        e.target.value = ''; // Reset
+                                      }
+                                    }} 
+                                  />
+                                </label>
+                                <button 
+                                  onClick={() => handleEdit(supplier)}
+                                  className="p-1.5 sm:p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title="ערוך"
+                                >
+                                  <Edit2 size={16} />
+                                </button>
+                                <button 
+                                  onClick={() => {
+                                    if (window.confirm('האם אתה בטוח שברצונך למחוק ספק/דיווח זה?')) {
+                                      deleteMutation.mutate(supplier.id);
+                                    }
+                                  }}
+                                  className="p-1.5 sm:p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="מחק"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </React.Fragment>
+                    ))}
+                  </React.Fragment>
+                );
+              })}
               
               {filteredSuppliers.length === 0 && (
                 <tr>
