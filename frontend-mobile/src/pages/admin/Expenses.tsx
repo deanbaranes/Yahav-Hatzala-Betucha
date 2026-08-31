@@ -72,7 +72,7 @@ export default function Expenses() {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', file, encodeURIComponent(file.name));
         formData.append('expense_month', currentMonth.toString());
         formData.append('expense_year', currentYear.toString());
         await axiosClient.post('/expenses/', formData);

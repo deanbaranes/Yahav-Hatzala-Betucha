@@ -93,7 +93,7 @@ export default function Suppliers() {
   const uploadReceiptMutation = useMutation({
     mutationFn: async ({ id, files }: { id: string, files: File[] }) => {
       const formData = new FormData();
-      files.forEach(file => formData.append('files', file));
+      files.forEach(file => formData.append('files', file, encodeURIComponent(file.name)));
       return axiosClient.post(`/suppliers/${id}/upload-receipt`, formData);
     },
     onSuccess: () => {

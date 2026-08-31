@@ -17,7 +17,7 @@ export default function ReceiptUploader({ onUploadComplete, onRemove }: { onUplo
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', file, encodeURIComponent(file.name));
 
       const { data } = await axiosClient.post('/reports/upload', formData);
 

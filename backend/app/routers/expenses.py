@@ -28,9 +28,10 @@ async def upload_expense(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"שגיאה בהעלאת הקובץ: {str(e)}")
         
+    from urllib.parse import unquote
     expense = BusinessExpense(
         file_url=url,
-        file_name=file.filename,
+        file_name=unquote(file.filename) if file.filename else None,
         notes=notes,
         uploaded_by_id=current_user.id,
         status="pending",

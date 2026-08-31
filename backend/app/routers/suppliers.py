@@ -103,9 +103,12 @@ def upload_supplier_receipt(
         else:
             notes = f"תשלום לספק: {supplier.name} (קובץ {i+1} מתוך {len(files)}) | המשך מסמכים (ללא סכום נוסף)"
             
+        from urllib.parse import unquote
+        safe_filename = unquote(file.filename) if file.filename else f"supplier_receipt_{supplier.name}_{now.date()}_{i}.jpg"
+        
         new_expense = BusinessExpense(
             file_url=url,
-            file_name=file.filename or f"supplier_receipt_{supplier.name}_{now.date()}_{i}.jpg",
+            file_name=safe_filename,
             status="pending",
             expense_month=now.month,
             expense_year=now.year,

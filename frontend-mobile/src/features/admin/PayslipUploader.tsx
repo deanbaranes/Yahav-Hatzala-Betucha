@@ -96,7 +96,7 @@ export default function PayslipUploader() {
         formData.append('user_id', f.matchedUserId);
         formData.append('month', month.toString());
         formData.append('year', year.toString());
-        formData.append('file', f.file);
+        formData.append('file', f.file, encodeURIComponent(f.file.name));
         
         await axiosClient.post('/payroll/payslips', formData);
         

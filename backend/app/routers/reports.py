@@ -142,7 +142,7 @@ async def upload_file(file: UploadFile = File(...), current_user: User = Depends
     # Reset file position for subsequent reads
     await file.seek(0)
 
-    ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp", "application/pdf"}
+    ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf", "image/heic", "image/heif", "application/octet-stream"}
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(status_code=400, detail="סוג קובץ לא נתמך. יש להעלות תמונה או PDF.")
 
