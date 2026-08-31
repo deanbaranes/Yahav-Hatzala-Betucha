@@ -276,11 +276,11 @@ export default function Suppliers() {
                       <td className="p-2 sm:p-4 text-center">
                         <button
                           onClick={() => {
-                            if (window.confirm(supplier.is_invoiced ? "האם לבטל סימון 'שולם'?" : "האם שולם? (החוב יישאר במערכת עד למחיקה ידנית)")) {
+                            if (window.confirm(supplier.is_invoiced ? "האם לסמן כ'טרם שולם'?" : "האם שולם? (החוב יישאר במערכת עד למחיקה ידנית)")) {
                               toggleInvoiceMutation.mutate(supplier);
                             }
                           }}
-                          title={supplier.is_invoiced ? "בטל שולם" : "סמן כשולם"}
+                          title={supplier.is_invoiced ? "טרם שולם" : "סמן כשולם"}
                           className={`inline-flex items-center justify-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap ${
                             supplier.is_invoiced 
                               ? "bg-green-100 text-green-700 hover:bg-red-50 hover:text-red-600" 
@@ -289,7 +289,7 @@ export default function Suppliers() {
                         >
                           {supplier.is_invoiced ? <X size={16} className="sm:hidden" /> : <Check size={16} />}
                           <span className="hidden sm:inline">
-                            {supplier.is_invoiced ? "בטל שולם" : "סמן כשולם"}
+                            {supplier.is_invoiced ? "טרם שולם" : "סמן כשולם"}
                           </span>
                         </button>
                         {supplier.is_invoiced && supplier.invoice_date && (
