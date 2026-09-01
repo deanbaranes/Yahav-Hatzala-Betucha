@@ -110,8 +110,8 @@ def upload_supplier_receipt(
             file_url=url,
             file_name=safe_filename,
             status="pending",
-            expense_month=now.month,
-            expense_year=now.year,
+            expense_month=supplier.debt_date.month if supplier.debt_date else now.month,
+            expense_year=supplier.debt_date.year if supplier.debt_date else now.year,
             notes=notes,
             uploaded_by_id=admin_user.id
         )
