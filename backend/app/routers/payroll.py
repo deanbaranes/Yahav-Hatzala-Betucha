@@ -278,9 +278,7 @@ async def upload_payslip(
     if not user:
         raise HTTPException(status_code=404, detail="משתמש לא נמצא")
         
-    ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf", "image/heic", "image/heif", "application/octet-stream"}
-    if file.content_type not in ALLOWED_CONTENT_TYPES:
-        raise HTTPException(status_code=400, detail="סוג קובץ לא נתמך. יש להעלות תמונה או PDF.")
+    # Removed strict content_type validation to support all Android uploads
 
     try:
         file_url = StorageService.upload_file(
