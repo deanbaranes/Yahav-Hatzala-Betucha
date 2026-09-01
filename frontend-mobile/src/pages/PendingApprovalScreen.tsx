@@ -45,7 +45,7 @@ export default function PendingApprovalScreen() {
             </div>
           </p>
           <a 
-            href="https://tpz.link/hy9tc" 
+            href="https://tpz.link/9sm87" 
             target="_blank" 
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md hover:shadow-lg"

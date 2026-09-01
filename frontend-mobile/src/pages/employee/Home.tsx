@@ -31,7 +31,7 @@ export default function Home() {
           </div>
         </div>
         <a 
-          href="https://tpz.link/hy9tc" 
+          href="https://tpz.link/9sm87" 
           target="_blank" 
           rel="noopener noreferrer" 
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-md flex items-center justify-center gap-2 w-full sm:w-auto shrink-0"
