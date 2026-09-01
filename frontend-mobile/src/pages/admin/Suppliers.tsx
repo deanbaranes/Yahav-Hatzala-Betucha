@@ -98,6 +98,7 @@ export default function Suppliers() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
       alert("הקבלה הועלתה בהצלחה, וההוצאה נרשמה במסך הוצאות!");
     },
     onError: () => {
