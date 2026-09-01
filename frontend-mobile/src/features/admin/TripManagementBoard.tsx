@@ -141,9 +141,16 @@ export default function TripManagementBoard() {
   const groupedTrips = useMemo(() => {
     if (!trips) return [];
     
-    const filtered = trips.filter((t: any) => 
-      (t.client?.name || '').includes(searchTerm) || (t.location || '').includes(searchTerm)
-    );
+    const filtered = trips.filter((t: any) => {
+      const search = searchTerm.toLowerCase();
+      const inClient = (t.client?.name || '').toLowerCase().includes(search);
+      const inLocation = (t.location || '').toLowerCase().includes(search);
+      const inNotes = (t.notes || '').toLowerCase().includes(search);
+      const inEmployees = t.assignments?.some((a: any) => 
+        (a.user?.full_name || '').toLowerCase().includes(search)
+      );
+      return inClient || inLocation || inNotes || inEmployees;
+    });
     
     // Sort ascending by date (oldest first, chronological)
     filtered.sort((a: any, b: any) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
