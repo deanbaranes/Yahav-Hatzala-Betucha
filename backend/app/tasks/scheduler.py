@@ -5,6 +5,7 @@ import re
 from sqlalchemy.orm import Session, joinedload
 from app.database import SessionLocal
 from app.models.client import Client
+from app.models.supplier import Supplier
 from app.models.trip import Trip
 from app.models.trip_assignment import TripAssignment
 from app.models.notification import Notification
@@ -383,6 +384,31 @@ def notify_admin_unconfirmed_arrivals():
     finally:
         db.close()
 
+def check_unpaid_suppliers():
+    """
+    Check for suppliers who have not been paid yet (is_invoiced == False).
+    Runs on the last day of the month at 10:00 AM.
+    """
+    logger.info("Running check_unpaid_suppliers task...")
+    db: Session = SessionLocal()
+    try:
+        unpaid_suppliers = db.query(Supplier).filter(Supplier.is_invoiced == False).all()
+        
+        if not unpaid_suppliers:
+            return
+            
+        supplier_names = ", ".join(list(set(s.name for s in unpaid_suppliers)))
+        msg = f"תזכורת סוף חודש: קיימים ספקים במערכת שטרם שולמו: {supplier_names}."
+        
+        admin_phone = os.getenv("ADMIN_PHONE")
+        if admin_phone:
+            NotificationService.send_sms(admin_phone, msg, db=db)
+            NotificationService.create_in_app_notification(msg, db, title="תזכורת תשלום לספקים")
+    except Exception as e:
+        logger.error(f"check_unpaid_suppliers failed: {e}")
+    finally:
+        db.close()
+
 def start_scheduler():
     scheduler = BackgroundScheduler()
     
@@ -403,6 +429,9 @@ def start_scheduler():
     
     # Alert admin about unconfirmed arrivals every day at 16:00
     scheduler.add_job(notify_admin_unconfirmed_arrivals, 'cron', hour=16, minute=0)
+    
+    # Notify admin about unpaid suppliers on the last day of the month at 10:00
+    scheduler.add_job(check_unpaid_suppliers, 'cron', day='last', hour=10, minute=0)
     
     scheduler.start()
     logger.info("APScheduler started successfully.")
