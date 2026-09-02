@@ -153,7 +153,12 @@ def join_trip(trip_id: str, request: JoinTripRequest, db: Session = Depends(get_
     if max_capacity == 0:
         raise HTTPException(status_code=400, detail="תפקיד זה אינו נדרש לטיול זה")
 
-    status = "waitlisted" if assigned_count_for_role >= max_capacity else "assigned"
+    total_assigned = db.query(TripAssignment).filter(
+        TripAssignment.trip_id == trip.id,
+        TripAssignment.status == "assigned"
+    ).count()
+
+    status = "waitlisted" if (assigned_count_for_role >= max_capacity or total_assigned >= trip.capacity) else "assigned"
 
     new_assignment = TripAssignment(
         trip_id=trip.id,

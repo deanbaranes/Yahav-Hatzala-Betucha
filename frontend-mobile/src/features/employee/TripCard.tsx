@@ -39,7 +39,9 @@ export default function TripCard({ trip }: { trip: any }) {
           {trip.end_date ? ` - ${new Date(trip.end_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})}` : ''}
         </div>
       </div>
-      <p className="text-md text-gray-500 mb-4">תפוסה כוללת: <span className="font-semibold">{trip.assigned_count} / {trip.capacity}</span></p>
+      {!hasRoles && (
+        <p className="text-md text-gray-500 mb-4">תפוסה כוללת: <span className="font-semibold">{trip.assigned_count} / {trip.capacity}</span></p>
+      )}
       
       {trip.user_status ? (
         <div className="flex flex-col gap-2">
@@ -67,7 +69,7 @@ export default function TripCard({ trip }: { trip: any }) {
           <h4 className="font-bold text-gray-700 text-sm">בחר תפקיד להשתבץ:</h4>
           {Object.entries(rolesReqs).map(([role, maxCap]) => {
             const currentCap = roleCounts[role] || 0;
-            const roleIsFull = currentCap >= (maxCap as number);
+            const roleIsFull = currentCap >= (maxCap as number) || isFull;
             
             return (
               <div key={role} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
