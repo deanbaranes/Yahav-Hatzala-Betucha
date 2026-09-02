@@ -87,7 +87,11 @@ def check_unassigned_trips():
     
     for trip in trips:
         confirmed_assignments = [a for a in trip.assignments if a.is_confirmed and a.status == "assigned"]
-        if len(confirmed_assignments) == 0:
+        if trip.capacity > 0 and len(confirmed_assignments) < trip.capacity:
+            missing = trip.capacity - len(confirmed_assignments)
+            msg = f"התראת שיבוץ: לטיול ב-{trip.location} ב-{trip.start_date.strftime('%d/%m/%Y %H:%M')} חסרים {missing} עובדים משובצים (נדרשים {trip.capacity})!"
+            NotificationService.send_sms(ADMIN_PHONE, msg, db=db)
+        elif trip.capacity == 0 and len(confirmed_assignments) == 0:
             msg = f"התראת שיבוץ: לטיול ב-{trip.location} ב-{trip.start_date.strftime('%d/%m/%Y %H:%M')} אין עובדים משובצים!"
             NotificationService.send_sms(ADMIN_PHONE, msg, db=db)
             
