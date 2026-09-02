@@ -68,7 +68,7 @@ export default function MySchedule() {
             {upcomingTrips.map(trip => (
               <div key={trip.id} className="bg-white p-5 rounded-2xl shadow-sm border-r-4 border-r-green-500 border border-gray-100 relative overflow-hidden">
                 <div className="flex justify-between items-start mb-3 relative z-10">
-                  <h4 className="font-black text-gray-800 text-lg">{trip.client?.name || 'לקוח כללי'}</h4>
+                  <h4 className="font-black text-gray-800 text-lg">{trip.location}</h4>
                   {trip.is_confirmed ? (
                     <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-md">אושר סופית</span>
                   ) : (
@@ -76,7 +76,6 @@ export default function MySchedule() {
                   )}
                 </div>
                 <div className="space-y-2 text-sm text-gray-600 font-medium relative z-10">
-                  <div className="flex items-center gap-2"><MapPin size={16} className="text-blue-500" /> {trip.location}</div>
                   <div className="flex items-center gap-2"><Clock size={16} className="text-blue-500" /> {new Date(trip.start_date).toLocaleString('he-IL', { weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit' })}</div>
                   <div className="flex items-center gap-2"><span className="text-blue-500 text-lg leading-none">👤</span> תפקיד: {trip.role || 'כללי'}</div>
                   {trip.is_confirmed && (trip.employee_contact_name || trip.employee_contact_phone) && (
@@ -130,10 +129,9 @@ export default function MySchedule() {
               {pastTrips.map(trip => (
                 <div key={trip.id} className="bg-white p-4 rounded-xl shadow-sm border-r-4 border-r-gray-400 border border-gray-100 opacity-80">
                   <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-bold text-gray-700">{trip.client?.name || 'לקוח כללי'}</h4>
+                    <h4 className="font-bold text-gray-700">{trip.location}</h4>
                   </div>
                   <div className="space-y-1 text-xs text-gray-500 font-medium">
-                    <div className="flex items-center gap-2"><MapPin size={14} /> {trip.location}</div>
                     <div className="flex items-center gap-2"><Clock size={14} /> {new Date(trip.start_date).toLocaleString('he-IL', { weekday: 'long', day: '2-digit', month: '2-digit' })}</div>
                   </div>
                 </div>
