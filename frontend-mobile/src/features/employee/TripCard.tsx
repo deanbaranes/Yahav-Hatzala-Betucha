@@ -52,6 +52,19 @@ export default function TripCard({ trip }: { trip: any }) {
                 ? 'שיבוצך לטיול זה אושר ✓' 
                 : 'נשלחה בקשה לשיבוץ, ממתין לאישור מנהל ⏳'}
           </div>
+
+          {trip.user_is_confirmed && (trip.employee_contact_name || trip.employee_contact_phone) && (
+            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg text-sm text-blue-900 mt-1 mb-2">
+              <div className="font-bold mb-1 text-base">פרטי איש קשר בשטח:</div>
+              {trip.employee_contact_name && <div>שם: {trip.employee_contact_name}</div>}
+              {trip.employee_contact_phone && (
+                <div className="flex gap-1 mt-1">
+                  <span>טלפון:</span> 
+                  <a href={`tel:${trip.employee_contact_phone}`} className="text-blue-600 hover:text-blue-800 underline font-bold" dir="ltr">{trip.employee_contact_phone}</a>
+                </div>
+              )}
+            </div>
+          )}
           <button 
             onClick={() => {
               if (window.confirm('האם אתה בטוח שברצונך לבטל את השתתפותך בטיול זה?')) {
