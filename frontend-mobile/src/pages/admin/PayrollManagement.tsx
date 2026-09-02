@@ -291,9 +291,9 @@ export default function PayrollManagement() {
               <h3 className="text-yellow-800 font-bold mb-3 flex items-center gap-2">
                 עובדים ממתינים לאישור ({pendingEmployees.length})
               </h3>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
+              <div className="space-y-3 max-h-40 overflow-y-auto overflow-x-hidden">
                 {pendingEmployees.map(emp => (
-                  <div key={emp.id} className="flex justify-between items-center bg-white p-2 rounded-lg border border-yellow-100 shadow-sm">
+                  <div key={emp.id} className="flex flex-wrap justify-between items-center gap-3 bg-white p-3 rounded-lg border border-yellow-100 shadow-sm">
                     <div>
                       <div className="font-bold text-sm">{emp.full_name}</div>
                       <div className="text-xs text-gray-500">{emp.phone}</div>
