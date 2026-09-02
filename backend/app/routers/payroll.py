@@ -134,9 +134,22 @@ def reject_employee(user_id: str, db: Session = Depends(get_db), admin_user: Use
     if not user:
         raise HTTPException(status_code=404, detail="משתמש ממתין לא נמצא")
     
+    from app.models.notification import Notification
+    from app.models.refresh_token import RefreshToken
+    from app.models.password_reset_token import PasswordResetToken
+    
+    # Safe delete: explicitly remove all child records for THIS user_id only
+    db.query(TripAssignment).filter(TripAssignment.user_id == user_id).delete(synchronize_session=False)
+    db.query(TripReport).filter(TripReport.user_id == user_id).delete(synchronize_session=False)
+    db.query(PayrollAdjustment).filter(PayrollAdjustment.user_id == user_id).delete(synchronize_session=False)
+    db.query(Payslip).filter(Payslip.user_id == user_id).delete(synchronize_session=False)
+    db.query(Notification).filter(Notification.user_id == user_id).delete(synchronize_session=False)
+    db.query(RefreshToken).filter(RefreshToken.user_id == user_id).delete(synchronize_session=False)
+    db.query(PasswordResetToken).filter(PasswordResetToken.user_id == user_id).delete(synchronize_session=False)
+    
     db.delete(user)
     db.commit()
-    return {"message": "User rejected and deleted"}
+    return {"message": "User rejected and deleted completely"}
 
 @router.put("/employees/{user_id}")
 def update_rates(user_id: str, data: EmployeeRatesUpdate, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
