@@ -32,9 +32,14 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
     const map = new Map<number, any[]>();
     trips.forEach(trip => {
       if (searchTerm) {
-        const nameMatch = (trip.client?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
-        const locMatch = (trip.location || '').toLowerCase().includes(searchTerm.toLowerCase());
-        if (!nameMatch && !locMatch) return;
+        const term = searchTerm.toLowerCase();
+        const nameMatch = (trip.client?.name || '').toLowerCase().includes(term);
+        const locMatch = (trip.location || '').toLowerCase().includes(term);
+        const notesMatch = (trip.notes || '').toLowerCase().includes(term);
+        const employeeMatch = trip.assignments?.some((a: any) => 
+          (a.user?.full_name || '').toLowerCase().includes(term)
+        );
+        if (!nameMatch && !locMatch && !notesMatch && !employeeMatch) return;
       }
 
       const start = new Date(trip.start_date);
