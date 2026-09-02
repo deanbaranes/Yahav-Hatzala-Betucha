@@ -51,7 +51,13 @@ def confirm_assignment(assignment_id: str, db: Session = Depends(get_db), admin_
     user = assignment.user
     trip = assignment.trip
     if user:
-        contact_str = f"איש קשר לטיול: {trip.contact_phone}" if trip.contact_phone else ""
+        contact_parts = []
+        if trip.employee_contact_name:
+            contact_parts.append(trip.employee_contact_name)
+        if trip.employee_contact_phone:
+            contact_parts.append(trip.employee_contact_phone)
+            
+        contact_str = f"פרטי איש קשר לטיול: {' - '.join(contact_parts)}" if contact_parts else ""
         date_str = trip.start_date.strftime("%d/%m/%Y %H:%M") if trip.start_date else ""
         msg = f"הטיול אושר! שובצת סופית לטיול ב-{trip.location} בתאריך {date_str} בתפקיד {assignment.role}. {contact_str}\nלפרטים נוספים: https://yahav-hatzala-betucha.vercel.app"
         NotificationService.create_in_app_notification(msg, db, user_id=user.id)
@@ -256,7 +262,13 @@ def admin_assign_trip(trip_id: str, request: AdminAssignRequest, db: Session = D
     # Send notification to assigned user
     user = db.query(User).filter(User.id == request.user_id).first()
     if user:
-        contact_str = f"איש קשר לטיול: {trip.contact_phone}" if trip.contact_phone else ""
+        contact_parts = []
+        if trip.employee_contact_name:
+            contact_parts.append(trip.employee_contact_name)
+        if trip.employee_contact_phone:
+            contact_parts.append(trip.employee_contact_phone)
+            
+        contact_str = f"פרטי איש קשר לטיול: {' - '.join(contact_parts)}" if contact_parts else ""
         date_str = trip.start_date.strftime("%d/%m/%Y %H:%M") if trip.start_date else ""
         msg = f"שובצת לטיול ב-{trip.location} בתאריך {date_str} בתפקיד {request.role}. {contact_str}\nלפרטים ואישור: https://yahav-hatzala-betucha.vercel.app/employee"
         NotificationService.create_in_app_notification(msg, db, user_id=user.id)

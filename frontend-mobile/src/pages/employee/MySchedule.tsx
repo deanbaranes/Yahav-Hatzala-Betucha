@@ -79,6 +79,17 @@ export default function MySchedule() {
                   <div className="flex items-center gap-2"><MapPin size={16} className="text-blue-500" /> {trip.location}</div>
                   <div className="flex items-center gap-2"><Clock size={16} className="text-blue-500" /> {new Date(trip.start_date).toLocaleString('he-IL', { weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit' })}</div>
                   <div className="flex items-center gap-2"><span className="text-blue-500 text-lg leading-none">👤</span> תפקיד: {trip.role || 'כללי'}</div>
+                  {trip.is_confirmed && (trip.employee_contact_name || trip.employee_contact_phone) && (
+                    <div className="flex items-start gap-2 pt-2 border-t border-gray-100/50 mt-1">
+                      <span className="text-blue-500 text-lg leading-none mt-0.5">📞</span>
+                      <div className="flex flex-col">
+                        {trip.employee_contact_name && <span className="font-bold text-gray-700">איש קשר: {trip.employee_contact_name}</span>}
+                        {trip.employee_contact_phone && (
+                          <a href={`tel:${trip.employee_contact_phone}`} className="text-blue-600 font-bold hover:underline" dir="ltr">{trip.employee_contact_phone}</a>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 {trip.is_confirmed && (
                   <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end relative z-10">
