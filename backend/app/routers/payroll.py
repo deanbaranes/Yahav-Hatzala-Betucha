@@ -140,7 +140,6 @@ def reject_employee(user_id: str, db: Session = Depends(get_db), admin_user: Use
     
     # Safe delete: explicitly remove all child records for THIS user_id only
     db.query(TripAssignment).filter(TripAssignment.user_id == user_id).delete(synchronize_session=False)
-    db.query(TripReport).filter(TripReport.user_id == user_id).delete(synchronize_session=False)
     db.query(PayrollAdjustment).filter(PayrollAdjustment.user_id == user_id).delete(synchronize_session=False)
     db.query(Payslip).filter(Payslip.user_id == user_id).delete(synchronize_session=False)
     db.query(Notification).filter(Notification.user_id == user_id).delete(synchronize_session=False)
