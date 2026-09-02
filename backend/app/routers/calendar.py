@@ -26,8 +26,8 @@ def get_calendar_feed(token: str = Query(None), db: Session = Depends(get_db)):
 
     for t in trips:
         event = Event()
+        from datetime import timedelta
         client_name = t.client.name if t.client else 'לקוח כללי'
-        event.add('summary', f"טיול ב{t.location} ({client_name})")
         
         start = t.start_date
         if start.tzinfo is None:
@@ -37,8 +37,19 @@ def get_calendar_feed(token: str = Query(None), db: Session = Depends(get_db)):
         if end.tzinfo is None:
             end = end.replace(tzinfo=il_tz)
 
-        event.add('dtstart', start)
-        event.add('dtend', end)
+        # Format times for the title since it's an all-day event
+        start_time_str = start.strftime("%H:%M")
+        end_time_str = end.strftime("%H:%M") if end else ""
+        time_str = f" | {start_time_str}-{end_time_str}" if end_time_str else f" | {start_time_str}"
+
+        # Client name first, then location and time
+        event.add('summary', f"{client_name} - {t.location}{time_str}")
+
+        # Make it an All-Day event (Date only, no time)
+        event.add('dtstart', start.date())
+        # iCalendar requires DTEND for all-day events to be the day AFTER the event ends
+        end_dt = end if end else start
+        event.add('dtend', end_dt.date() + timedelta(days=1))
         event.add('location', t.location)
         
         description = f"לקוח: {client_name}\n"
