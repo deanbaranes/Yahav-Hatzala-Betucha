@@ -40,7 +40,7 @@ export default function TripCard({ trip }: { trip: any }) {
         </div>
       </div>
       {!hasRoles && (
-        <p className="text-md text-gray-500 mb-4">תפוסה כוללת: <span className="font-semibold">{trip.assigned_count} / {trip.capacity}</span></p>
+        <p className="text-md text-gray-500 mb-4">תפוסה כוללת: <span className="font-semibold" dir="ltr" style={{ display: 'inline-block' }}>{trip.assigned_count} / {trip.capacity}</span></p>
       )}
       
       {trip.user_status ? (
@@ -75,7 +75,7 @@ export default function TripCard({ trip }: { trip: any }) {
               <div key={role} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
                 <div>
                   <span className="font-bold block">{role}</span>
-                  <span className="text-xs text-gray-500">{currentCap} / {maxCap as number} מאויש</span>
+                  <span className="text-xs text-gray-500"><span dir="ltr" style={{ display: 'inline-block' }}>{currentCap} / {maxCap as number}</span> מאויש</span>
                 </div>
                 <button 
                   onClick={() => joinMutation.mutate(role)}
