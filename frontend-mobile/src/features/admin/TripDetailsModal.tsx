@@ -38,7 +38,8 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose, ini
     contact_phone: selectedTrip.contact_phone || '', 
     employee_contact_name: selectedTrip.employee_contact_name || '',
     employee_contact_phone: selectedTrip.employee_contact_phone || '',
-    notes: selectedTrip.notes || '' 
+    notes: selectedTrip.notes || '',
+    has_accommodation: selectedTrip.has_accommodation ?? true
   });
 
   // Prevent background scrolling when modal is open
@@ -246,9 +247,14 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose, ini
                   <div className="text-blue-600">📅</div>
                   <div>
                     <div className="text-xs text-gray-500 font-bold">תאריך ושעות</div>
-                    <div className="text-gray-800 font-medium">
-                      {new Date(selectedTrip.start_date).toLocaleDateString('he-IL')}
-                      {selectedTrip.end_date && new Date(selectedTrip.start_date).toLocaleDateString('he-IL') !== new Date(selectedTrip.end_date).toLocaleDateString('he-IL') && ` - ${new Date(selectedTrip.end_date).toLocaleDateString('he-IL')}`} • {new Date(selectedTrip.start_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})} - {selectedTrip.end_date ? new Date(selectedTrip.end_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'}) : 'לא הוגדר'}
+                    <div className="text-gray-800 font-medium flex flex-col">
+                      <span>
+                        {new Date(selectedTrip.start_date).toLocaleDateString('he-IL')}
+                        {selectedTrip.end_date && new Date(selectedTrip.start_date).toLocaleDateString('he-IL') !== new Date(selectedTrip.end_date).toLocaleDateString('he-IL') && ` - ${new Date(selectedTrip.end_date).toLocaleDateString('he-IL')}`}
+                      </span>
+                      <span className="text-gray-600">
+                        {new Date(selectedTrip.start_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})} - {selectedTrip.end_date ? new Date(selectedTrip.end_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'}) : 'לא הוגדר'}
+                      </span>
                     </div>
                     {selectedTrip.has_accommodation === false && (
                       <div className="text-[10px] text-red-600 font-bold bg-red-50 mt-1 inline-block px-2 py-0.5 rounded-full border border-red-100">
