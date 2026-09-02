@@ -125,7 +125,11 @@ class TripService:
             "location": t.location,
             "notes": t.notes,
             "start_date": t.start_date.isoformat(),
+            "end_date": t.end_date.isoformat() if t.end_date else None,
             "is_confirmed": assignment.is_confirmed,
+            "role": assignment.role,
+            "employee_contact_name": t.employee_contact_name if assignment.is_confirmed else None,
+            "employee_contact_phone": t.employee_contact_phone if assignment.is_confirmed else None,
             "client": {"name": t.client.name} if t.client else None
         }
 

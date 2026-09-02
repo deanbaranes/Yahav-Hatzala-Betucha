@@ -45,7 +45,20 @@ export default function NextTripCard() {
           {new Date(trip.start_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})}
           {trip.end_date ? ` - ${new Date(trip.end_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})}` : ''}
         </div>
+        <div className="mt-2 text-sm font-medium flex items-center gap-1.5"><span className="text-blue-500">👤</span> תפקיד: {trip.role || 'כללי'}</div>
       </div>
+
+      {trip.is_confirmed && (trip.employee_contact_name || trip.employee_contact_phone) && (
+        <div className="flex items-start gap-2 pt-2 border-t border-gray-100 mt-2 mb-4">
+          <span className="text-blue-500 text-lg leading-none mt-0.5">📞</span>
+          <div className="flex flex-col text-sm">
+            {trip.employee_contact_name && <span className="font-bold text-gray-700">איש קשר: {trip.employee_contact_name}</span>}
+            {trip.employee_contact_phone && (
+              <a href={`tel:${trip.employee_contact_phone}`} className="text-blue-600 font-bold hover:underline" dir="ltr">{trip.employee_contact_phone}</a>
+            )}
+          </div>
+        </div>
+      )}
       
       <div className="flex flex-col gap-3 mt-4">
         {isUrgent && (
