@@ -202,13 +202,40 @@ class TripService:
                 nights = (trip_end.date() - start_dt.date()).days
                 if nights < 0:
                     nights = 0
+
+            # Calculate daily shift hours based on clock time
+            start_time = start_dt.time() if start_dt else time(0, 0)
+            end_time = trip_end.time() if trip_end else time(0, 0)
+            start_mins = start_time.hour * 60 + start_time.minute
+            end_mins = end_time.hour * 60 + end_time.minute
             
-            stats["trips_details"].append({
-                "date": start_dt.strftime('%d.%m') if start_dt else "",
-                "location": t.location,
-                "planned_hours": round(duration_hours, 1),
-                "nights": nights
-            })
+            if end_mins < start_mins:
+                daily_duration = (end_mins + 24 * 60 - start_mins) / 60.0
+            else:
+                daily_duration = (end_mins - start_mins) / 60.0
+                
+            if daily_duration == 0 and duration_hours > 0:
+                daily_duration = 24.0 if duration_hours >= 24 else duration_hours
+
+            # If the total duration is <= 24 hours, it's considered a single shift (even if overnight)
+            if duration_hours <= 24:
+                stats["trips_details"].append({
+                    "date": start_dt.strftime('%d.%m') if start_dt else "",
+                    "location": t.location,
+                    "planned_hours": round(duration_hours, 1),
+                    "nights": nights
+                })
+            else:
+                # Multi-day trip (multiple shifts)
+                days_count = nights + 1
+                for i in range(days_count):
+                    current_day = start_dt + timedelta(days=i)
+                    stats["trips_details"].append({
+                        "date": current_day.strftime('%d.%m'),
+                        "location": t.location,
+                        "planned_hours": round(daily_duration, 1),
+                        "nights": 0
+                    })
 
             if t.notes and t.notes.strip():
                 stats["all_notes"].append(t.notes.strip())

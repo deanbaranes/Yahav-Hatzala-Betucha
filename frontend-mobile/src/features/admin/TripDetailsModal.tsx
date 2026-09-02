@@ -247,7 +247,8 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose, ini
                   <div>
                     <div className="text-xs text-gray-500 font-bold">תאריך ושעות</div>
                     <div className="text-gray-800 font-medium">
-                      {new Date(selectedTrip.start_date).toLocaleDateString('he-IL')} • {new Date(selectedTrip.start_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})} - {selectedTrip.end_date ? new Date(selectedTrip.end_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'}) : 'לא הוגדר'}
+                      {new Date(selectedTrip.start_date).toLocaleDateString('he-IL')}
+                      {selectedTrip.end_date && new Date(selectedTrip.start_date).toLocaleDateString('he-IL') !== new Date(selectedTrip.end_date).toLocaleDateString('he-IL') && ` - ${new Date(selectedTrip.end_date).toLocaleDateString('he-IL')}`} • {new Date(selectedTrip.start_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})} - {selectedTrip.end_date ? new Date(selectedTrip.end_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'}) : 'לא הוגדר'}
                     </div>
                     {selectedTrip.has_accommodation === false && (
                       <div className="text-[10px] text-red-600 font-bold bg-red-50 mt-1 inline-block px-2 py-0.5 rounded-full border border-red-100">
