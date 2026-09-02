@@ -115,8 +115,7 @@ def register(request: Request, user: UserCreate, db: Session = Depends(get_db)):
     # Send Notification to Admin
     try:
         msg = f"משתמש/ת חדש/ה נרשם/ה למערכת וממתין/ה לאישור: {new_user.full_name} ({new_user.phone})"
-        admin_phone = os.getenv("ADMIN_PHONE", "0533210777")
-        NotificationService.send_sms(admin_phone, msg, db=db)
+        NotificationService.create_in_app_notification(msg, db)
     except Exception:
         pass
 
