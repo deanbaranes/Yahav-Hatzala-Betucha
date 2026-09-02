@@ -64,7 +64,7 @@ class TripService:
         now = datetime.now()
         trips = db.query(Trip).options(
             joinedload(Trip.client),
-            joinedload(Trip.assignments)
+            joinedload(Trip.assignments).joinedload(TripAssignment.user)
         ).filter(
             Trip.start_date >= now,
             Trip.roles_requirements != None
@@ -75,6 +75,10 @@ class TripService:
             reqs = t.roles_requirements or {}
             total_reqs = sum(int(v) for v in reqs.values() if str(v).isdigit())
             if total_reqs == 0:
+                continue
+                
+            has_yahav = any(a.user and a.user.full_name == "יהב כלפון" for a in t.assignments if a.status in ["assigned", "waitlisted"])
+            if has_yahav and current_user.full_name != "יהב כלפון":
                 continue
 
             assigned_count = sum(1 for a in t.assignments if a.status == "assigned")
