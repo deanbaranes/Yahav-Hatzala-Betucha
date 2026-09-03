@@ -8,3 +8,4 @@ from .supplier import Supplier
 from .notification import Notification
 from .payslip import Payslip
 from .business_expense import BusinessExpense
+from .push_subscription import PushSubscription

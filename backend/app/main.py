@@ -12,7 +12,7 @@ from app.models import supplier             # register Supplier table
 from app.models import notification         # register Notification table
 from app.models import payslip              # register Payslip table
 from app.models import business_expense
-from app.routers import auth, trips, assignments, reports, clients, payroll, suppliers, notifications, expenses, calendar
+from app.routers import auth, trips, assignments, reports, clients, payroll, suppliers, notifications, expenses, calendar, push
 from app.dependencies import get_current_user
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
@@ -122,6 +122,7 @@ app.include_router(suppliers.router)
 app.include_router(notifications.router)
 app.include_router(expenses.router)
 app.include_router(calendar.router)
+app.include_router(push.router)
 
 @app.get("/")
 def read_root():
