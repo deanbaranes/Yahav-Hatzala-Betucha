@@ -377,7 +377,7 @@ class TripService:
 
         db.commit()
 
-        if first_trip:
+        if first_trip and trip_data.capacity > 0:
             try:
                 from app.services.push_service import broadcast_push_notification
                 trip_title = trip_data.trip_name or trip_data.location
