@@ -10,17 +10,16 @@ self.addEventListener('push', function(event) {
   if (event.data) {
     try {
       const data = event.data.json();
-      const options = {
-        body: data.body,
-        dir: 'rtl',
-        data: data.url || '/'
-      };
+      const title = data.title || 'התראה ממערכת יהב';
+      const body = data.body || 'יש לך עדכון חדש';
       
       event.waitUntil(
-        self.registration.showNotification(data.title, options)
+        self.registration.showNotification(title, {
+          body: body
+        })
       );
     } catch (e) {
-      console.error('Push event error:', e);
+      console.error('Push parse error:', e);
     }
   }
 });
