@@ -22,6 +22,7 @@ class Trip(Base):
     employee_contact_name = Column(String, nullable=True)
     employee_contact_phone = Column(String, nullable=True)
     notes = Column(String, nullable=True)
+    trip_name = Column(String, nullable=True)
     has_accommodation = Column(Boolean, default=True, nullable=False)
 
     client = relationship("Client", back_populates="trips")

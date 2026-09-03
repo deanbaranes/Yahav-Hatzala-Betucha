@@ -122,6 +122,7 @@ class TripService:
         return {
             "id": str(t.id),
             "assignment_id": str(assignment.id),
+            "trip_name": t.trip_name,
             "location": t.location,
             "notes": t.notes,
             "start_date": t.start_date.isoformat(),

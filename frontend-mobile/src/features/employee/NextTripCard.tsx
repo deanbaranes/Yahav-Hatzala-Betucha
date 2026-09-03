@@ -38,7 +38,7 @@ export default function NextTripCard() {
           פעולה נדרשת: אשר הגעה לטיול של מחר
         </div>
       )}
-      <h3 className="text-xl font-bold mb-2">{trip.location}</h3>
+      <h3 className="text-xl font-bold mb-2">{trip.trip_name || trip.location}</h3>
       <div className="text-gray-600 mb-4">
         <div>{new Date(trip.start_date).toLocaleDateString('he-IL')}</div>
         <div dir="ltr" style={{ textAlign: 'right' }}>

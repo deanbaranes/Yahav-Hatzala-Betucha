@@ -13,7 +13,7 @@ export default function TripManagementBoard() {
   const queryClient = useQueryClient();
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
   const [viewingTrip, setViewingTrip] = useState<any>(null);
-  const [formData, setFormData] = useState({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {} as Record<string, number>, color: '' as string, global_salary: '' as string | number, contact_name: '' as string, contact_phone: '' as string, employee_contact_name: '' as string, employee_contact_phone: '' as string, has_accommodation: true });
+  const [formData, setFormData] = useState({ client_name: '', trip_name: '' as string, location: '', start_date: '', end_date: '', roles_requirements: {} as Record<string, number>, color: '' as string, global_salary: '' as string | number, contact_name: '' as string, contact_phone: '' as string, employee_contact_name: '' as string, employee_contact_phone: '' as string, has_accommodation: true });
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedWeeks, setExpandedWeeks] = useState<Record<string, boolean>>({});
   const [isFormVisible, setIsFormVisible] = useState(false);
@@ -80,7 +80,7 @@ export default function TripManagementBoard() {
       queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       alert('הטיול נוצר בהצלחה!');
-      setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '', has_accommodation: true });
+      setFormData({ client_name: '', trip_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '', has_accommodation: true });
       setIsFormVisible(false);
     },
     onError: (error: any) => {
@@ -101,7 +101,7 @@ export default function TripManagementBoard() {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       alert('הטיול עודכן בהצלחה!');
       setEditingTripId(null);
-      setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '', has_accommodation: true });
+      setFormData({ client_name: '', trip_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '', has_accommodation: true });
     },
     onError: (error: any) => {
       alert('שגיאה בעדכון הטיול: ' + (error.response?.data?.detail || 'אנא ודא שכל השדות מלאים ותקינים.'));
@@ -207,6 +207,12 @@ export default function TripManagementBoard() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <SmartClientInput value={formData.client_name} onChange={(v) => setFormData({...formData, client_name: v})} />
+        
+        <div className="mb-4">
+          <label className="block text-gray-700 font-bold mb-2">שם הטיול (יוצג לעובדים)</label>
+          <input type="text" placeholder="למשל: ביה״ס הריאלי" className="w-full p-2 border border-gray-300 rounded" 
+            value={formData.trip_name} onChange={e => setFormData({...formData, trip_name: e.target.value})} />
+        </div>
         
         <div className="mb-4">
           <label className="block text-gray-700 font-bold mb-2">מיקום (אופציונלי)</label>
@@ -351,7 +357,7 @@ export default function TripManagementBoard() {
           <button 
             onClick={() => {
               setEditingTripId(null);
-              setFormData({ client_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '', has_accommodation: true });
+              setFormData({ client_name: '', trip_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '', has_accommodation: true });
             }}
             className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-bold shadow transition-colors"
           >
@@ -505,6 +511,7 @@ export default function TripManagementBoard() {
                                         setEditingTripId(trip.id);
                                         setFormData({
                                           client_name: trip.client?.name || '',
+                                          trip_name: trip.trip_name || '',
                                           location: trip.location || '',
                                           start_date: trip.start_date ? trip.start_date.substring(0, 16) : '',
                                           end_date: trip.end_date ? trip.end_date.substring(0, 16) : '',

@@ -31,7 +31,7 @@ export default function TripCard({ trip }: { trip: any }) {
 
   return (
     <div className={`bg-white rounded-xl shadow p-5 mb-4 text-right border-r-4 ${isFull ? 'border-orange-500 bg-orange-50/50' : 'border-blue-500'}`} dir="rtl">
-      <h3 className="text-xl font-bold mb-2">{trip.location}</h3>
+      <h3 className="text-xl font-bold mb-2">{trip.trip_name || trip.location}</h3>
       <div className="text-gray-600 mb-2">
         <div>{new Date(trip.start_date).toLocaleDateString('he-IL')}</div>
         <div dir="ltr" style={{ textAlign: 'right' }}>

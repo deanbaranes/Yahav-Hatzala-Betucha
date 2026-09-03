@@ -68,7 +68,7 @@ export default function MySchedule() {
             {upcomingTrips.map(trip => (
               <div key={trip.id} className="bg-white p-5 rounded-2xl shadow-sm border-r-4 border-r-green-500 border border-gray-100 relative overflow-hidden">
                 <div className="flex justify-between items-start mb-3 relative z-10">
-                  <h4 className="font-black text-gray-800 text-lg">{trip.location}</h4>
+                  <h4 className="font-black text-gray-800 text-lg">{trip.trip_name || trip.location}</h4>
                   {trip.is_confirmed ? (
                     <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-md">אושר סופית</span>
                   ) : (
@@ -129,7 +129,7 @@ export default function MySchedule() {
               {pastTrips.map(trip => (
                 <div key={trip.id} className="bg-white p-4 rounded-xl shadow-sm border-r-4 border-r-gray-400 border border-gray-100 opacity-80">
                   <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-bold text-gray-700">{trip.location}</h4>
+                    <h4 className="font-bold text-gray-700">{trip.trip_name || trip.location}</h4>
                   </div>
                   <div className="space-y-1 text-xs text-gray-500 font-medium">
                     <div className="flex items-center gap-2"><Clock size={14} /> {new Date(trip.start_date).toLocaleString('he-IL', { weekday: 'long', day: '2-digit', month: '2-digit' })}</div>
@@ -149,7 +149,7 @@ export default function MySchedule() {
           <div className="grid gap-4 opacity-75">
             {waitlistedTrips.map(trip => (
               <div key={trip.id} className="bg-gray-50 p-5 rounded-2xl shadow-sm border-r-4 border-r-amber-400 border border-gray-200">
-                <h4 className="font-bold text-gray-800 mb-2">{trip.location}</h4>
+                <h4 className="font-bold text-gray-800 mb-2">{trip.trip_name || trip.location}</h4>
                 <div className="text-xs text-gray-500 font-medium flex gap-4">
                   <span className="flex items-center gap-1"><Clock size={14}/> {new Date(trip.start_date).toLocaleDateString('he-IL')}</span>
                   <span>{trip.role}</span>
