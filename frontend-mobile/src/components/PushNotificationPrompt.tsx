@@ -5,6 +5,7 @@ import { Bell, BellRing } from 'lucide-react';
 export default function PushNotificationPrompt() {
   const [permission, setPermission] = useState(Notification.permission);
   const [loading, setLoading] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(true);
 
   useEffect(() => {
     if ('permissions' in navigator) {
@@ -12,6 +13,14 @@ export default function PushNotificationPrompt() {
         status.onchange = () => {
           setPermission(status.state === 'prompt' ? 'default' : (status.state as NotificationPermission));
         };
+      });
+    }
+
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+      navigator.serviceWorker.ready.then(registration => {
+        registration.pushManager.getSubscription().then(subscription => {
+          setIsSubscribed(!!subscription);
+        });
       });
     }
   }, []);
@@ -51,6 +60,7 @@ export default function PushNotificationPrompt() {
         auth: subData.keys.auth
       });
 
+      setIsSubscribed(true);
       alert('ההרשמה להתראות חכמות בוצעה בהצלחה!');
     } catch (error: any) {
       console.error('Error subscribing to push', error);
@@ -59,7 +69,7 @@ export default function PushNotificationPrompt() {
     setLoading(false);
   };
 
-  if (permission === 'granted' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+  if (isSubscribed || !('serviceWorker' in navigator) || !('PushManager' in window)) {
     return null;
   }
 
