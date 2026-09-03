@@ -274,6 +274,15 @@ def admin_assign_trip(trip_id: str, request: AdminAssignRequest, db: Session = D
         NotificationService.create_in_app_notification(msg, db, user_id=user.id)
         if getattr(request, 'send_sms', True) and user.phone and user.role != 'admin' and user.full_name not in ["יהב כלפון", "דין ברנס"]:
             NotificationService.send_sms(user.phone, msg)
+            
+        # Send Push Notification
+        try:
+            from app.services.push_service import send_push_notification
+            trip_title = trip.trip_name or trip.location
+            push_title = f"שיבוץ חדש: {trip_title}"
+            send_push_notification(db, user.id, push_title, msg)
+        except Exception as e:
+            print("Failed to send push notification:", e)
 
     return {"message": "Assigned and reported successfully"}
 
