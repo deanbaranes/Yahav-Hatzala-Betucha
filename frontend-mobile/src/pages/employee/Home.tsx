@@ -1,6 +1,7 @@
 import NextTripCard from '../../features/employee/NextTripCard';
 import { useAuth } from '../../hooks/useAuth';
 import { FileText, ExternalLink } from 'lucide-react';
+import PushNotificationPrompt from '../../components/PushNotificationPrompt';
 
 export default function Home() {
   const { user } = useAuth();
@@ -11,6 +12,8 @@ export default function Home() {
         <h2 className="text-2xl font-black mb-1">שלום {user?.name?.split(' ')[0] || 'עובד יקר'}! 👋</h2>
         <p className="text-blue-100">מוכן ליום עבודה חדש?</p>
       </div>
+
+      <PushNotificationPrompt />
 
       <div className="bg-blue-50/80 border border-blue-100 p-5 rounded-3xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-4 text-right w-full sm:w-auto">
