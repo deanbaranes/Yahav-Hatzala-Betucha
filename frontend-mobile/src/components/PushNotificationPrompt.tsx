@@ -42,6 +42,8 @@ export default function PushNotificationPrompt() {
       const vapidPublicKey = data.public_key;
       if (!vapidPublicKey) {
         console.error('VAPID public key not found');
+        alert('שגיאה: חסר מפתח VAPID בשרת. אנא פנה למנהל המערכת.');
+        setLoading(false);
         return;
       }
 
