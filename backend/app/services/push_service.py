@@ -6,7 +6,7 @@ from app.models.push_subscription import PushSubscription
 
 def send_push_notification(db: Session, user_id, title: str, body: str, url: str = "/employee/schedule"):
     vapid_private_key = os.environ.get("VAPID_PRIVATE_KEY")
-    vapid_claims_email = os.environ.get("VAPID_CLAIMS_EMAIL", "mailto:admin@example.com")
+    vapid_claims_email = os.environ.get("VAPID_CLAIMS_EMAIL", "mailto:deanbaranes1@gmail.com")
 
     if not vapid_private_key:
         return
@@ -48,7 +48,7 @@ def send_push_notification(db: Session, user_id, title: str, body: str, url: str
 def broadcast_push_notification(db: Session, title: str, body: str, url: str = "/employee/schedule"):
     print(f"DEBUG PUSH: Attempting to broadcast push notification. Title: {title}")
     vapid_private_key = os.environ.get("VAPID_PRIVATE_KEY")
-    vapid_claims_email = os.environ.get("VAPID_CLAIMS_EMAIL", "mailto:admin@example.com")
+    vapid_claims_email = os.environ.get("VAPID_CLAIMS_EMAIL", "mailto:deanbaranes1@gmail.com")
 
     if not vapid_private_key:
         print("DEBUG PUSH Error: VAPID_PRIVATE_KEY is missing from environment variables!")
