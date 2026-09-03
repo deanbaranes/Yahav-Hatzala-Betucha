@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import { Calendar, Clock, MapPin, CheckCircle, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import PushNotificationPrompt from '../../components/PushNotificationPrompt';
 
 export default function MySchedule() {
   const { data: myTrips, isLoading } = useQuery<any[]>({
@@ -44,6 +45,7 @@ export default function MySchedule() {
 
   return (
     <div className="animate-fade-in pb-10 space-y-6">
+      <PushNotificationPrompt />
       <header className="bg-gradient-to-r from-blue-700 to-indigo-700 text-white p-6 rounded-3xl shadow-lg">
         <h2 className="text-2xl font-black mb-1 flex items-center gap-2"><Calendar size={24} /> הסידור שלי</h2>
         <p className="text-blue-100 font-medium">הטיולים שאתה משובץ אליהם.</p>
