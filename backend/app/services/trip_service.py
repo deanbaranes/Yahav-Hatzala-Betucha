@@ -376,6 +376,17 @@ class TripService:
             current_end += timedelta(days=delta_days)
 
         db.commit()
+
+        if first_trip:
+            try:
+                from app.services.push_service import broadcast_push_notification
+                trip_title = trip_data.trip_name or trip_data.location
+                date_str = first_trip.start_date.strftime("%d/%m/%Y") if first_trip.start_date else ""
+                msg = f"טיול ל{trip_title} בתאריך {date_str} נוסף הרגע למערכת. היכנסו עכשיו לאפליקציה כדי להשתבץ."
+                push_title = "טיול חדש עלה ללוח! 🚌"
+                broadcast_push_notification(db, push_title, msg)
+            except Exception as e:
+                print("Failed to broadcast push notification:", e)
         
         if trip_data.assigned_user_id and created_count > 0:
             assigned_user = db.query(User).filter(User.id == trip_data.assigned_user_id).first()
