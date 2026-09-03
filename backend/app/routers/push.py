@@ -6,8 +6,13 @@ from app.models.user import User
 from app.models.push_subscription import PushSubscription
 from pydantic import BaseModel
 import uuid
+import os
 
 router = APIRouter(prefix="/push", tags=["Push Notifications"])
+
+@router.get("/public-key")
+def get_public_key():
+    return {"public_key": os.environ.get("VAPID_PUBLIC_KEY")}
 
 class PushSubscriptionCreate(BaseModel):
     endpoint: str
