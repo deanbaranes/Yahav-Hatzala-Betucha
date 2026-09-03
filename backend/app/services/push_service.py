@@ -35,7 +35,9 @@ def send_push_notification(db: Session, user_id, title: str, body: str, url: str
                 vapid_private_key=vapid_private_key,
                 vapid_claims={
                     "sub": vapid_claims_email
-                }
+                },
+                ttl=86400,
+                headers={"Urgency": "high"}
             )
         except WebPushException as ex:
             # If subscription is gone/unsubscribed, remove it from DB
@@ -83,7 +85,9 @@ def broadcast_push_notification(db: Session, title: str, body: str, url: str = "
                 vapid_private_key=vapid_private_key,
                 vapid_claims={
                     "sub": vapid_claims_email
-                }
+                },
+                ttl=86400,
+                headers={"Urgency": "high"}
             )
             success_count += 1
             print(f"DEBUG PUSH: Successfully sent to {sub.endpoint[:30]}")
