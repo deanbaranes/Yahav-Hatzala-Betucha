@@ -1,17 +1,19 @@
 self.addEventListener('push', function(event) {
   if (event.data) {
-    const data = event.data.json();
-    const options = {
-      body: data.body,
-      icon: '/logo.png', // Assuming logo.png is in public folder
-      badge: '/logo.png',
-      dir: 'rtl',
-      data: data.url || '/'
-    };
-    
-    event.waitUntil(
-      self.registration.showNotification(data.title, options)
-    );
+    try {
+      const data = event.data.json();
+      const options = {
+        body: data.body,
+        dir: 'rtl',
+        data: data.url || '/'
+      };
+      
+      event.waitUntil(
+        self.registration.showNotification(data.title, options)
+      );
+    } catch (e) {
+      console.error('Push event error:', e);
+    }
   }
 });
 
