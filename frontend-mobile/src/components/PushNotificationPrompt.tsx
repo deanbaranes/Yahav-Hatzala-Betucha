@@ -54,7 +54,7 @@ export default function PushNotificationPrompt() {
       alert('ההרשמה להתראות חכמות בוצעה בהצלחה!');
     } catch (error) {
       console.error('Error subscribing to push', error);
-      alert('אירעה שגיאה בעת ההרשמה להתראות.');
+      alert('אירעה שגיאה בעת ההרשמה להתראות: ' + (error.message || JSON.stringify(error)));
     }
     setLoading(false);
   };
