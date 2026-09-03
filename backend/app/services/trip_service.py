@@ -380,11 +380,18 @@ class TripService:
         if first_trip and trip_data.capacity > 0:
             try:
                 from app.services.push_service import broadcast_push_notification
+                from app.services.notification_service import NotificationService
+                
                 trip_title = trip_data.trip_name or trip_data.location
                 date_str = first_trip.start_date.strftime("%d/%m/%Y") if first_trip.start_date else ""
                 msg = f"טיול ל{trip_title} בתאריך {date_str} נוסף הרגע למערכת. היכנסו עכשיו לאפליקציה כדי להשתבץ."
                 push_title = "טיול חדש עלה ללוח! 🚌"
+                
+                # 1. Device Push Notification
                 broadcast_push_notification(db, push_title, msg)
+                
+                # 2. In-App Bell Notification (user_id=None means broadcast to all)
+                NotificationService.create_in_app_notification(message=msg, db=db, user_id=None, title=push_title)
             except Exception as e:
                 print("Failed to broadcast push notification:", e)
         
