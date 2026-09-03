@@ -47,6 +47,7 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
 
     return { 
       client_name: '', 
+      trip_name: '',
       location: '', 
       start_date: sd, 
       end_date: ed, 
@@ -131,6 +132,17 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
               value={newTripForm.notes}
               onChange={e => setNewTripForm({...newTripForm, notes: e.target.value})}
               placeholder="טקסט קצר שיופיע ליד שם הלקוח"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">שם הטיול (יוצג לעובדים)</label>
+            <input 
+              type="text" 
+              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+              value={newTripForm.trip_name}
+              onChange={e => setNewTripForm({...newTripForm, trip_name: e.target.value})}
+              placeholder="למשל: ביה״ס הריאלי"
             />
           </div>
 
@@ -418,6 +430,7 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
             onClick={() => {
               createManualTripMutation.mutate({
                 client_name: newTripForm.client_name,
+                trip_name: newTripForm.trip_name || null,
                 location: newTripForm.location,
                 start_date: newTripForm.start_date,
                 end_date: newTripForm.end_date || null,
