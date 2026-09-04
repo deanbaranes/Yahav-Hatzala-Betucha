@@ -19,7 +19,7 @@ from app.models.refresh_token import RefreshToken
 logger = logging.getLogger(__name__)
 
 # Admin phone number to send alerts to
-ADMIN_PHONE = os.environ.get("ADMIN_PHONE", "0533210777")
+ADMIN_PHONE = os.environ.get("ADMIN_PHONE", "")
 
 def get_db():
     db = SessionLocal()
@@ -90,10 +90,12 @@ def check_unassigned_trips():
         if trip.capacity > 0 and len(confirmed_assignments) < trip.capacity:
             missing = trip.capacity - len(confirmed_assignments)
             msg = f"התראת שיבוץ: לטיול ב-{trip.location} ב-{trip.start_date.strftime('%d/%m/%Y %H:%M')} חסרים {missing} עובדים משובצים (נדרשים {trip.capacity})!"
-            NotificationService.send_sms(ADMIN_PHONE, msg, db=db)
+            if ADMIN_PHONE:
+                NotificationService.send_sms(ADMIN_PHONE, msg, db=db)
         elif trip.capacity == 0 and len(confirmed_assignments) == 0:
             msg = f"התראת שיבוץ: לטיול ב-{trip.location} ב-{trip.start_date.strftime('%d/%m/%Y %H:%M')} אין עובדים משובצים!"
-            NotificationService.send_sms(ADMIN_PHONE, msg, db=db)
+            if ADMIN_PHONE:
+                NotificationService.send_sms(ADMIN_PHONE, msg, db=db)
             
 def check_uninvoiced_trips():
     """
