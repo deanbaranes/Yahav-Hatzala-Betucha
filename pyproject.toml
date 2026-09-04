@@ -1,0 +1,11 @@
+[tool.ruff]
+# General Ruff configuration
+line-length = 88
+
+[tool.ruff.lint]
+# Ignore B008: Do not perform function call in argument defaults (Required for FastAPI Depends)
+ignore = ["B008"]
+
+[tool.ruff.lint.flake8-bugbear]
+# Explicitly tell Ruff that FastAPI dependency injections are safe and immutable
+extend-immutable-calls = ["fastapi.Depends", "Depends", "fastapi.Query", "Query", "fastapi.Path", "Path", "fastapi.Body", "Body"]

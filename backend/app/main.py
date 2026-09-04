@@ -1,71 +1,52 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-from fastapi import Depends, HTTPException
 import os
-from app.database import engine, Base
-from app.models import user, client, trip, trip_assignment, trip_report, payroll_adjustment
-from app.models import refresh_token        # register RefreshToken table
-from app.models import password_reset_token # register PasswordResetToken table
-from app.models import supplier             # register Supplier table
-from app.models import notification         # register Notification table
-from app.models import payslip              # register Payslip table
-from app.models import business_expense
-from app.routers import auth, trips, assignments, reports, clients, payroll, suppliers, notifications, expenses, calendar, push
+from contextlib import asynccontextmanager
+
+from app.database import Base, engine, get_db
 from app.dependencies import get_current_user
-from fastapi.middleware.cors import CORSMiddleware
-from slowapi import _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
-from slowapi.middleware import SlowAPIMiddleware
+from app.models import (  # noqa: F401
+    business_expense,
+    client,
+    notification,  # register Notification table
+    password_reset_token,  # register PasswordResetToken table
+    payroll_adjustment,
+    payslip,  # register Payslip table
+    refresh_token,  # register RefreshToken table
+    supplier,  # register Supplier table
+    trip,
+    trip_assignment,
+    trip_report,
+    user,
+)
+from app.models.payslip import Payslip
+from app.models.user import UserRole
 
 # ── Rate limiter (shared instance) ────────────────────────────────────────────
 from app.rate_limiter import limiter
+from app.routers import (
+    assignments,
+    auth,
+    calendar,
+    clients,
+    expenses,
+    notifications,
+    payroll,
+    push,
+    reports,
+    suppliers,
+    trips,
+)
+from app.tasks.scheduler import start_scheduler
+from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from sqlalchemy.orm import Session
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
-from sqlalchemy import text, inspect
-try:
-    inspector = inspect(engine)
-    
-    # Check users table
-    if 'users' in inspector.get_table_names():
-        users_cols = {col['name'] for col in inspector.get_columns('users')}
-        if 'employment_type' not in users_cols:
-            with engine.begin() as conn:
-                conn.execute(text("ALTER TABLE users ADD COLUMN employment_type VARCHAR DEFAULT 'שכיר'"))
-                
-    # Check business_expenses table
-    if 'business_expenses' in inspector.get_table_names():
-        be_cols = {col['name'] for col in inspector.get_columns('business_expenses')}
-        with engine.begin() as conn:
-            if 'expense_month' not in be_cols:
-                conn.execute(text("ALTER TABLE business_expenses ADD COLUMN expense_month INTEGER"))
-            if 'expense_year' not in be_cols:
-                conn.execute(text("ALTER TABLE business_expenses ADD COLUMN expense_year INTEGER"))
-                
-    # Check suppliers table
-    if 'suppliers' in inspector.get_table_names():
-        sup_cols = {col['name'] for col in inspector.get_columns('suppliers')}
-        with engine.begin() as conn:
-            if 'debt_end_date' not in sup_cols:
-                conn.execute(text("ALTER TABLE suppliers ADD COLUMN debt_end_date DATE"))
-            if 'report_id' not in sup_cols:
-                conn.execute(text("ALTER TABLE suppliers ADD COLUMN report_id UUID UNIQUE"))
-    # Check trips table
-    if 'trips' in inspector.get_table_names():
-        trip_cols = {col['name'] for col in inspector.get_columns('trips')}
-        with engine.begin() as conn:
-            if 'has_accommodation' not in trip_cols:
-                conn.execute(text("ALTER TABLE trips ADD COLUMN has_accommodation BOOLEAN DEFAULT TRUE NOT NULL"))
-
-except Exception as e:
-    import logging
-    logging.getLogger(__name__).warning(f"Auto-migration failed: {e}")
-
-from contextlib import asynccontextmanager
-from app.tasks.scheduler import start_scheduler
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -73,7 +54,7 @@ async def lifespan(app: FastAPI):
     start_scheduler()
     yield
     # Shutdown
-    pass
+
 
 app = FastAPI(title="Yahav Hatzala Betucha API", lifespan=lifespan)
 
@@ -90,9 +71,12 @@ if raw_origins:
     ALLOWED_ORIGINS = raw_origins.split(",")
 elif is_prod:
     # Fail safely in production if CORS is not configured
-    raise RuntimeError("CRITICAL SECURITY ERROR: ALLOWED_ORIGINS environment variable is missing in production.")
+    raise RuntimeError(
+        "CRITICAL SECURITY ERROR: ALLOWED_ORIGINS environment variable is missing in production."
+    )
 else:
     ALLOWED_ORIGINS = ["http://localhost:5173", "http://localhost:3000"]
+
 
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
@@ -100,8 +84,11 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Strict-Transport-Security"] = (
+        "max-age=31536000; includeSubDomains"
+    )
     return response
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -124,24 +111,44 @@ app.include_router(expenses.router)
 app.include_router(calendar.router)
 app.include_router(push.router)
 
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Yahav Hatzala Betucha API"}
 
+
 os.makedirs("uploads", exist_ok=True)
 
+
 @app.get("/uploads/{file_path:path}")
-def get_upload_file(file_path: str, current_user = Depends(get_current_user)):
+def get_upload_file(
+    file_path: str,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized access to files")
-        
+
     file_location = os.path.join("uploads", file_path)
     # Basic directory traversal protection
     if not os.path.abspath(file_location).startswith(os.path.abspath("uploads")):
         raise HTTPException(status_code=403, detail="Forbidden")
-        
+
+    # Security Fix: RBAC for sensitive files (IDOR protection)
+    # Strictly protect payslips
+    if current_user.role != UserRole.admin and (
+        file_path.startswith("payslips/") or "payslip" in file_path.lower()
+    ):
+        # In DB, file_path might be stored as "payslips/file.pdf" or full URL
+        payslip = (
+            db.query(Payslip).filter(Payslip.file_path.contains(file_path)).first()
+        )
+        if not payslip or payslip.user_id != current_user.id:
+            raise HTTPException(
+                status_code=403, detail="אין לך הרשאה לצפות בתלוש שכר זה"
+            )
+
     if not os.path.exists(file_location) or not os.path.isfile(file_location):
         raise HTTPException(status_code=404, detail="File not found")
-        
-    return FileResponse(file_location)
 
+    return FileResponse(file_location)

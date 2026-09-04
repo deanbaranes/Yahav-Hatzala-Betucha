@@ -18,7 +18,7 @@ export default function Expenses() {
 
   const [isMarkingAll, setIsMarkingAll] = useState(false);
 
-  const { data: allExpenses, isLoading, refetch } = useQuery<any[]>({
+  const { data: allExpenses, isLoading } = useQuery<any[]>({
     queryKey: ['expenses', currentMonth, currentYear],
     queryFn: async () => {
       const res = await axiosClient.get(`/expenses/?expense_month=${currentMonth}&expense_year=${currentYear}`);
