@@ -15,6 +15,7 @@ import os
 from app.models.trip_report import TripReport
 from app.models.business_expense import BusinessExpense
 from app.models.refresh_token import RefreshToken
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +71,22 @@ def check_client_debts():
             
             if not recent_notif:
                 NotificationService.create_in_app_notification(msg, db, title="התראת חוב")
+                billing_phone = "".join(filter(str.isdigit, os.getenv("BILLING_ADMIN_PHONE", "")))
+                admin_phone = "".join(filter(str.isdigit, os.getenv("ADMIN_PHONE", "")))
+                
+                # Send Push to Dean (Billing Admin)
+                if billing_phone:
+                    billing_admin = db.query(User).filter(User.phone.like(f"%{billing_phone}%")).first()
+                    if billing_admin:
+                        from app.services.push_service import send_push_notification
+                        send_push_notification(db, billing_admin.id, "התראת גבייה מלקוחות", msg, url="/admin/clients")
+                        
+                # Send Push to Yahav (General Admin)
+                if admin_phone and admin_phone != billing_phone:
+                    admin_user = db.query(User).filter(User.phone.like(f"%{admin_phone}%")).first()
+                    if admin_user:
+                        from app.services.push_service import send_push_notification
+                        send_push_notification(db, admin_user.id, "התראת גבייה מלקוחות", msg, url="/admin/clients")
     
 def check_unassigned_trips():
     """
@@ -139,6 +156,12 @@ def check_uninvoiced_trips():
         if future_trips == 0:
             msg = f"התראת חשבונית: ללקוח '{client.name}' יש {len(trips)} טיולים שהסתיימו החודש ללא חשבונית, ואין טיולים נוספים שנותרו לו החודש. כדאי להפיק חשבונית!"
             NotificationService.create_in_app_notification(msg, db, title="התראת מערכת")
+            billing_phone = "".join(filter(str.isdigit, os.getenv("BILLING_ADMIN_PHONE", "")))
+            if billing_phone:
+                billing_admin = db.query(User).filter(User.phone.like(f"%{billing_phone}%")).first()
+                if billing_admin:
+                    from app.services.push_service import send_push_notification
+                    send_push_notification(db, billing_admin.id, "התראה להפקת חשבוניות", msg, url="/admin/reports")
 
 def delete_old_receipts():
     """
@@ -406,10 +429,12 @@ def check_unpaid_suppliers():
         supplier_names = ", ".join(list(set(s.name for s in unpaid_suppliers)))
         msg = f"תזכורת סוף חודש: קיימים ספקים במערכת שטרם שולמו: {supplier_names}."
         
-        admin_phone = os.getenv("ADMIN_PHONE")
+        admin_phone = "".join(filter(str.isdigit, os.getenv("ADMIN_PHONE", "")))
         if admin_phone:
-            NotificationService.send_sms(admin_phone, msg, db=db)
-            NotificationService.create_in_app_notification(msg, db, title="תזכורת תשלום לספקים")
+            admin_user = db.query(User).filter(User.phone.like(f"%{admin_phone}%")).first()
+            if admin_user:
+                from app.services.push_service import send_push_notification
+                send_push_notification(db, admin_user.id, "תזכורת ספקים", msg, url="/admin/suppliers")
     except Exception as e:
         logger.error(f"check_unpaid_suppliers failed: {e}")
     finally:

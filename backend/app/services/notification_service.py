@@ -62,6 +62,10 @@ class NotificationService:
                         push_title = "עדכון רישום עובדים"
                     elif "ספקים" in message:
                         push_title = "תזכורת ספקים"
+                    elif "התראת חוב" in message:
+                        push_title = "התראת גבייה מלקוחות"
+                    elif "התראת חשבונית" in message:
+                        push_title = "התראה להפקת חשבוניות"
                         
                     # Skip pushing if it's one of the ignored employee keywords
                     employee_keywords = ["תזכורת שיבוץ", "שובצת לטיול", "לאשר הגעה סופית", "למלא דוח", "הסתיים"]
