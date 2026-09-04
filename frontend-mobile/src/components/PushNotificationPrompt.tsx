@@ -7,6 +7,8 @@ export default function PushNotificationPrompt() {
   const [loading, setLoading] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(true);
 
+  const [vapidKey, setVapidKey] = useState<string | null>(null);
+
   useEffect(() => {
     if ('permissions' in navigator) {
       navigator.permissions.query({ name: 'notifications' }).then(status => {
@@ -20,6 +22,14 @@ export default function PushNotificationPrompt() {
       navigator.serviceWorker.ready.then(registration => {
         registration.pushManager.getSubscription().then(subscription => {
           setIsSubscribed(!!subscription);
+          if (!subscription) {
+            // Fetch VAPID key in advance to avoid losing user gesture context
+            axiosClient.get('/push/public-key').then(res => {
+              if (res.data && res.data.public_key) {
+                setVapidKey(res.data.public_key);
+              }
+            }).catch(err => console.error('Failed to pre-fetch VAPID key', err));
+          }
         });
       });
     }
@@ -38,16 +48,21 @@ export default function PushNotificationPrompt() {
 
       const registration = await navigator.serviceWorker.ready;
       
-      const { data } = await axiosClient.get('/push/public-key');
-      const vapidPublicKey = data.public_key;
-      if (!vapidPublicKey) {
+      let currentVapidKey = vapidKey;
+      if (!currentVapidKey) {
+        // Fallback if it wasn't pre-fetched in time
+        const { data } = await axiosClient.get('/push/public-key');
+        currentVapidKey = data.public_key;
+      }
+
+      if (!currentVapidKey) {
         console.error('VAPID public key not found');
         alert('שגיאה: חסר מפתח VAPID בשרת. אנא פנה למנהל המערכת.');
         setLoading(false);
         return;
       }
 
-      const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+      const convertedVapidKey = urlBase64ToUint8Array(currentVapidKey);
 
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -66,13 +81,15 @@ export default function PushNotificationPrompt() {
       alert('ההרשמה להתראות חכמות בוצעה בהצלחה!');
     } catch (error: any) {
       console.error('Error subscribing to push', error);
-      alert(
-        'DEV DEBUG LOG:\\n' + 
-        'Message: ' + error.message + '\\n' +
-        'Name: ' + error.name + '\\n' +
-        'Stack: ' + (error.stack ? error.stack.substring(0, 100) : 'No stack') + '\\n' +
-        'Stringified: ' + JSON.stringify(error)
-      );
+      if (error.name === 'AbortError') {
+        alert('לא ניתן היה להירשם להתראות. אם אתה משתמש בדפדפן סמסונג או במצב חסכון בסוללה, נסה להשתמש ב-Chrome או לאשר התראות דרך הגדרות האתר בדפדפן.');
+      } else {
+        alert(
+          'שגיאה בהרשמה:\\n' + 
+          'Message: ' + error.message + '\\n' +
+          'Name: ' + error.name
+        );
+      }
     }
     setLoading(false);
   };

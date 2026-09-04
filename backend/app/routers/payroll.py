@@ -83,13 +83,13 @@ def get_employees(month: Optional[int] = None, year: Optional[int] = None, db: S
             Trip.start_date >= start_date,
             Trip.start_date <= end_date,
             TripAssignment.status == "assigned"
-        ).subquery()
+        )
         
         # Include employees who had a manual payroll adjustment this month
         adjusted_users = db.query(PayrollAdjustment.user_id).filter(
             PayrollAdjustment.month == month,
             PayrollAdjustment.year == year
-        ).subquery()
+        )
         
         query = query.filter((User.id.in_(assigned_users)) | (User.id.in_(adjusted_users)))
         
