@@ -66,13 +66,13 @@ export default function PushNotificationPrompt() {
       alert('ההרשמה להתראות חכמות בוצעה בהצלחה!');
     } catch (error: any) {
       console.error('Error subscribing to push', error);
-      const errorMsg = error.message || JSON.stringify(error);
-      
-      if (errorMsg.includes('push service error')) {
-        alert('לא ניתן להתחבר לשירות ההתראות מהדפדפן הנוכחי.\nבאנדרואיד מומלץ להשתמש ב-Google Chrome. אנא פתח את המערכת דרך כרום ונסה שוב, או נקה את זיכרון המטמון של הדפדפן.\n\n(שגיאה מקורית: ' + errorMsg + ')');
-      } else {
-        alert('אירעה שגיאה בעת ההרשמה להתראות: ' + errorMsg);
-      }
+      alert(
+        'DEV DEBUG LOG:\\n' + 
+        'Message: ' + error.message + '\\n' +
+        'Name: ' + error.name + '\\n' +
+        'Stack: ' + (error.stack ? error.stack.substring(0, 100) : 'No stack') + '\\n' +
+        'Stringified: ' + JSON.stringify(error)
+      );
     }
     setLoading(false);
   };
