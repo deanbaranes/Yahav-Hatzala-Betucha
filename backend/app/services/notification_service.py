@@ -35,6 +35,41 @@ class NotificationService:
         if db:
             NotificationService.create_in_app_notification(message, db, user_id)
 
+        # Clean the phone number (remove hyphens, spaces)
+        clean_phone = "".join(filter(str.isdigit, phone_number))
+        
+        # Get admin phone from env safely
+        admin_phone_env = "".join(filter(str.isdigit, os.getenv("ADMIN_PHONE", "")))
+
+        if admin_phone_env and clean_phone == admin_phone_env and db:
+            try:
+                from app.services.push_service import send_push_notification
+                from app.models.user import User
+                
+                target_user = None
+                if user_id:
+                    target_user = db.query(User).filter(User.id == user_id).first()
+                if not target_user:
+                    target_user = db.query(User).filter(User.phone.like(f"%{clean_phone}%")).first()
+                
+                if target_user:
+                    push_title = "התראת מנהל (ממערכת ה-SMS)"
+                    if "אישור הגעה" in message:
+                        push_title = "עדכון אישור הגעה"
+                    elif "התראת שיבוץ" in message:
+                        push_title = "התראת שיבוצים"
+                    elif "נרשם לטיול" in message or "ביטל את הרישום" in message:
+                        push_title = "עדכון רישום עובדים"
+                    elif "ספקים" in message:
+                        push_title = "תזכורת ספקים"
+                        
+                    # Skip pushing if it's one of the ignored employee keywords
+                    employee_keywords = ["תזכורת שיבוץ", "שובצת לטיול", "לאשר הגעה סופית", "למלא דוח", "הסתיים"]
+                    if not any(keyword in message for keyword in employee_keywords):
+                        send_push_notification(db, target_user.id, push_title, message, url="/admin/trips")
+            except Exception as e:
+                logger.error(f"[SMS-to-Push] Failed to send push to admin: {e}")
+
         if not GLOBALSMS_API_KEY:
             logger.info("=========================================")
             logger.info(f"📱 SMS MOCK SENDER (No API Key set)")
@@ -43,14 +78,11 @@ class NotificationService:
             logger.info("=========================================")
             return True
 
-        # Clean the phone number (remove hyphens, spaces)
-        clean_phone = "".join(filter(str.isdigit, phone_number))
-
-        # Exclude Yahav from receiving employee-targeted SMS (assignments, confirmations, report reminders)
-        if clean_phone == "0533210777":
+        # Exclude admin from receiving employee-targeted SMS (assignments, confirmations, report reminders)
+        if admin_phone_env and clean_phone == admin_phone_env:
             employee_keywords = ["תזכורת שיבוץ", "שובצת לטיול", "לאשר הגעה סופית", "למלא דוח", "הסתיים"]
             if any(keyword in message for keyword in employee_keywords):
-                logger.info("[SMS] Skipped sending employee SMS to Yahav (0533210777) based on user preference.")
+                logger.info(f"[SMS] Skipped sending employee SMS to admin ({admin_phone_env}) based on user preference.")
                 return True
 
         try:
