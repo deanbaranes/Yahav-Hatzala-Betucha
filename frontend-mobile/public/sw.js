@@ -42,3 +42,8 @@ self.addEventListener('notificationclick', function(event) {
     })
   );
 });
+
+// Empty fetch handler to satisfy Chrome PWA installability criteria
+self.addEventListener('fetch', function(event) {
+  // Do nothing, let the browser handle requests normally
+});
