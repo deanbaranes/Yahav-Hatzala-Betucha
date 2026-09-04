@@ -90,7 +90,7 @@ export default function MySchedule() {
                     </div>
                   )}
                 </div>
-                {trip.is_confirmed && (
+                {trip.is_confirmed && (trip.employee_confirmed_arrival || ((new Date(trip.start_date).getTime() - now.getTime()) / (1000 * 60 * 60) <= 24)) && (
                   <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end relative z-10">
                     {trip.employee_confirmed_arrival ? (
                       <span className="flex items-center gap-1.5 text-green-600 font-bold text-sm bg-green-50 px-3 py-1.5 rounded-lg border border-green-200">
