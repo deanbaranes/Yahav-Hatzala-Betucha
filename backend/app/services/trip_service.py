@@ -1,119 +1,161 @@
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import extract
-from datetime import datetime, timezone, time, timedelta
-from urllib.parse import urlparse
-import requests as http_requests
-from icalendar import Calendar as ICalendar
-from fastapi import HTTPException
+from datetime import datetime, time, timedelta, timezone
 
-from app.models.trip import Trip
 from app.models.client import Client
+from app.models.trip import Trip
+from app.models.trip_assignment import AssignmentStatus, TripAssignment
+from app.models.trip_report import ManagerStatus
 from app.models.user import User
-from app.models.trip_assignment import TripAssignment
-from app.schemas import TripCreate, IcalImportRequest, DuplicateRecurringRequest
+from app.schemas import DuplicateRecurringRequest, TripCreate
 from app.services.notification_service import NotificationService
+from fastapi import HTTPException
+from sqlalchemy import extract
+from sqlalchemy.orm import Session, joinedload
+
 
 class TripService:
-
     @staticmethod
     def get_all_trips(db: Session, skip: int = 0, limit: int = 100):
-        trips = db.query(Trip).options(
-            joinedload(Trip.client),
-            joinedload(Trip.assignments).joinedload(TripAssignment.user)
-        ).order_by(Trip.start_date.desc()).offset(skip).limit(limit).all()
-        
+        trips = (
+            db.query(Trip)
+            .options(
+                joinedload(Trip.client),
+                joinedload(Trip.assignments).joinedload(TripAssignment.user),
+            )
+            .order_by(Trip.start_date.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
         result = []
         for t in trips:
-            result.append({
-                "id": str(t.id),
-                "location": t.location,
-                "start_date": t.start_date.isoformat(),
-                "end_date": t.end_date.isoformat() if t.end_date else None,
-                "capacity": t.capacity,
-                "roles_requirements": t.roles_requirements or {},
-                "is_billed": t.is_billed,
-                "color": t.color,
-                "global_salary": t.global_salary,
-                "contact_name": t.contact_name,
-                "contact_phone": t.contact_phone,
-                "employee_contact_name": t.employee_contact_name,
-                "employee_contact_phone": t.employee_contact_phone,
-                "notes": t.notes,
-                "client": {
-                    "id": str(t.client.id),
-                    "name": t.client.name,
-                } if t.client else None,
-                "assignments": [
-                    {
-                        "id": str(a.id),
-                        "is_confirmed": a.is_confirmed,
-                        "user_id": str(a.user_id),
-                        "status": a.status,
-                        "role": a.role,
-                        "employee_confirmed_arrival": getattr(a, 'employee_confirmed_arrival', False),
-                        "user": {
-                            "full_name": a.user.full_name
-                        } if a.user else None
-                    } for a in t.assignments
-                ] if hasattr(t, 'assignments') and t.assignments else []
-            })
+            result.append(
+                {
+                    "id": str(t.id),
+                    "location": t.location,
+                    "start_date": t.start_date.isoformat(),
+                    "end_date": t.end_date.isoformat() if t.end_date else None,
+                    "capacity": t.capacity,
+                    "roles_requirements": t.roles_requirements or {},
+                    "is_billed": t.is_billed,
+                    "color": t.color,
+                    "global_salary": t.global_salary,
+                    "contact_name": t.contact_name,
+                    "contact_phone": t.contact_phone,
+                    "employee_contact_name": t.employee_contact_name,
+                    "employee_contact_phone": t.employee_contact_phone,
+                    "notes": t.notes,
+                    "client": {
+                        "id": str(t.client.id),
+                        "name": t.client.name,
+                    }
+                    if t.client
+                    else None,
+                    "assignments": [
+                        {
+                            "id": str(a.id),
+                            "is_confirmed": a.is_confirmed,
+                            "user_id": str(a.user_id),
+                            "status": a.status,
+                            "role": a.role,
+                            "employee_confirmed_arrival": getattr(
+                                a, "employee_confirmed_arrival", False
+                            ),
+                            "user": {"full_name": a.user.full_name} if a.user else None,
+                        }
+                        for a in t.assignments
+                    ]
+                    if hasattr(t, "assignments") and t.assignments
+                    else [],
+                }
+            )
         return result
 
     @staticmethod
     def get_available_trips(db: Session, current_user: User):
-        now = datetime.now()
-        trips = db.query(Trip).options(
-            joinedload(Trip.client),
-            joinedload(Trip.assignments).joinedload(TripAssignment.user)
-        ).filter(
-            Trip.start_date >= now,
-            Trip.roles_requirements != None
-        ).order_by(Trip.start_date.asc()).all()
-        
+        now = datetime.now(timezone.utc)
+        trips = (
+            db.query(Trip)
+            .options(
+                joinedload(Trip.client),
+                joinedload(Trip.assignments).joinedload(TripAssignment.user),
+            )
+            .filter(Trip.start_date >= now, Trip.roles_requirements != None)
+            .order_by(Trip.start_date.asc())
+            .all()
+        )
+
         result = []
         for t in trips:
             reqs = t.roles_requirements or {}
             total_reqs = sum(int(v) for v in reqs.values() if str(v).isdigit())
             if total_reqs == 0:
                 continue
-                
-            has_yahav = any(a.user and a.user.full_name == "יהב כלפון" for a in t.assignments if a.status in ["assigned", "waitlisted"])
+
+            has_yahav = any(
+                a.user and a.user.full_name == "יהב כלפון"
+                for a in t.assignments
+                if a.status in [AssignmentStatus.assigned, AssignmentStatus.waitlisted]
+            )
             if has_yahav and current_user.full_name != "יהב כלפון":
                 continue
 
-            assigned_count = sum(1 for a in t.assignments if a.status == "assigned")
+            assigned_count = sum(
+                1 for a in t.assignments if a.status == AssignmentStatus.assigned
+            )
 
             role_counts = {}
             for a in t.assignments:
-                if a.status == "assigned" and a.role:
+                if a.status == AssignmentStatus.assigned and a.role:
                     role_counts[a.role] = role_counts.get(a.role, 0) + 1
 
-            user_assignment = next((a for a in t.assignments if a.user_id == current_user.id and a.status in ["assigned", "waitlisted"]), None)
+            user_assignment = next(
+                (
+                    a
+                    for a in t.assignments
+                    if a.user_id == current_user.id
+                    and a.status
+                    in [AssignmentStatus.assigned, AssignmentStatus.waitlisted]
+                ),
+                None,
+            )
 
-            result.append({
-                "id": str(t.id),
-                "location": t.location,
-                "start_date": t.start_date.isoformat(),
-                "end_date": t.end_date.isoformat() if t.end_date else None,
-                "notes": t.notes,
-                "capacity": t.capacity,
-                "roles_requirements": t.roles_requirements or {},
-                "role_counts": role_counts,
-                "assigned_count": assigned_count,
-                "user_status": user_assignment.status if user_assignment else None,
-                "user_is_confirmed": user_assignment.is_confirmed if user_assignment else False,
-                "client": {"id": str(t.client.id), "name": t.client.name} if t.client else None
-            })
+            result.append(
+                {
+                    "id": str(t.id),
+                    "location": t.location,
+                    "start_date": t.start_date.isoformat(),
+                    "end_date": t.end_date.isoformat() if t.end_date else None,
+                    "notes": t.notes,
+                    "capacity": t.capacity,
+                    "roles_requirements": t.roles_requirements or {},
+                    "role_counts": role_counts,
+                    "assigned_count": assigned_count,
+                    "user_status": user_assignment.status if user_assignment else None,
+                    "user_is_confirmed": user_assignment.is_confirmed
+                    if user_assignment
+                    else False,
+                    "client": {"id": str(t.client.id), "name": t.client.name}
+                    if t.client
+                    else None,
+                }
+            )
         return result
 
     @staticmethod
     def get_next_trip(db: Session, current_user: User):
-        now = datetime.now()
-        assignment = db.query(TripAssignment).join(Trip).filter(
-            TripAssignment.user_id == current_user.id,
-            TripAssignment.status == "assigned",
-            Trip.start_date >= now
-        ).order_by(Trip.start_date.asc()).first()
+        now = datetime.now(timezone.utc)
+        assignment = (
+            db.query(TripAssignment)
+            .join(Trip)
+            .filter(
+                TripAssignment.user_id == current_user.id,
+                TripAssignment.status == "assigned",
+                Trip.start_date >= now,
+            )
+            .order_by(Trip.start_date.asc())
+            .first()
+        )
 
         if not assignment:
             return None
@@ -129,52 +171,75 @@ class TripService:
             "end_date": t.end_date.isoformat() if t.end_date else None,
             "is_confirmed": assignment.is_confirmed,
             "role": assignment.role,
-            "employee_contact_name": t.employee_contact_name if assignment.is_confirmed else None,
-            "employee_contact_phone": t.employee_contact_phone if assignment.is_confirmed else None,
-            "client": {"name": t.client.name} if t.client else None
+            "employee_contact_name": t.employee_contact_name
+            if assignment.is_confirmed
+            else None,
+            "employee_contact_phone": t.employee_contact_phone
+            if assignment.is_confirmed
+            else None,
+            "client": {"name": t.client.name} if t.client else None,
         }
 
     @staticmethod
     def get_my_trips(db: Session, current_user: User):
-        assignments = db.query(TripAssignment).options(
-            joinedload(TripAssignment.trip).joinedload(Trip.client)
-        ).join(Trip).filter(
-            TripAssignment.user_id == current_user.id,
-            TripAssignment.status.in_(["assigned", "waitlisted"])
-        ).order_by(Trip.start_date.desc()).all()
+        assignments = (
+            db.query(TripAssignment)
+            .options(joinedload(TripAssignment.trip).joinedload(Trip.client))
+            .join(Trip)
+            .filter(
+                TripAssignment.user_id == current_user.id,
+                TripAssignment.status.in_(["assigned", "waitlisted"]),
+            )
+            .order_by(Trip.start_date.desc())
+            .all()
+        )
 
         result = []
         for a in assignments:
             t = a.trip
-            result.append({
-                "id": str(t.id),
-                "assignment_id": str(a.id),
-                "location": t.location,
-                "start_date": t.start_date.isoformat(),
-                "end_date": t.end_date.isoformat() if t.end_date else None,
-                "notes": t.notes,
-                "status": a.status,
-                "role": a.role,
-                "is_confirmed": a.is_confirmed,
-                "employee_confirmed_arrival": getattr(a, 'employee_confirmed_arrival', False),
-                "employee_contact_name": t.employee_contact_name if a.is_confirmed else None,
-                "employee_contact_phone": t.employee_contact_phone if a.is_confirmed else None,
-                "client": {"name": t.client.name} if t.client else None
-            })
+            result.append(
+                {
+                    "id": str(t.id),
+                    "assignment_id": str(a.id),
+                    "location": t.location,
+                    "start_date": t.start_date.isoformat(),
+                    "end_date": t.end_date.isoformat() if t.end_date else None,
+                    "notes": t.notes,
+                    "status": a.status,
+                    "role": a.role,
+                    "is_confirmed": a.is_confirmed,
+                    "employee_confirmed_arrival": getattr(
+                        a, "employee_confirmed_arrival", False
+                    ),
+                    "employee_contact_name": t.employee_contact_name
+                    if a.is_confirmed
+                    else None,
+                    "employee_contact_phone": t.employee_contact_phone
+                    if a.is_confirmed
+                    else None,
+                    "client": {"name": t.client.name} if t.client else None,
+                }
+            )
         return result
 
     @staticmethod
     def get_billing_status(db: Session, year: int, month: int):
-        trips = db.query(Trip).options(
-            joinedload(Trip.client),
-            joinedload(Trip.assignments).joinedload(TripAssignment.report)
-        ).filter(
-            extract('year', Trip.start_date) == year,
-            extract('month', Trip.start_date) == month
-        ).order_by(Trip.start_date.asc()).all()
+        trips = (
+            db.query(Trip)
+            .options(
+                joinedload(Trip.client),
+                joinedload(Trip.assignments).joinedload(TripAssignment.report),
+            )
+            .filter(
+                extract("year", Trip.start_date) == year,
+                extract("month", Trip.start_date) == month,
+            )
+            .order_by(Trip.start_date.asc())
+            .all()
+        )
 
         client_stats = {}
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
 
         for t in trips:
             c_id = str(t.client_id)
@@ -190,61 +255,68 @@ class TripService:
                     "roles_summary": {},
                     "all_notes": [],
                     "trips_details": [],
-                    "client_notes": t.client.notes if t.client else ""
+                    "client_notes": t.client.notes if t.client else "",
                 }
 
             stats = client_stats[c_id]
             stats["total_trips"] += 1
 
             start_dt = t.start_date
-            if start_dt and hasattr(start_dt, 'tzinfo') and start_dt.tzinfo is not None:
+            if start_dt and hasattr(start_dt, "tzinfo") and start_dt.tzinfo is not None:
                 start_dt = start_dt.replace(tzinfo=None)
-                
+
             trip_end = t.end_date or t.start_date
-            if trip_end and hasattr(trip_end, 'tzinfo') and trip_end.tzinfo is not None:
+            if trip_end and hasattr(trip_end, "tzinfo") and trip_end.tzinfo is not None:
                 trip_end = trip_end.replace(tzinfo=None)
-                
-            duration_hours = (trip_end - start_dt).total_seconds() / 3600.0 if start_dt and trip_end else 0
-            
+
+            duration_hours = (
+                (trip_end - start_dt).total_seconds() / 3600.0
+                if start_dt and trip_end
+                else 0
+            )
+
             nights = 0
             if start_dt and trip_end:
                 nights = (trip_end.date() - start_dt.date()).days
-                if nights < 0:
-                    nights = 0
+                nights = max(nights, 0)
 
             # Calculate daily shift hours based on clock time
             start_time = start_dt.time() if start_dt else time(0, 0)
             end_time = trip_end.time() if trip_end else time(0, 0)
             start_mins = start_time.hour * 60 + start_time.minute
             end_mins = end_time.hour * 60 + end_time.minute
-            
+
             if end_mins < start_mins:
                 daily_duration = (end_mins + 24 * 60 - start_mins) / 60.0
             else:
                 daily_duration = (end_mins - start_mins) / 60.0
-                
+
             if daily_duration == 0 and duration_hours > 0:
                 daily_duration = 24.0 if duration_hours >= 24 else duration_hours
 
             # If the total duration is <= 24 hours, it's considered a single shift (even if overnight)
             if duration_hours <= 24:
-                stats["trips_details"].append({
-                    "date": start_dt.strftime('%d.%m') if start_dt else "",
-                    "location": t.location,
-                    "planned_hours": round(duration_hours, 1),
-                    "nights": nights
-                })
+                stats["trips_details"].append(
+                    {
+                        "date": start_dt.strftime("%d.%m") if start_dt else "",
+                        "location": t.location,
+                        "planned_hours": round(duration_hours, 1),
+                        "nights": nights,
+                    }
+                )
             else:
                 # Multi-day trip (multiple shifts)
                 days_count = nights + 1
                 for i in range(days_count):
                     current_day = start_dt + timedelta(days=i)
-                    stats["trips_details"].append({
-                        "date": current_day.strftime('%d.%m'),
-                        "location": t.location,
-                        "planned_hours": round(daily_duration, 1),
-                        "nights": 0
-                    })
+                    stats["trips_details"].append(
+                        {
+                            "date": current_day.strftime("%d.%m"),
+                            "location": t.location,
+                            "planned_hours": round(daily_duration, 1),
+                            "nights": 0,
+                        }
+                    )
 
             if t.notes and t.notes.strip():
                 stats["all_notes"].append(t.notes.strip())
@@ -257,17 +329,17 @@ class TripService:
 
             has_confirmed_assignments = False
             for a in t.assignments:
-                if a.status == "assigned" and a.is_confirmed:
+                if a.status == AssignmentStatus.assigned and a.is_confirmed:
                     has_confirmed_assignments = True
                     role = a.role or "כללי"
                     if role not in stats["roles_summary"]:
                         stats["roles_summary"][role] = 0
                     stats["roles_summary"][role] += 1
 
-                if a.report and a.report.manager_status == "approved":
+                if a.report and a.report.manager_status == ManagerStatus.approved:
                     stats["total_overtime"] += float(a.report.overtime_decimal or 0)
                     stats["total_expenses"] += float(a.report.expenses or 0)
-                    
+
             if not has_confirmed_assignments:
                 if t.roles_requirements and len(t.roles_requirements) > 0:
                     for role, count in t.roles_requirements.items():
@@ -282,7 +354,7 @@ class TripService:
         result = []
         for stats in client_stats.values():
             stats["total_overtime"] = round(stats["total_overtime"] * 2) / 2
-            
+
             status = "פעיל"
             if stats["invoiced_trips"] == stats["total_trips"]:
                 status = "חויב במלואו"
@@ -290,27 +362,42 @@ class TripService:
                 status = "מוכן לחיוב"
 
             stats["status"] = status
-            stats["all_notes"] = sorted(list(set(stats["all_notes"])))
-            
+            stats["all_notes"] = sorted(set(stats["all_notes"]))
+
             result.append(stats)
 
-        result.sort(key=lambda x: 0 if x["status"] == "מוכן לחיוב" else (1 if x["status"] == "פעיל" else 2))
+        result.sort(
+            key=lambda x: (
+                0
+                if x["status"] == "מוכן לחיוב"
+                else (1 if x["status"] == "פעיל" else 2)
+            )
+        )
         return result
 
     @staticmethod
     def create_trip(db: Session, trip_data: TripCreate):
         if trip_data.end_date <= trip_data.start_date:
-            raise HTTPException(status_code=400, detail="תאריך הסיום חייב להיות אחרי תאריך ההתחלה")
+            raise HTTPException(
+                status_code=400, detail="תאריך הסיום חייב להיות אחרי תאריך ההתחלה"
+            )
 
         client = db.query(Client).filter(Client.name == trip_data.client_name).first()
         if not client:
-            client = Client(name=trip_data.client_name, contact_person=trip_data.contact_name, phone=trip_data.contact_phone)
+            client = Client(
+                name=trip_data.client_name,
+                contact_person=trip_data.contact_name,
+                phone=trip_data.contact_phone,
+            )
             db.add(client)
             db.commit()
             db.refresh(client)
         else:
             updated = False
-            if trip_data.contact_name and client.contact_person != trip_data.contact_name:
+            if (
+                trip_data.contact_name
+                and client.contact_person != trip_data.contact_name
+            ):
                 client.contact_person = trip_data.contact_name
                 updated = True
             if trip_data.contact_phone and client.phone != trip_data.contact_phone:
@@ -321,15 +408,15 @@ class TripService:
                 db.refresh(client)
 
         delta_days = 0
-        if trip_data.recurring_type == 'weekly':
+        if trip_data.recurring_type == "weekly":
             delta_days = 7
-        elif trip_data.recurring_type == 'biweekly':
+        elif trip_data.recurring_type == "biweekly":
             delta_days = 14
 
         current_start = trip_data.start_date
         current_end = trip_data.end_date
         end_date_limit = trip_data.recurring_end_date or trip_data.start_date
-        
+
         max_trips = 104
         created_count = 0
         first_trip = None
@@ -349,29 +436,29 @@ class TripService:
                 employee_contact_name=trip_data.employee_contact_name,
                 employee_contact_phone=trip_data.employee_contact_phone,
                 notes=trip_data.notes,
-                has_accommodation=trip_data.has_accommodation
+                has_accommodation=trip_data.has_accommodation,
             )
             db.add(new_trip)
             db.flush()
-            
+
             if trip_data.assigned_user_id:
                 new_assignment = TripAssignment(
                     trip_id=new_trip.id,
                     user_id=trip_data.assigned_user_id,
                     role=trip_data.assigned_role or "כללי",
                     status="assigned",
-                    is_confirmed=True
+                    is_confirmed=True,
                 )
                 db.add(new_assignment)
-            
+
             if not first_trip:
                 first_trip = new_trip
-                
+
             created_count += 1
-            
+
             if delta_days == 0:
                 break
-                
+
             current_start += timedelta(days=delta_days)
             current_end += timedelta(days=delta_days)
 
@@ -379,33 +466,47 @@ class TripService:
 
         if first_trip and trip_data.capacity > 0:
             try:
-                from app.services.push_service import broadcast_push_notification
                 from app.services.notification_service import NotificationService
-                
+                from app.services.push_service import broadcast_push_notification
+
                 trip_title = trip_data.trip_name or trip_data.location
-                date_str = first_trip.start_date.strftime("%d/%m/%Y") if first_trip.start_date else ""
+                date_str = (
+                    first_trip.start_date.strftime("%d/%m/%Y")
+                    if first_trip.start_date
+                    else ""
+                )
                 msg = f"טיול ל{trip_title} בתאריך {date_str} נוסף הרגע למערכת. היכנסו עכשיו לאפליקציה כדי להשתבץ."
                 push_title = "טיול חדש עלה ללוח! 🚌"
-                
+
                 # 1. Device Push Notification
                 broadcast_push_notification(db, push_title, msg)
-                
+
                 # 2. In-App Bell Notification (user_id=None means broadcast to all)
-                NotificationService.create_in_app_notification(message=msg, db=db, user_id=None, title=push_title)
-            except Exception as e:
+                NotificationService.create_in_app_notification(
+                    message=msg, db=db, user_id=None, title=push_title
+                )
+            except Exception as e:  # noqa: BLE001
                 print("Failed to broadcast push notification:", e)
-        
+
         if trip_data.assigned_user_id and created_count > 0:
-            assigned_user = db.query(User).filter(User.id == trip_data.assigned_user_id).first()
+            assigned_user = (
+                db.query(User).filter(User.id == trip_data.assigned_user_id).first()
+            )
             if assigned_user:
                 if created_count > 1:
                     msg = f"שובצת לסדרת אירועים (סך הכל {created_count} מפגשים) במיקום {trip_data.location} בתפקיד {trip_data.assigned_role or 'כללי'}."
                 else:
-                    date_str = first_trip.start_date.strftime("%d/%m/%Y %H:%M") if first_trip.start_date else ""
+                    date_str = (
+                        first_trip.start_date.strftime("%d/%m/%Y %H:%M")
+                        if first_trip.start_date
+                        else ""
+                    )
                     msg = f"שובצת לטיול ב-{first_trip.location} בתאריך {date_str} בתפקיד {trip_data.assigned_role or 'כללי'}."
-                
-                NotificationService.create_in_app_notification(msg, db, user_id=assigned_user.id)
-                if assigned_user.phone and assigned_user.role != 'admin':
+
+                NotificationService.create_in_app_notification(
+                    msg, db, user_id=assigned_user.id
+                )
+                if assigned_user.phone and assigned_user.role != "admin":
                     NotificationService.send_sms(assigned_user.phone, msg)
 
         db.refresh(first_trip)
@@ -413,18 +514,22 @@ class TripService:
 
     @staticmethod
     def bulk_bill_trips(db: Session, client_id: str, year: int, month: int):
-        trips = db.query(Trip).filter(
-            Trip.client_id == client_id,
-            extract('year', Trip.start_date) == year,
-            extract('month', Trip.start_date) == month,
-            Trip.is_billed == False
-        ).all()
-        
+        trips = (
+            db.query(Trip)
+            .filter(
+                Trip.client_id == client_id,
+                extract("year", Trip.start_date) == year,
+                extract("month", Trip.start_date) == month,
+                Trip.is_billed == False,
+            )
+            .all()
+        )
+
         count = 0
         for t in trips:
             t.is_billed = True
             count += 1
-            
+
         db.commit()
         return {"message": f"Successfully billed {count} trips", "count": count}
 
@@ -436,13 +541,20 @@ class TripService:
 
         client = db.query(Client).filter(Client.name == trip_data.client_name).first()
         if not client:
-            client = Client(name=trip_data.client_name, contact_person=trip_data.contact_name, phone=trip_data.contact_phone)
+            client = Client(
+                name=trip_data.client_name,
+                contact_person=trip_data.contact_name,
+                phone=trip_data.contact_phone,
+            )
             db.add(client)
             db.commit()
             db.refresh(client)
         else:
             updated = False
-            if trip_data.contact_name and client.contact_person != trip_data.contact_name:
+            if (
+                trip_data.contact_name
+                and client.contact_person != trip_data.contact_name
+            ):
                 client.contact_person = trip_data.contact_name
                 updated = True
             if trip_data.contact_phone and client.phone != trip_data.contact_phone:
@@ -472,21 +584,25 @@ class TripService:
         return trip
 
     @staticmethod
-    def duplicate_trip_recurring(db: Session, trip_id: str, request: DuplicateRecurringRequest):
+    def duplicate_trip_recurring(
+        db: Session, trip_id: str, request: DuplicateRecurringRequest
+    ):
         base_trip = db.query(Trip).filter(Trip.id == trip_id).first()
         if not base_trip:
             raise HTTPException(status_code=404, detail="Trip not found")
 
-        if request.recurring_type == 'weekly':
+        if request.recurring_type == "weekly":
             delta_days = 7
-        elif request.recurring_type == 'biweekly':
+        elif request.recurring_type == "biweekly":
             delta_days = 14
         else:
             raise HTTPException(status_code=400, detail="Invalid recurring_type")
 
         end_date_limit = request.recurring_end_date
         if end_date_limit.tzinfo is not None:
-            end_date_limit = end_date_limit.astimezone(timezone.utc).replace(tzinfo=None)
+            end_date_limit = end_date_limit.astimezone(timezone.utc).replace(
+                tzinfo=None
+            )
 
         current_start = base_trip.start_date + timedelta(days=delta_days)
         if base_trip.end_date:
@@ -497,7 +613,14 @@ class TripService:
         max_trips = 104
         created_count = 0
 
-        base_assignments = db.query(TripAssignment).filter(TripAssignment.trip_id == base_trip.id, TripAssignment.status == "assigned").all()
+        base_assignments = (
+            db.query(TripAssignment)
+            .filter(
+                TripAssignment.trip_id == base_trip.id,
+                TripAssignment.status == "assigned",
+            )
+            .all()
+        )
 
         while current_start <= end_date_limit and created_count < max_trips:
             new_trip = Trip(
@@ -514,7 +637,7 @@ class TripService:
                 employee_contact_name=base_trip.employee_contact_name,
                 employee_contact_phone=base_trip.employee_contact_phone,
                 notes=base_trip.notes,
-                has_accommodation=base_trip.has_accommodation
+                has_accommodation=base_trip.has_accommodation,
             )
             db.add(new_trip)
             db.flush()
@@ -525,10 +648,10 @@ class TripService:
                     user_id=a.user_id,
                     role=a.role,
                     status="assigned",
-                    is_confirmed=True
+                    is_confirmed=True,
                 )
                 db.add(new_a)
-            
+
             created_count += 1
             current_start += timedelta(days=delta_days)
             current_end += timedelta(days=delta_days)
@@ -540,8 +663,14 @@ class TripService:
                 user = db.query(User).filter(User.id == a.user_id).first()
                 if user:
                     msg = f"שובצת לסדרת אירועים (סך הכל {created_count} מפגשים נוספים) במיקום {base_trip.location} בתפקיד {a.role}."
-                    NotificationService.create_in_app_notification(msg, db, user_id=user.id)
-                    if user.phone and user.role != 'admin' and user.full_name not in ["יהב כלפון", "דין ברנס"]:
+                    NotificationService.create_in_app_notification(
+                        msg, db, user_id=user.id
+                    )
+                    if (
+                        user.phone
+                        and user.role != "admin"
+                        and user.full_name not in ["יהב כלפון", "דין ברנס"]
+                    ):
                         NotificationService.send_sms(user.phone, msg)
 
         return {"message": f"Successfully created {created_count} recurring trips"}
