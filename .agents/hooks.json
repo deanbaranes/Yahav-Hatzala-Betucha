@@ -1,0 +1,15 @@
+{
+  "strict-approval": {
+    "PreToolUse": [
+      {
+        "matcher": "run_command|replace_file_content|write_to_file|multi_replace_file_content",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python ./scripts/strict_approval.py"
+          }
+        ]
+      }
+    ]
+  }
+}
