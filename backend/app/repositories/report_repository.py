@@ -108,6 +108,23 @@ class ReportRepository:
             .all()
         )
 
+    def get_matrix_reports_with_join(self, year: int, month: int):
+        return (
+            self.db.query(TripAssignment, TripReport, User, Trip)
+            .join(Trip, TripAssignment.trip_id == Trip.id)
+            .join(User, TripAssignment.user_id == User.id)
+            .join(TripReport, TripReport.assignment_id == TripAssignment.id)
+            .filter(
+                TripAssignment.status == AssignmentStatus.assigned,
+                User.status != "inactive",
+                User.employment_type == EmploymentType.EMPLOYEE,
+                extract("year", Trip.start_date) == year,
+                extract("month", Trip.start_date) == month,
+                TripReport.manager_status == ManagerStatus.approved,
+            )
+            .all()
+        )
+
     def get_approved_reports_by_assignments(self, assignment_ids: list):
         if not assignment_ids:
             return []

@@ -148,49 +148,24 @@ async def upload_file(
         raise HTTPException(status_code=500, detail="שגיאה בהעלאת הקובץ. אנא נסה שנית.")
 
 
-# ── Report Submission (Employee) ──────────────────────────────────────────────
-
-
 @router.post("/", response_model=TripReportOut)
 def submit_trip_report(
     report_data: TripReportCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_employee_user),
 ):
-    # Validate assignment belongs to employee
-    assignment = (
-        db.query(TripAssignment)
-        .filter(
-            TripAssignment.id == report_data.assignment_id,
-            TripAssignment.user_id == current_user.id,
-        )
-        .first()
-    )
+    from app.models.user import UserRole
+    
+    query = db.query(TripAssignment).filter(TripAssignment.id == report_data.assignment_id)
+    
+    # Validates assignment belongs to employee, unless admin
+    if current_user.role != UserRole.admin:
+        query = query.filter(TripAssignment.user_id == current_user.id)
+        
+    assignment = query.first()
 
     if not assignment:
         raise HTTPException(status_code=404, detail="שיבוץ לא נמצא או שאינו שייך לך")
-
-    return process_and_save_report(db, assignment, report_data)
-
-
-# ── Report Submission (Admin Manual) ──────────────────────────────────────────
-
-
-@router.post("/admin-manual", response_model=TripReportOut)
-def submit_trip_report_admin(
-    report_data: TripReportCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_admin_user),
-):
-    # Validate assignment exists (doesn't need to belong to admin)
-    assignment = (
-        db.query(TripAssignment)
-        .filter(TripAssignment.id == report_data.assignment_id)
-        .first()
-    )
-
-    if not assignment:
-        raise HTTPException(status_code=404, detail="שיבוץ לא נמצא")
 
     return process_and_save_report(db, assignment, report_data)
 
@@ -323,27 +298,17 @@ def get_reports_matrix(
     repo: ReportRepository = Depends(get_report_repo),
     current_user: User = Depends(get_admin_user),
 ):
-    assignments = repo.get_matrix_assignments(year, month)
-
-    assignment_ids = [a.id for a in assignments]
-    reports = repo.get_approved_reports_by_assignments(assignment_ids)
-
-    reports_map = {r.assignment_id: r for r in reports}
+    rows = repo.get_matrix_reports_with_join(year, month)
 
     users_dict = {}
-    for a in assignments:
-        report = reports_map.get(a.id)
-        if not report:
-            continue  # Only show approved reports in the matrix
+    for assignment, report, user, trip in rows:
+        date_str = trip.start_date.date().isoformat()
 
-        u = a.user
-        date_str = a.trip.start_date.date().isoformat()
+        if str(user.id) not in users_dict:
+            users_dict[str(user.id)] = {"id": str(user.id), "name": user.full_name, "shifts": {}}
 
-        if str(u.id) not in users_dict:
-            users_dict[str(u.id)] = {"id": str(u.id), "name": u.full_name, "shifts": {}}
-
-        users_dict[str(u.id)]["shifts"][date_str] = {
-            "role": a.role,
+        users_dict[str(user.id)]["shifts"][date_str] = {
+            "role": assignment.role,
             "overtime": float(report.overtime_decimal)
             if report.overtime_decimal
             else 0,

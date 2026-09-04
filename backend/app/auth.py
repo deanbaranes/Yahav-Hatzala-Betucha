@@ -1,6 +1,6 @@
 import os
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Optional
 
 from jose import jwt
@@ -29,9 +29,9 @@ def get_password_hash(password):
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(
+        expire = datetime.utcnow() + timedelta(
             minutes=ACCESS_TOKEN_EXPIRE_MINUTES
         )
     to_encode.update({"exp": expire})
@@ -43,5 +43,5 @@ def create_refresh_token(is_admin: bool = False) -> tuple[str, datetime]:
     """Returns (token_string, expires_at_datetime)"""
     token = secrets.token_urlsafe(64)
     days = REFRESH_TOKEN_EXPIRE_DAYS if is_admin else 30
-    expires_at = datetime.now(timezone.utc) + timedelta(days=days)
+    expires_at = datetime.utcnow() + timedelta(days=days)
     return token, expires_at

@@ -22,7 +22,7 @@ export default function TripAdminReportingForm({ assignment, tripStartDate, trip
 
   const submitReportMutation = useMutation({
     mutationFn: async (data: any) => {
-      await axiosClient.post('/reports/admin-manual', data);
+      await axiosClient.post('/reports/', data);
     },
     onSuccess: () => {
       alert('הדיווח נוסף בהצלחה!');
