@@ -249,9 +249,17 @@ export default function Dashboard() {
                                     {trip.notes}
                                   </div>
                                 )}
-                                <p className="text-gray-500 text-sm mt-1">
-                                  {trip.client?.name === 'לקוח כללי' ? 'מיובא מיומן גוגל' : trip.location}
-                                </p>
+                                <div className="text-gray-500 text-sm mt-1">
+                                  <p>{trip.client?.name === 'לקוח כללי' ? 'מיובא מיומן גוגל' : trip.location}</p>
+                                  <p className="mt-1 font-bold text-gray-600 flex items-center gap-1.5">
+                                    <Clock size={14} />
+                                    {trip.end_date ? (
+                                      <span>{new Date(trip.start_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})} - {new Date(trip.end_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})}</span>
+                                    ) : (
+                                      <span>החל מ- {new Date(trip.start_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})}</span>
+                                    )}
+                                  </p>
+                                </div>
                               </div>
                               
                               <div className="flex flex-col items-end gap-2">
@@ -283,11 +291,6 @@ export default function Dashboard() {
                                     >
                                       <Pencil size={18} />
                                     </button>
-                                  )}
-                                </div>
-                                <span className="text-sm text-gray-500 font-medium bg-white px-2 py-1 rounded-md shadow-sm">
-                                  {new Date(trip.start_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})}
-                                </span>
                               </div>
                             </div>
                             {confirmedCount > 0 && (
