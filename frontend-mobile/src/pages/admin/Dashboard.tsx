@@ -291,6 +291,8 @@ export default function Dashboard() {
                                     >
                                       <Pencil size={18} />
                                     </button>
+                                  )}
+                                </div>
                               </div>
                             </div>
                             {confirmedCount > 0 && (
