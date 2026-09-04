@@ -121,11 +121,26 @@ export default function Expenses() {
       const zip = new JSZip();
       const folder = zip.folder("expenses_pending");
 
+      // Pre-calculate safe unique filenames
+      const nameCounts: Record<string, number> = {};
+      const safeFileNames = pendingExpenses.map((exp, i) => {
+        let fileName = exp.file_name || `receipt_${i + 1}.jpg`;
+        if (nameCounts[fileName]) {
+          nameCounts[fileName]++;
+          const lastDotIdx = fileName.lastIndexOf('.');
+          if (lastDotIdx !== -1) {
+            return `${fileName.substring(0, lastDotIdx)}_${nameCounts[fileName]}${fileName.substring(lastDotIdx)}`;
+          }
+          return `${fileName}_${nameCounts[fileName]}`;
+        }
+        nameCounts[fileName] = 1;
+        return fileName;
+      });
+
       await Promise.all(pendingExpenses.map(async (exp, i) => {
         const response = await fetch(exp.file_url);
         const blob = await response.blob();
-        const ext = exp.file_name?.split('.').pop() || 'jpg';
-        folder?.file(`receipt_${i + 1}.${ext}`, blob);
+        folder?.file(safeFileNames[i], blob);
       }));
 
       const content = await zip.generateAsync({ type: "blob" });
@@ -248,7 +263,7 @@ export default function Expenses() {
                 className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg font-bold text-sm shadow-sm transition-colors"
               >
                 <FolderDown size={16} />
-                הורד הכל כ-ZIP (לסריקה ב'יש חשבונית')
+                הורד הכל כ-ZIP
               </button>
             </div>
           )}
