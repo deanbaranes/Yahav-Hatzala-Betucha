@@ -43,13 +43,13 @@ def _build_tokens_and_set_cookie(user: User, db: Session, response: Response) ->
     # --- Access Token (30 min) ---
     access_token = create_access_token(data={
         "sub": str(user.id),
-        "role": user.role,
-        "status": user.status,
+        "role": user.role.value if hasattr(user.role, 'value') else user.role,
+        "status": user.status.value if hasattr(user.status, 'value') else user.status,
         "name": user.full_name
     })
 
     # --- Refresh Token (Dynamic, DB-backed) ---
-    is_admin = user.role == "admin"
+    is_admin = (user.role == UserRole.admin) or (user.role == "admin")
     raw_token, expires_at = create_refresh_token(is_admin=is_admin)
     db_refresh = RefreshToken(
         token=raw_token,
@@ -199,8 +199,8 @@ def refresh_token(
 
     access_token = create_access_token(data={
         "sub": str(user.id),
-        "role": user.role,
-        "status": user.status,
+        "role": user.role.value if hasattr(user.role, 'value') else user.role,
+        "status": user.status.value if hasattr(user.status, 'value') else user.status,
         "name": user.full_name
     })
 
