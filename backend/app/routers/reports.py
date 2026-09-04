@@ -1,31 +1,28 @@
 import logging
+from datetime import datetime, date
+from decimal import Decimal
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import not_, extract
 
 from app.database import get_db
-from app.dependencies import get_admin_user, get_employee_user
+from app.models.trip_report import TripReport
 from app.models.trip_assignment import TripAssignment
-from app.models.trip_report import ManagerStatus, TripReport
-from app.models.user import EmploymentType, User
-from app.repositories.report_repository import ReportRepository
-from app.schemas import ReportUpdate, TripReportCreate, TripReportOut
-from app.services.payroll_service import PayrollService
+from app.models.trip import Trip
+from app.models.user import User
+from app.models.supplier import Supplier
+from app.schemas import TripReportCreate, TripReportOut, ReportUpdate
+from app.dependencies import get_employee_user, get_admin_user
 from app.services.report_service import (
+    calculate_overtime_decimal,
     process_and_save_report,
-    update_report_data,
+    update_report_data
 )
 from app.services.storage_service import StorageService
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from sqlalchemy.orm import Session
+from app.services.payroll_service import PayrollService
 
 logger = logging.getLogger(__name__)
-
-
-def get_report_repo(db: Session = Depends(get_db)) -> ReportRepository:
-    return ReportRepository(db)
-
-
-def get_payroll_service(db: Session = Depends(get_db)) -> PayrollService:
-    return PayrollService(db)
-
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
@@ -35,13 +32,20 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 
 # ── Pending reports ───────────────────────────────────────────────────────────
 
-
 @router.get("/all-pending-reports")
-def get_all_pending_reports(
-    repo: ReportRepository = Depends(get_report_repo),
-    current_user: User = Depends(get_admin_user),
-):
-    pending_assignments = repo.get_pending_assignments_for_admin()
+def get_all_pending_reports(db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
+    # Find all assignments that are confirmed and do not have a report already
+    reported_assignment_ids = db.query(TripReport.assignment_id).subquery()
+    
+    pending_assignments = db.query(TripAssignment).options(
+        joinedload(TripAssignment.user),
+        joinedload(TripAssignment.trip)
+    ).join(Trip).join(User, TripAssignment.user_id == User.id).filter(
+        TripAssignment.status == "assigned",
+        TripAssignment.is_confirmed == True,
+        not_(TripAssignment.id.in_(reported_assignment_ids))
+    ).order_by(Trip.start_date.desc()).all()
+    
     return [
         {
             "assignment_id": str(a.id),
@@ -50,18 +54,26 @@ def get_all_pending_reports(
             "location": a.trip.location,
             "notes": a.trip.notes,
             "start_date": a.trip.start_date.isoformat(),
-            "role": a.role,
-        }
-        for a in pending_assignments
+            "role": a.role
+        } for a in pending_assignments
     ]
 
-
 @router.get("/my-pending-reports")
-def get_my_pending_reports(
-    repo: ReportRepository = Depends(get_report_repo),
-    current_user: User = Depends(get_employee_user),
-):
-    pending_assignments = repo.get_pending_assignments_for_employee(current_user.id)
+def get_my_pending_reports(db: Session = Depends(get_db), current_user: User = Depends(get_employee_user)):
+    # Subquery: get assignment IDs that have a fully submitted (non-draft) report
+    submitted_assignment_ids = db.query(TripReport.assignment_id).filter(
+        TripReport.is_draft == False
+    ).subquery()
+    
+    pending_assignments = db.query(TripAssignment).options(
+        joinedload(TripAssignment.trip)
+    ).join(Trip).filter(
+        TripAssignment.user_id == current_user.id,
+        TripAssignment.status == "assigned",
+        TripAssignment.is_confirmed == True,
+        not_(TripAssignment.id.in_(submitted_assignment_ids))
+    ).order_by(Trip.start_date.desc()).all()
+    
     return [
         {
             "assignment_id": str(a.id),
@@ -70,22 +82,20 @@ def get_my_pending_reports(
             "notes": a.trip.notes,
             "start_date": a.trip.start_date.isoformat(),
             "end_date": a.trip.end_date.isoformat() if a.trip.end_date else None,
-            "role": a.role,
-        }
-        for a in pending_assignments
+            "role": a.role
+        } for a in pending_assignments
     ]
 
-
 @router.get("/my-draft/{assignment_id}")
-def get_my_draft(
-    assignment_id: str,
-    repo: ReportRepository = Depends(get_report_repo),
-    current_user: User = Depends(get_employee_user),
-):
-    report = repo.get_employee_draft(assignment_id, current_user.id)
+def get_my_draft(assignment_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_employee_user)):
+    report = db.query(TripReport).join(TripAssignment).filter(
+        TripReport.assignment_id == assignment_id,
+        TripReport.is_draft == True,
+        TripAssignment.user_id == current_user.id
+    ).first()
     if not report:
         raise HTTPException(status_code=404, detail="טיוטה לא נמצאה")
-
+        
     return {
         "start_time": report.start_time.isoformat() if report.start_time else None,
         "end_time": report.end_time.isoformat() if report.end_time else None,
@@ -93,16 +103,19 @@ def get_my_draft(
         "expenses": float(report.expenses or 0),
         "expenses_notes": report.expenses_notes,
         "sleeps": report.sleeps or 0,
-        "receipt_url": report.receipt_url,
+        "receipt_url": report.receipt_url
     }
 
 
 @router.get("/my-reports")
-def get_my_reports(
-    repo: ReportRepository = Depends(get_report_repo),
-    current_user: User = Depends(get_employee_user),
-):
-    reports = repo.get_employee_reports(current_user.id)
+def get_my_reports(db: Session = Depends(get_db), current_user: User = Depends(get_employee_user)):
+    reports = db.query(TripReport).options(
+        joinedload(TripReport.assignment).joinedload(TripAssignment.trip)
+    ).join(TripAssignment).join(Trip).filter(
+        TripAssignment.user_id == current_user.id,
+        TripReport.is_draft == False
+    ).order_by(Trip.start_date.desc()).all()
+    
     return [
         {
             "id": str(r.id),
@@ -111,25 +124,20 @@ def get_my_reports(
             "start_date": r.assignment.trip.start_date.isoformat(),
             "manager_status": r.manager_status,
             "billing_status": r.billing_status,
-            "expenses": float(r.expenses or 0),
-        }
-        for r in reports
+            "expenses": float(r.expenses or 0)
+        } for r in reports
     ]
-
 
 # ── File Upload ───────────────────────────────────────────────────────────────
 
-
 @router.post("/upload")
-async def upload_file(
-    file: UploadFile = File(...), current_user: User = Depends(get_employee_user)
-):
+async def upload_file(file: UploadFile = File(...), current_user: User = Depends(get_employee_user)):
     # Validate file size
     contents = await file.read()
     if len(contents) > MAX_UPLOAD_SIZE_BYTES:
         raise HTTPException(
             status_code=413,
-            detail=f"הקובץ גדול מדי. גודל מקסימלי: {MAX_UPLOAD_SIZE_BYTES // (1024 * 1024)} MB",
+            detail=f"הקובץ גדול מדי. גודל מקסימלי: {MAX_UPLOAD_SIZE_BYTES // (1024*1024)} MB"
         )
     # Reset file position for subsequent reads
     await file.seek(0)
@@ -148,76 +156,89 @@ async def upload_file(
         raise HTTPException(status_code=500, detail="שגיאה בהעלאת הקובץ. אנא נסה שנית.")
 
 
-@router.post("/", response_model=TripReportOut)
-def submit_trip_report(
-    report_data: TripReportCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_employee_user),
-):
-    from app.models.user import UserRole
-    
-    query = db.query(TripAssignment).filter(TripAssignment.id == report_data.assignment_id)
-    
-    # Validates assignment belongs to employee, unless admin
-    if current_user.role != UserRole.admin:
-        query = query.filter(TripAssignment.user_id == current_user.id)
-        
-    assignment = query.first()
+# ── Report Submission (Employee) ──────────────────────────────────────────────
 
+@router.post("/", response_model=TripReportOut)
+def submit_trip_report(report_data: TripReportCreate, db: Session = Depends(get_db), current_user: User = Depends(get_employee_user)):
+    # Validate assignment belongs to employee
+    assignment = db.query(TripAssignment).filter(
+        TripAssignment.id == report_data.assignment_id,
+        TripAssignment.user_id == current_user.id
+    ).first()
+    
     if not assignment:
         raise HTTPException(status_code=404, detail="שיבוץ לא נמצא או שאינו שייך לך")
 
     return process_and_save_report(db, assignment, report_data)
 
 
+# ── Report Submission (Admin Manual) ──────────────────────────────────────────
+
+@router.post("/admin-manual", response_model=TripReportOut)
+def submit_trip_report_admin(report_data: TripReportCreate, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
+    # Validate assignment exists (doesn't need to belong to admin)
+    assignment = db.query(TripAssignment).filter(
+        TripAssignment.id == report_data.assignment_id
+    ).first()
+    
+    if not assignment:
+        raise HTTPException(status_code=404, detail="שיבוץ לא נמצא")
+
+    return process_and_save_report(db, assignment, report_data)
+
+
 # ── Report List (Admin) ──────────────────────────────────────────────────────
 
-
 @router.get("/")
-def get_all_reports(
-    skip: int = 0,
-    limit: int = 100,
-    repo: ReportRepository = Depends(get_report_repo),
-    current_user: User = Depends(get_admin_user),
-):
-    reports = repo.get_all_reports(skip, limit)
-
+def get_all_reports(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
+    reports = (
+        db.query(TripReport)
+        .options(
+            joinedload(TripReport.assignment).joinedload(TripAssignment.trip).joinedload(Trip.client),
+            joinedload(TripReport.assignment).joinedload(TripAssignment.user)
+        )
+        .join(TripAssignment)
+        .join(Trip)
+        .join(User)
+        .filter(TripReport.is_draft == False)
+        .order_by(TripReport.start_time.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    
     result = []
     for r in reports:
         a = r.assignment
         t = a.trip
         u = a.user
-
-        result.append(
-            {
-                "id": str(r.id),
-                "start_time": r.start_time.isoformat(),
-                "end_time": r.end_time.isoformat(),
-                "daily_shifts": r.daily_shifts,
-                "overtime_decimal": r.overtime_decimal,
-                "expenses": r.expenses,
-                "expenses_notes": r.expenses_notes,
-                "sleeps": r.sleeps,
-                "receipt_url": r.receipt_url,
-                "manager_status": r.manager_status.value if r.manager_status else None,
-                "created_at": r.start_time.isoformat(),
-                "employee": {
-                    "id": str(u.id),
-                    "full_name": u.full_name,
-                    "phone": u.phone,
-                    "role": a.role,
-                    "employment_type": u.employment_type.value
-                    if hasattr(u.employment_type, "value")
-                    else (u.employment_type or EmploymentType.EMPLOYEE.value),
-                },
-                "trip": {
-                    "id": str(t.id),
-                    "location": t.location,
-                    "start_date": t.start_date.isoformat(),
-                    "client_name": t.client.name if t.client else None,
-                },
+        
+        result.append({
+            "id": str(r.id),
+            "start_time": r.start_time.isoformat(),
+            "end_time": r.end_time.isoformat(),
+            "daily_shifts": r.daily_shifts,
+            "overtime_decimal": r.overtime_decimal,
+            "expenses": r.expenses,
+            "expenses_notes": r.expenses_notes,
+            "sleeps": r.sleeps,
+            "receipt_url": r.receipt_url,
+            "manager_status": r.manager_status.value,
+            "created_at": r.start_time.isoformat(),
+            "employee": {
+                "id": str(u.id),
+                "full_name": u.full_name,
+                "phone": u.phone,
+                "role": a.role,
+                "employment_type": getattr(u, 'employment_type', 'שכיר')
+            },
+            "trip": {
+                "id": str(t.id),
+                "location": t.location,
+                "start_date": t.start_date.isoformat(),
+                "client_name": t.client.name if t.client else None
             }
-        )
+        })
     return result
 
 
@@ -225,94 +246,90 @@ def get_all_reports(
 
 
 @router.put("/{report_id}")
-def update_report(
-    report_id: str,
-    data: ReportUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_admin_user),
-):
+def update_report(report_id: str, data: ReportUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
     report = db.query(TripReport).filter(TripReport.id == report_id).first()
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
-
+        
     update_report_data(db, report, data)
     return {"message": "Report updated"}
 
-
 @router.delete("/{report_id}")
-def delete_report(
-    report_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_admin_user),
-):
+def delete_report(report_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
     report = db.query(TripReport).filter(TripReport.id == report_id).first()
     if not report:
         raise HTTPException(status_code=404, detail="דיווח לא נמצא")
-
+    
     db.delete(report)
     db.commit()
     return {"message": "Report deleted successfully"}
 
-
 @router.patch("/{report_id}/approve")
-def approve_report(
-    report_id: str,
-    db: Session = Depends(get_db),
-    payroll_service: PayrollService = Depends(get_payroll_service),
-    current_user: User = Depends(get_admin_user),
-):
+def approve_report(report_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
     report = db.query(TripReport).filter(TripReport.id == report_id).first()
     if not report:
         raise HTTPException(status_code=404, detail="דיווח לא נמצא")
-
+    
     # Check if we should automatically create a Supplier record
+    payroll_service = PayrollService(db)
     payroll_service.create_supplier_record_from_report(report)
 
-    report.manager_status = ManagerStatus.approved
+    report.manager_status = "approved"
     db.commit()
     return {"message": "Report approved"}
 
-
 @router.patch("/{report_id}/reject")
-def reject_report(
-    report_id: str,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_admin_user),
-):
+def reject_report(report_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
     report = db.query(TripReport).filter(TripReport.id == report_id).first()
     if not report:
         raise HTTPException(status_code=404, detail="דיווח לא נמצא")
-
-    report.manager_status = ManagerStatus.rejected
+    
+    report.manager_status = "rejected"
     db.commit()
     return {"message": "Report rejected"}
 
 
 # ── Reports Matrix ────────────────────────────────────────────────────────────
 
-
 @router.get("/matrix/{year}/{month}")
-def get_reports_matrix(
-    year: int,
-    month: int,
-    repo: ReportRepository = Depends(get_report_repo),
-    current_user: User = Depends(get_admin_user),
-):
-    rows = repo.get_matrix_reports_with_join(year, month)
-
+def get_reports_matrix(year: int, month: int, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
+    # Fetch all assignments in this month that are "assigned" for active/pending users
+    assignments = db.query(TripAssignment).options(
+        joinedload(TripAssignment.user),
+        joinedload(TripAssignment.trip)
+    ).join(Trip).join(User, TripAssignment.user_id == User.id).filter(
+        TripAssignment.status == "assigned",
+        User.status != "inactive",
+        User.employment_type == "שכיר",
+        extract('year', Trip.start_date) == year,
+        extract('month', Trip.start_date) == month
+    ).all()
+    
+    assignment_ids = [a.id for a in assignments]
+    # N+1 FIX: Fetch all relevant reports at once, but only APPROVED ones
+    reports = db.query(TripReport).filter(
+        TripReport.assignment_id.in_(assignment_ids),
+        TripReport.manager_status == "approved"
+    ).all() if assignment_ids else []
+    
+    reports_map = {r.assignment_id: r for r in reports}
+    
     users_dict = {}
-    for assignment, report, user, trip in rows:
-        date_str = trip.start_date.date().isoformat()
-
-        if str(user.id) not in users_dict:
-            users_dict[str(user.id)] = {"id": str(user.id), "name": user.full_name, "shifts": {}}
-
-        users_dict[str(user.id)]["shifts"][date_str] = {
-            "role": assignment.role,
-            "overtime": float(report.overtime_decimal)
-            if report.overtime_decimal
-            else 0,
-            "report_id": str(report.id),
+    for a in assignments:
+        report = reports_map.get(a.id)
+        if not report:
+            continue  # Only show approved reports in the matrix
+            
+        u = a.user
+        date_str = a.trip.start_date.date().isoformat()
+        
+        if str(u.id) not in users_dict:
+            users_dict[str(u.id)] = {"id": str(u.id), "name": u.full_name, "shifts": {}}
+            
+        users_dict[str(u.id)]["shifts"][date_str] = {
+            "role": a.role,
+            "overtime": float(report.overtime_decimal),
+            "report_id": str(report.id)
         }
-
+        
     return {"matrix": list(users_dict.values())}

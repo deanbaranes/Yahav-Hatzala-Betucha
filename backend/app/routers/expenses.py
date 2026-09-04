@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import List, Optional
 from app.database import get_db
 from app.models.business_expense import BusinessExpense
 from app.models.user import User
@@ -41,7 +41,7 @@ async def upload_expense(
     db.refresh(expense)
     return expense
 
-@router.get("/", response_model=list[BusinessExpenseOut])
+@router.get("/", response_model=List[BusinessExpenseOut])
 def list_expenses(
     status: Optional[str] = None, 
     expense_month: Optional[int] = None,

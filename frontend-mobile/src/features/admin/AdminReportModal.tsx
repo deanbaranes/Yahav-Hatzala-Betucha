@@ -57,7 +57,7 @@ export default function AdminReportModal({ isOpen, onClose }: AdminReportModalPr
   });
 
   const reportMutation = useMutation({
-    mutationFn: (data: ManualReportData) => axiosClient.post('/reports/', data),
+    mutationFn: (data: ManualReportData) => axiosClient.post('/reports/admin-manual', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-reports'] });
       queryClient.invalidateQueries({ queryKey: ['all-pending-reports'] });

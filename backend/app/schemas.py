@@ -1,50 +1,44 @@
 import uuid
-from datetime import date, datetime
-
-from app.models.trip_assignment import AssignmentStatus
-from app.models.trip_report import BillingStatus, ManagerStatus
-from app.models.user import UserRole, UserStatus
+from datetime import datetime, date
+from typing import Optional, Dict, List
 from pydantic import BaseModel
+from app.models.user import UserRole, UserStatus
+from app.models.trip_assignment import AssignmentStatus
+from app.models.trip_report import ManagerStatus, BillingStatus
+
 
 # ── Auth Schemas ──────────────────────────────────────────────────────────────
-
 
 class Token(BaseModel):
     access_token: str
     token_type: str
-    refresh_token: str | None = None
-
+    refresh_token: Optional[str] = None
 
 class TokenData(BaseModel):
-    phone: str | None = None
-
+    phone: Optional[str] = None
 
 class UserBase(BaseModel):
     full_name: str
     phone: str
-    national_id: str | None = None
-    email: str | None = None
-
+    national_id: Optional[str] = None
+    email: Optional[str] = None
 
 class UserCreate(UserBase):
     password: str
-    employment_type: str | None = None
+    employment_type: Optional[str] = None
     # role is intentionally excluded — all self-registrations are employees
-
 
 class UserOut(UserBase):
     id: uuid.UUID
     role: UserRole
     status: UserStatus
-    email: str | None = None
+    email: Optional[str] = None
 
     class Config:
         from_attributes = True
 
-
 class ForgotPasswordRequest(BaseModel):
     email: str
-
 
 class ResetPasswordRequest(BaseModel):
     token: str
@@ -53,16 +47,13 @@ class ResetPasswordRequest(BaseModel):
 
 # ── Client Schemas ────────────────────────────────────────────────────────────
 
-
 class ClientBase(BaseModel):
     name: str
-    contact_person: str | None = None
-
-
+    contact_person: Optional[str] = None
+    
 class ClientCreate(ClientBase):
-    email: str | None = None
-    phone: str | None = None
-
+    email: Optional[str] = None
+    phone: Optional[str] = None
 
 class ClientOut(ClientBase):
     id: uuid.UUID
@@ -70,45 +61,40 @@ class ClientOut(ClientBase):
     class Config:
         from_attributes = True
 
-
 class ClientUpdate(BaseModel):
-    name: str | None = None
-    contact_person: str | None = None
-    email: str | None = None
-    phone: str | None = None
-    balance: str | None = None
-    debt_start_date: str | None = None
-    notes: str | None = None
-    payment_terms: str | None = (
-        None  # "שוטף + 30" / "שוטף + 60" / "שוטף + 75" / None
-    )
+    name: Optional[str] = None
+    contact_person: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    balance: Optional[str] = None
+    debt_start_date: Optional[str] = None
+    notes: Optional[str] = None
+    payment_terms: Optional[str] = None  # "שוטף + 30" / "שוטף + 60" / "שוטף + 75" / None
 
 
 # ── Trip Schemas ──────────────────────────────────────────────────────────────
 
-
 class TripCreate(BaseModel):
     client_name: str
-    client_contact_person: str | None = None
+    client_contact_person: Optional[str] = None
     location: str
     start_date: datetime
     end_date: datetime
     capacity: int
-    roles_requirements: dict[str, int | None] = {}
-    color: str | None = None
-    global_salary: float | None = None
-    contact_name: str | None = None
-    contact_phone: str | None = None
-    employee_contact_name: str | None = None
-    employee_contact_phone: str | None = None
-    notes: str | None = None
-    trip_name: str | None = None
-    recurring_type: str | None = None
-    recurring_end_date: datetime | None = None
-    assigned_user_id: str | None = None
-    assigned_role: str | None = None
+    roles_requirements: Optional[Dict[str, int]] = {}
+    color: Optional[str] = None
+    global_salary: Optional[float] = None
+    contact_name: Optional[str] = None
+    contact_phone: Optional[str] = None
+    employee_contact_name: Optional[str] = None
+    employee_contact_phone: Optional[str] = None
+    notes: Optional[str] = None
+    trip_name: Optional[str] = None
+    recurring_type: Optional[str] = None
+    recurring_end_date: Optional[datetime] = None
+    assigned_user_id: Optional[str] = None
+    assigned_role: Optional[str] = None
     has_accommodation: bool = True
-
 
 class TripOut(BaseModel):
     id: uuid.UUID
@@ -117,15 +103,15 @@ class TripOut(BaseModel):
     start_date: datetime
     end_date: datetime
     capacity: int
-    roles_requirements: dict[str, int | None] = {}
-    color: str | None = None
-    global_salary: float | None = None
-    contact_name: str | None = None
-    contact_phone: str | None = None
-    employee_contact_name: str | None = None
-    employee_contact_phone: str | None = None
-    notes: str | None = None
-    trip_name: str | None = None
+    roles_requirements: Optional[Dict[str, int]] = {}
+    color: Optional[str] = None
+    global_salary: Optional[float] = None
+    contact_name: Optional[str] = None
+    contact_phone: Optional[str] = None
+    employee_contact_name: Optional[str] = None
+    employee_contact_phone: Optional[str] = None
+    notes: Optional[str] = None
+    trip_name: Optional[str] = None
     has_accommodation: bool = True
     is_billed: bool = False
     client: ClientOut
@@ -133,15 +119,12 @@ class TripOut(BaseModel):
     class Config:
         from_attributes = True
 
-
 class DuplicateRecurringRequest(BaseModel):
     recurring_type: str
     recurring_end_date: datetime
 
-
 class JoinTripRequest(BaseModel):
     role: str
-
 
 class AdminAssignRequest(BaseModel):
     user_id: str
@@ -150,7 +133,6 @@ class AdminAssignRequest(BaseModel):
     is_confirmed: bool = True
     send_sms: bool = True
 
-
 class IcalImportRequest(BaseModel):
     ical_url: str
     default_client_name: str = "לקוח מיומן גוגל"
@@ -158,42 +140,38 @@ class IcalImportRequest(BaseModel):
 
 # ── Report Schemas ────────────────────────────────────────────────────────────
 
-
 class DailyShift(BaseModel):
     start_time: datetime
     end_time: datetime
-    is_absent: bool | None = False
-
+    is_absent: Optional[bool] = False
 
 class TripReportCreate(BaseModel):
     assignment_id: uuid.UUID
-    start_time: datetime | None = None
-    end_time: datetime | None = None
-    daily_shifts: list[DailyShift | None] = None
-    expenses: float | None = 0.0
-    expenses_notes: str | None = None
-    sleeps: int | None = 0
-    receipt_url: str | None = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    daily_shifts: Optional[List[DailyShift]] = None
+    expenses: Optional[float] = 0.0
+    expenses_notes: Optional[str] = None
+    sleeps: Optional[int] = 0
+    receipt_url: Optional[str] = None
     is_draft: bool = False
-
 
 class TripReportOut(BaseModel):
     id: uuid.UUID
     assignment_id: uuid.UUID
     start_time: datetime
     end_time: datetime
-    daily_shifts: list[DailyShift | None] = None
+    daily_shifts: Optional[List[DailyShift]] = None
     overtime_decimal: float
     expenses: float
-    expenses_notes: str | None = None
+    expenses_notes: Optional[str] = None
     sleeps: int = 0
-    receipt_url: str | None
+    receipt_url: Optional[str]
     manager_status: ManagerStatus
     billing_status: BillingStatus
 
     class Config:
         from_attributes = True
-
 
 class ReportUpdate(BaseModel):
     start_time: datetime
@@ -201,17 +179,15 @@ class ReportUpdate(BaseModel):
     overtime_decimal: float
     expenses: float
     sleeps: int = 0
-    daily_shifts: list[dict | None] = None
+    daily_shifts: Optional[List[dict]] = None
 
 
 # ── Payroll / Employee Schemas ────────────────────────────────────────────────
 
-
 class EmployeeRatesUpdate(BaseModel):
     hourly_rate: float
     base_daily_hours: float
-    employment_type: str | None = None
-
+    employment_type: Optional[str] = None
 
 class AdjustmentCreate(BaseModel):
     user_id: str
@@ -219,54 +195,48 @@ class AdjustmentCreate(BaseModel):
     year: int
     type: str
     amount: float
-    notes: str | None = None
-
+    notes: Optional[str] = None
 
 class EmployeeCreate(BaseModel):
     full_name: str
     phone: str
     password: str
-    national_id: str | None = None
-    email: str | None = None
-    notes: str | None = None
-
+    national_id: Optional[str] = None
+    email: Optional[str] = None
+    notes: Optional[str] = None
 
 class EmployeeUpdate(BaseModel):
-    full_name: str | None = None
-    phone: str | None = None
-    national_id: str | None = None
-    email: str | None = None
-    employment_type: str | None = None
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    national_id: Optional[str] = None
+    email: Optional[str] = None
+    employment_type: Optional[str] = None
 
 
 # ── Supplier Schemas ──────────────────────────────────────────────────────────
 
-
 class SupplierBase(BaseModel):
     name: str
     debt_date: date
-    debt_end_date: date | None = None
+    debt_end_date: Optional[date] = None
     amount: float
-    details: str | None = None
+    details: Optional[str] = None
     includes_vat: bool = False
     is_invoiced: bool = False
-    invoice_date: date | None = None
-
+    invoice_date: Optional[date] = None
 
 class SupplierCreate(SupplierBase):
     pass
 
-
 class SupplierUpdate(BaseModel):
-    name: str | None = None
-    debt_date: date | None = None
-    debt_end_date: date | None = None
-    amount: float | None = None
-    details: str | None = None
-    includes_vat: bool | None = None
-    is_invoiced: bool | None = None
-    invoice_date: date | None = None
-
+    name: Optional[str] = None
+    debt_date: Optional[date] = None
+    debt_end_date: Optional[date] = None
+    amount: Optional[float] = None
+    details: Optional[str] = None
+    includes_vat: Optional[bool] = None
+    is_invoiced: Optional[bool] = None
+    invoice_date: Optional[date] = None
 
 class SupplierOut(SupplierBase):
     id: uuid.UUID
@@ -275,27 +245,23 @@ class SupplierOut(SupplierBase):
     class Config:
         from_attributes = True
 
-
 # ── Business Expenses Schemas ──────────────────────────────────────────────────
 
-
 class BusinessExpenseBase(BaseModel):
-    notes: str | None = None
-    status: str | None = "pending"
-    file_name: str | None = None
+    notes: Optional[str] = None
+    status: Optional[str] = "pending"
+    file_name: Optional[str] = None
     expense_month: int
     expense_year: int
 
-
 class BusinessExpenseUpdate(BaseModel):
-    status: str | None = None
-    notes: str | None = None
-
+    status: Optional[str] = None
+    notes: Optional[str] = None
 
 class BusinessExpenseOut(BusinessExpenseBase):
     id: uuid.UUID
     file_url: str
-    uploaded_by_id: uuid.UUID | None = None
+    uploaded_by_id: Optional[uuid.UUID] = None
     created_at: datetime
     updated_at: datetime
 
