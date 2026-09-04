@@ -1,9 +1,41 @@
+import { useEffect } from 'react';
 import { Clock, FileText, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import axiosClient from '../api/axiosClient';
+import { jwtDecode } from 'jwt-decode';
 
 export default function PendingApprovalScreen() {
   const navigate = useNavigate();
   
+  useEffect(() => {
+    // Poll the server every 15 seconds to check if status changed to active
+    const interval = setInterval(async () => {
+      try {
+        const rToken = localStorage.getItem('refresh_token');
+        if (!rToken) return;
+        
+        const res = await axiosClient.post('/auth/refresh', { refresh_token: rToken });
+        const newToken = res.data.access_token;
+        const newRToken = res.data.refresh_token;
+        
+        if (newToken) {
+          localStorage.setItem('token', newToken);
+          if (newRToken) localStorage.setItem('refresh_token', newRToken);
+          
+          const decoded: any = jwtDecode(newToken);
+          if (decoded.status === 'active') {
+            // User was approved! Reload the page to jump into the app.
+            window.location.reload();
+          }
+        }
+      } catch (err) {
+        // Silently fail, try again next interval
+      }
+    }, 15000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');

@@ -126,6 +126,7 @@ def approve_employee(user_id: str, db: Session = Depends(get_db), admin_user: Us
     
     user.status = "active"
     db.commit()
+    
     return {"message": "User approved successfully"}
 
 @router.delete("/employees/{user_id}/reject")

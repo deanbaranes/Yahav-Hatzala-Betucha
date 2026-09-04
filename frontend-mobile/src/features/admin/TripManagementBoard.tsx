@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import SmartClientInput from './SmartClientInput';
-import GoogleCalendarImport from './GoogleCalendarImport';
 import { CheckCircle2, Plus } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import TripDetailsModal from './TripDetailsModal';
@@ -187,7 +186,6 @@ export default function TripManagementBoard() {
   return (
     <div className="bg-white p-6 rounded-lg shadow-md mb-8 text-right" dir="rtl">
       <div className="mb-6 flex flex-col sm:flex-row gap-3 justify-start items-start">
-        <GoogleCalendarImport />
         {isYahav && !editingTripId && !isFormVisible && (
           <button 
             onClick={() => setIsFormVisible(true)}

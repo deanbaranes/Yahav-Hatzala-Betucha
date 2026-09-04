@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User
-from app.schemas import TripCreate, TripOut, IcalImportRequest, DuplicateRecurringRequest
+from app.schemas import TripCreate, TripOut, DuplicateRecurringRequest
 from app.dependencies import get_admin_user, get_current_user
 from app.services.trip_service import TripService
 
@@ -31,10 +31,6 @@ def get_billing_status(year: int, month: int, db: Session = Depends(get_db), cur
 @router.post("/", response_model=TripOut)
 def create_trip(trip_data: TripCreate, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
     return TripService.create_trip(db, trip_data)
-
-@router.post("/import-ical")
-def import_from_ical(body: IcalImportRequest, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
-    return TripService.import_from_ical(db, body)
 
 @router.put("/bulk-bill/{client_id}/{year}/{month}")
 def bulk_bill_trips(client_id: str, year: int, month: int, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
