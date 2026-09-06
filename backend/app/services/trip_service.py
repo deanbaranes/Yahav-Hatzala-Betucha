@@ -374,7 +374,8 @@ class TripService:
                     user_id=trip_data.assigned_user_id,
                     role=trip_data.assigned_role or "כללי",
                     status="assigned",
-                    is_confirmed=True
+                    is_confirmed=True,
+                    promised_salary=trip_data.assigned_promised_salary
                 )
                 db.add(new_assignment)
             
@@ -420,7 +421,7 @@ class TripService:
                     msg = f"שובצת לטיול ב-{first_trip.location} בתאריך {date_str} בתפקיד {trip_data.assigned_role or 'כללי'}."
                 
                 NotificationService.create_in_app_notification(msg, db, user_id=assigned_user.id)
-                if assigned_user.phone and assigned_user.role != 'admin':
+                if assigned_user.phone and assigned_user.role != 'admin' and trip_data.assigned_send_sms:
                     NotificationService.send_sms(assigned_user.phone, msg)
 
         db.refresh(first_trip)
@@ -591,7 +592,7 @@ class TripService:
         
         for assignment in assignments:
             user = assignment.user
-            if user:
+            if user and user.full_name not in ["יהב כלפון", "דין ברנס"]:
                 NotificationService.create_in_app_notification(msg, db, user_id=user.id, title="ביטול טיול")
                 if user.phone:
                     NotificationService.send_sms(user.phone, msg)

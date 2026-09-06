@@ -115,7 +115,7 @@ def delete_assignment(assignment_id: str, db: Session = Depends(get_db), admin_u
     user = assignment.user
     trip = assignment.trip
     
-    if assignment.status == "assigned" and user and trip:
+    if assignment.status == "assigned" and user and trip and user.full_name not in ["יהב כלפון", "דין ברנס"]:
         from app.services.notification_service import NotificationService
         trip_title = trip.trip_name or trip.location
         date_str = trip.start_date.strftime("%d/%m/%Y") if trip.start_date else ""

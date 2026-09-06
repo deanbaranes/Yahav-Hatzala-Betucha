@@ -94,6 +94,9 @@ class TripCreate(BaseModel):
     recurring_end_date: Optional[datetime] = None
     assigned_user_id: Optional[str] = None
     assigned_role: Optional[str] = None
+    assigned_new_user_name: Optional[str] = None
+    assigned_send_sms: bool = True
+    assigned_promised_salary: Optional[float] = None
     has_accommodation: bool = True
 
 class TripOut(BaseModel):

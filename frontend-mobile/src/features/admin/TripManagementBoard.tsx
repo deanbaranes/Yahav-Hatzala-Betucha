@@ -12,7 +12,7 @@ export default function TripManagementBoard() {
   const queryClient = useQueryClient();
   const [editingTripId, setEditingTripId] = useState<string | null>(null);
   const [viewingTrip, setViewingTrip] = useState<any>(null);
-  const [formData, setFormData] = useState({ client_name: '', trip_name: '' as string, location: '', start_date: '', end_date: '', roles_requirements: {} as Record<string, number>, color: '' as string, global_salary: '' as string | number, contact_name: '' as string, contact_phone: '' as string, employee_contact_name: '' as string, employee_contact_phone: '' as string, has_accommodation: true });
+  const [formData, setFormData] = useState({ client_name: '', trip_name: '' as string, location: '', start_date: '', end_date: '', roles_requirements: {} as Record<string, number>, color: '' as string, global_salary: '' as string | number, contact_name: '' as string, contact_phone: '' as string, employee_contact_name: '' as string, employee_contact_phone: '' as string, has_accommodation: true, assigned_user_id: '' as string | null, assigned_role: 'כללי' as string | null });
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedWeeks, setExpandedWeeks] = useState<Record<string, boolean>>({});
   const [isFormVisible, setIsFormVisible] = useState(false);
@@ -24,6 +24,12 @@ export default function TripManagementBoard() {
   const [assignEmployeeName, setAssignEmployeeName] = useState('');
   const [assignEmployeeRole, setAssignEmployeeRole] = useState('כללי');
   const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
+
+  const [createTripEmployeeName, setCreateTripEmployeeName] = useState('');
+  const [createTripEmployeeRole, setCreateTripEmployeeRole] = useState('כללי');
+  const [createTripShowDropdown, setCreateTripShowDropdown] = useState(false);
+  const [createTripSendSms, setCreateTripSendSms] = useState(true);
+  const [createTripPromisedSalary, setCreateTripPromisedSalary] = useState('');
 
   const totalCapacity = Object.values(formData.roles_requirements).reduce((a, b) => a + b, 0);
 
@@ -39,6 +45,11 @@ export default function TripManagementBoard() {
     if (!employees) return [];
     return employees.filter(e => e.full_name.includes(assignEmployeeName) && e.status === 'active');
   }, [employees, assignEmployeeName]);
+
+  const createFilteredEmployees = useMemo(() => {
+    if (!employees) return [];
+    return employees.filter(e => e.full_name.includes(createTripEmployeeName) && e.status === 'active');
+  }, [employees, createTripEmployeeName]);
 
   const assignEmployeeMutation = useMutation({
     mutationFn: (data: { trip_id: string; employee_id: string | null; full_name: string; role: string; overwrite: boolean }) => 
@@ -68,19 +79,49 @@ export default function TripManagementBoard() {
   });
 
   const createTrip = useMutation({
-    mutationFn: (data: any) => {
+    mutationFn: async (data: any) => {
+      let finalUserId = null;
+      let finalNewUserName = null;
+      
+      if (createTripEmployeeName) {
+         const existing = employees?.find(e => e.full_name === createTripEmployeeName);
+         if (existing) {
+             finalUserId = existing.id;
+         } else {
+             // Create new user if doesn't exist
+             const res = await axiosClient.post('/payroll/employees', {
+               full_name: createTripEmployeeName,
+               phone: `050${Math.floor(1000000 + Math.random() * 9000000)}`,
+               password: '123',
+               notes: 'יש לעדכן לעובד שכר שעתי'
+             });
+             finalUserId = res.data.id;
+             alert(`שים לב: הלקוח/עובד ${createTripEmployeeName} לא היה קיים, לכן נוצר עובד חדש. יש לעדכן לו שכר שעתי!`);
+         }
+      }
+      
       const payload = { ...data, capacity: totalCapacity };
       if (!payload.global_salary || payload.global_salary === '') payload.global_salary = null;
       if (!payload.end_date || payload.end_date === '') payload.end_date = payload.start_date;
       payload.location = payload.trip_name || 'ללא מיקום';
+      
+      payload.assigned_user_id = finalUserId;
+      payload.assigned_role = createTripEmployeeRole;
+      payload.assigned_send_sms = (createTripEmployeeName === 'יהב כלפון' || createTripEmployeeName === 'דין ברנס') ? false : createTripSendSms;
+      payload.assigned_promised_salary = createTripPromisedSalary ? parseFloat(createTripPromisedSalary) : null;
+      
       return axiosClient.post('/trips/', payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
       queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
       alert('הטיול נוצר בהצלחה!');
-      setFormData({ client_name: '', trip_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '', has_accommodation: true });
+      setFormData({ client_name: '', trip_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '', has_accommodation: true, assigned_user_id: '', assigned_role: 'כללי' });
+      setCreateTripEmployeeName('');
+      setCreateTripPromisedSalary('');
+      setCreateTripSendSms(true);
       setIsFormVisible(false);
     },
     onError: (error: any) => {
@@ -102,7 +143,7 @@ export default function TripManagementBoard() {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       alert('הטיול עודכן בהצלחה!');
       setEditingTripId(null);
-      setFormData({ client_name: '', trip_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '', has_accommodation: true });
+      setFormData({ client_name: '', trip_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '', has_accommodation: true, assigned_user_id: '', assigned_role: 'כללי' });
     },
     onError: (error: any) => {
       alert('שגיאה בעדכון הטיול: ' + (error.response?.data?.detail || 'אנא ודא שכל השדות מלאים ותקינים.'));
@@ -339,6 +380,85 @@ export default function TripManagementBoard() {
             ))}
           </div>
         </div>
+        
+        {!editingTripId && (
+          <div className="mb-4 md:col-span-2 pt-4 border-t border-blue-200">
+            <h4 className="text-sm font-bold text-blue-900 mb-2">➕ הוסף עובד לטיול זה</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              <div className="relative">
+                <input 
+                  type="text" 
+                  placeholder="התחל להקליד שם עובד..."
+                  className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                  value={createTripEmployeeName}
+                  onChange={(e) => {
+                    setCreateTripEmployeeName(e.target.value);
+                    setCreateTripShowDropdown(true);
+                  }}
+                  onFocus={() => setCreateTripShowDropdown(true)}
+                />
+                {createTripShowDropdown && createTripEmployeeName && (
+                  <div className="absolute z-10 w-full bg-white border border-gray-200 mt-1 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                    {createFilteredEmployees.map(emp => (
+                      <div 
+                        key={emp.id} 
+                        className="p-2 text-sm hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
+                        onClick={() => {
+                          setCreateTripEmployeeName(emp.full_name);
+                          setCreateTripShowDropdown(false);
+                        }}
+                      >
+                        {emp.full_name}
+                      </div>
+                    ))}
+                    {createFilteredEmployees.length === 0 && (
+                      <div className="p-2 text-sm text-gray-500 italic">
+                        לא נמצא עובד כזה. לחיצה על "צור טיול" תיצור עובד חדש.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2 w-full">
+                <select
+                  className="w-2/3 p-2 text-sm border border-gray-300 rounded bg-white focus:ring-2 focus:ring-blue-500"
+                  value={createTripEmployeeRole}
+                  onChange={e => setCreateTripEmployeeRole(e.target.value)}
+                >
+                  <option value="כללי">כללי</option>
+                  <option value="חובש">חובש</option>
+                  <option value='מע"ר'>מע"ר</option>
+                  <option value='מע"ר חמוש'>מע"ר חמוש</option>
+                  <option value="פראמדיק">פראמדיק</option>
+                  <option value="רופא">רופא</option>
+                  <option value="מלווה נשק">מלווה נשק</option>
+                  <option value="שומר לילה">שומר לילה</option>
+                  <option value="נהג">נהג</option>
+                </select>
+                <input 
+                  type="number"
+                  placeholder="שכר מובטח"
+                  className="w-1/3 p-2 text-sm border border-gray-300 rounded bg-white focus:ring-2 focus:ring-blue-500"
+                  value={createTripPromisedSalary}
+                  onChange={e => setCreateTripPromisedSalary(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-2 h-full pb-2">
+                <input
+                  type="checkbox"
+                  id="createSendSmsCheckbox"
+                  disabled={createTripEmployeeName === 'יהב כלפון' || createTripEmployeeName === 'דין ברנס'}
+                  checked={(createTripEmployeeName === 'יהב כלפון' || createTripEmployeeName === 'דין ברנס') ? false : createTripSendSms}
+                  onChange={(e) => setCreateTripSendSms(e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 disabled:opacity-50"
+                />
+                <label htmlFor="createSendSmsCheckbox" className="text-sm font-bold text-gray-700 cursor-pointer">
+                  שלח סמס לעובד
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
         
       <div className="flex gap-4 mt-6">
@@ -355,7 +475,7 @@ export default function TripManagementBoard() {
           <button 
             onClick={() => {
               setEditingTripId(null);
-              setFormData({ client_name: '', trip_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '', has_accommodation: true });
+              setFormData({ client_name: '', trip_name: '', location: '', start_date: '', end_date: '', roles_requirements: {}, color: '', global_salary: '', contact_name: '', contact_phone: '', employee_contact_name: '', employee_contact_phone: '', has_accommodation: true, assigned_user_id: '', assigned_role: 'כללי' });
             }}
             className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-bold shadow transition-colors"
           >
@@ -520,7 +640,9 @@ export default function TripManagementBoard() {
                                           contact_phone: trip.contact_phone || '',
                                           employee_contact_name: trip.employee_contact_name || '',
                                           employee_contact_phone: trip.employee_contact_phone || '',
-                                          has_accommodation: trip.has_accommodation ?? true
+                                          has_accommodation: trip.has_accommodation ?? true,
+                                          assigned_user_id: '',
+                                          assigned_role: 'כללי'
                                         });
                                           setTimeout(() => {
                                           document.getElementById('edit-form-area')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
