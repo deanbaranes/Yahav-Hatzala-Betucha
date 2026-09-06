@@ -34,6 +34,9 @@ class NotificationService:
         # Save to database if session is provided (in-app notification)
         if db:
             NotificationService.create_in_app_notification(message, db, user_id)
+        
+        return True # זמני: הושבת לשם בדיקות
+
 
         # Clean the phone number (remove hyphens, spaces)
         clean_phone = "".join(filter(str.isdigit, phone_number))

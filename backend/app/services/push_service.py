@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 from app.models.push_subscription import PushSubscription
 
 def send_push_notification(db: Session, user_id, title: str, body: str, url: str = "/employee/schedule"):
+    return # זמני: הושבת לשם בדיקות
+
     vapid_private_key = os.environ.get("VAPID_PRIVATE_KEY")
     vapid_claims_email = os.environ.get("VAPID_CLAIMS_EMAIL", "mailto:deanbaranes1@gmail.com")
 
@@ -48,6 +50,8 @@ def send_push_notification(db: Session, user_id, title: str, body: str, url: str
                 print("Push Error:", ex)
 
 def broadcast_push_notification(db: Session, title: str, body: str, url: str = "/employee/schedule"):
+    return # זמני: הושבת לשם בדיקות
+
     print(f"DEBUG PUSH: Attempting to broadcast push notification. Title: {title}")
     vapid_private_key = os.environ.get("VAPID_PRIVATE_KEY")
     vapid_claims_email = os.environ.get("VAPID_CLAIMS_EMAIL", "mailto:deanbaranes1@gmail.com")
