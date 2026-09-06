@@ -394,7 +394,9 @@ class TripService:
 
         db.commit()
 
-        if first_trip and trip_data.capacity > 0:
+        # Only broadcast if the trip is NOT fully assigned at creation
+        is_fully_assigned = (trip_data.capacity == 1 and trip_data.assigned_user_id is not None)
+        if first_trip and trip_data.capacity > 0 and not is_fully_assigned:
             try:
                 from app.services.push_service import broadcast_push_notification
                 from app.services.notification_service import NotificationService
