@@ -3,9 +3,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import { Search, Save, Edit2, Trash2, Copy, Check, Users, Download, Plus, X } from 'lucide-react';
 import { exportToCSV } from '../../utils/csvExport';
+import { useLocation } from 'react-router-dom';
 
 export default function Clients() {
-  const [searchTerm, setSearchTerm] = useState('');
+  const location = useLocation();
+  const [searchTerm, setSearchTerm] = useState(location.state?.search || '');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ balance: '', notes: '', debt_start_date: '', payment_terms: '', name: '', contact_person: '', email: '', phone: '' });
   const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
@@ -250,6 +252,7 @@ export default function Clients() {
             <input 
               type="text" 
               placeholder="חיפוש לפי שם לקוח או איש קשר..."
+              value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
                 setPage(0); // reset page on search

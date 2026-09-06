@@ -67,6 +67,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       navigate('/admin/reports');
     } else if (msg.includes("נרשם לטיול") || msg.includes("אין עובדים משובצים")) {
       navigate('/admin', { state: { scrollTo: 'approvals' } });
+    } else if (msg.includes("התראת חוב") || msg.includes("לגבות")) {
+      const match = msg.match(/לקוח '(.*?)'/);
+      const clientName = match ? match[1] : '';
+      navigate('/admin/clients', { state: { search: clientName } });
     } else if (msg.includes("אישר/ה הגעה") || msg.includes("ביטל את הרישום")) {
       navigate('/admin');
     } else if (msg.includes("שובצת לטיול") || msg.includes("קודמת לרשימת המשובצים") || msg.includes("הטיול אושר!")) {
