@@ -396,7 +396,6 @@ class TripService:
         if first_trip and trip_data.capacity > 0 and not is_fully_assigned:
             try:
                 from app.services.push_service import broadcast_push_notification
-                from app.services.notification_service import NotificationService
                 
                 trip_title = trip_data.trip_name or trip_data.location
                 date_str = first_trip.start_date.strftime("%d/%m/%Y") if first_trip.start_date else ""
