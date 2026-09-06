@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import StaffApprovalsTable from '../../features/admin/StaffApprovalsTable';
@@ -9,6 +10,17 @@ import TripDetailsModal from '../../features/admin/TripDetailsModal';
 import CreateManualTripModal from '../../features/admin/CreateManualTripModal';
 
 export default function Dashboard() {
+  const location = useLocation();
+  const approvalsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if ((location.state as any)?.scrollTo === 'approvals' && approvalsRef.current) {
+      setTimeout(() => {
+        approvalsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 500); // slight delay to allow rendering
+    }
+  }, [location]);
+
   const { user } = useAuth();
   // זמנית: הוספנו גם את דין (0504851269) כדי שתוכל לראות את השינויים
   const isYahav = user?.name?.includes('יהב') || (user as any)?.full_name?.includes('יהב') || (user as any)?.phone === '0533210777' || user?.name?.includes('דין') || (user as any)?.full_name?.includes('דין') || (user as any)?.phone === '0504851269';
@@ -338,7 +350,7 @@ export default function Dashboard() {
         </div>
         
         {/* Left side: Pending Approvals */}
-        <div className="xl:col-span-1 space-y-8">
+        <div className="xl:col-span-1 space-y-8" ref={approvalsRef}>
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
              <div className="bg-indigo-600 px-6 py-4">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">אישור עובדים ממתינים</h2>
