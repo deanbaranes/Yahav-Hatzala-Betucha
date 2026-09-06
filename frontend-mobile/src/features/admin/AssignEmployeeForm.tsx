@@ -15,6 +15,7 @@ export default function AssignEmployeeForm({ tripId, employees, onAssignSuccess 
   const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
   const [filteredEmployees, setFilteredEmployees] = useState<any[]>([]);
   const [sendSms, setSendSms] = useState(true);
+  const [promisedSalary, setPromisedSalary] = useState('');
 
   useEffect(() => {
     if (assignEmployeeName && employees) {
@@ -25,7 +26,7 @@ export default function AssignEmployeeForm({ tripId, employees, onAssignSuccess 
   }, [assignEmployeeName, employees]);
 
   const assignEmployeeMutation = useMutation({
-    mutationFn: async (payload: { trip_id: string, user_id?: string, new_user_name?: string, role: string, send_sms: boolean }) => {
+    mutationFn: async (payload: { trip_id: string, user_id?: string, new_user_name?: string, role: string, send_sms: boolean, promised_salary?: string }) => {
       let finalUserId = payload.user_id;
       if (!finalUserId && payload.new_user_name) {
          const res = await axiosClient.post('/payroll/employees', {
@@ -43,12 +44,14 @@ export default function AssignEmployeeForm({ tripId, employees, onAssignSuccess 
         role: payload.role,
         status: 'assigned',
         is_confirmed: true,
-        send_sms: payload.send_sms
+        send_sms: payload.send_sms,
+        promised_salary: payload.promised_salary ? parseFloat(payload.promised_salary) : null
       });
     },
     onSuccess: () => {
       alert('עובד שובץ בהצלחה!');
       setAssignEmployeeName('');
+      setPromisedSalary('');
       queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
       queryClient.invalidateQueries({ queryKey: ['employees'] });
@@ -96,21 +99,30 @@ export default function AssignEmployeeForm({ tripId, employees, onAssignSuccess 
           </div>
         )}
       </div>
-      <select
-        className="w-full p-2 text-sm border border-gray-300 rounded mb-2 bg-white"
-        value={assignEmployeeRole}
-        onChange={e => setAssignEmployeeRole(e.target.value)}
-      >
-        <option value="כללי">כללי</option>
-        <option value="חובש">חובש</option>
-        <option value='מע"ר'>מע"ר</option>
-        <option value='מע"ר חמוש'>מע"ר חמוש</option>
-        <option value="פראמדיק">פראמדיק</option>
-        <option value="רופא">רופא</option>
-        <option value="מלווה נשק">מלווה נשק</option>
-        <option value="שומר לילה">שומר לילה</option>
-        <option value="נהג">נהג</option>
-      </select>
+      <div className="flex gap-2 mb-2">
+        <select
+          className="w-2/3 p-2 text-sm border border-gray-300 rounded bg-white"
+          value={assignEmployeeRole}
+          onChange={e => setAssignEmployeeRole(e.target.value)}
+        >
+          <option value="כללי">כללי</option>
+          <option value="חובש">חובש</option>
+          <option value='מע"ר'>מע"ר</option>
+          <option value='מע"ר חמוש'>מע"ר חמוש</option>
+          <option value="פראמדיק">פראמדיק</option>
+          <option value="רופא">רופא</option>
+          <option value="מלווה נשק">מלווה נשק</option>
+          <option value="שומר לילה">שומר לילה</option>
+          <option value="נהג">נהג</option>
+        </select>
+        <input 
+          type="number"
+          placeholder="שכר מובטח"
+          className="w-1/3 p-2 text-sm border border-gray-300 rounded bg-white"
+          value={promisedSalary}
+          onChange={e => setPromisedSalary(e.target.value)}
+        />
+      </div>
       <div className="flex items-center gap-2 mb-3 mt-1">
         <input
           type="checkbox"
@@ -133,7 +145,8 @@ export default function AssignEmployeeForm({ tripId, employees, onAssignSuccess 
             user_id: existing?.id,
             new_user_name: !existing ? assignEmployeeName : undefined,
             role: assignEmployeeRole,
-            send_sms: (assignEmployeeName === 'יהב כלפון' || assignEmployeeName === 'דין ברנס') ? false : sendSms
+            send_sms: (assignEmployeeName === 'יהב כלפון' || assignEmployeeName === 'דין ברנס') ? false : sendSms,
+            promised_salary: promisedSalary
           });
         }}
         className="mt-2 w-full px-3 py-2 text-sm bg-indigo-600 text-white hover:bg-indigo-700 rounded font-bold disabled:opacity-50"

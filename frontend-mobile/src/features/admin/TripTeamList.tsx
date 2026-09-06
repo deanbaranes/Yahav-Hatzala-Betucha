@@ -1,5 +1,4 @@
 import { CheckCircle2 } from 'lucide-react';
-
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
@@ -13,23 +12,28 @@ interface TripTeamListProps {
 export default function TripTeamList({ trip, setReportingAssignment, removeAssignmentMutation }: TripTeamListProps) {
   const queryClient = useQueryClient();
   const [salaries, setSalaries] = useState<Record<string, string>>({});
+  const [savingId, setSavingId] = useState<string | null>(null);
 
   const updateSalaryMutation = useMutation({
     mutationFn: ({ assignmentId, salary }: { assignmentId: string, salary: number | null }) => 
       axiosClient.patch(`/trips/assignments/${assignmentId}/promised-salary`, { promised_salary: salary }),
+    onMutate: (vars) => {
+      setSavingId(vars.assignmentId);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trips'] });
+      alert('השכר המובטח נשמר בהצלחה.');
+    },
+    onSettled: () => {
+      setSavingId(null);
     }
   });
 
-  const handleSalaryBlur = (assignment: any, value: string) => {
+  const handleSaveSalary = (assignment: any) => {
+    const value = salaries[assignment.id];
+    if (value === undefined) return; // Unchanged
     const numValue = value === '' ? null : parseFloat(value);
-    const existingVal = assignment.promised_salary ?? null;
-    
-    // Only fire mutation if value changed
-    if (numValue !== existingVal) {
-       updateSalaryMutation.mutate({ assignmentId: assignment.id, salary: numValue });
-    }
+    updateSalaryMutation.mutate({ assignmentId: assignment.id, salary: numValue });
   };
 
   return (
@@ -62,16 +66,26 @@ export default function TripTeamList({ trip, setReportingAssignment, removeAssig
               </span>
               
               <div className="flex items-center gap-2">
-                <div className="flex items-center border border-gray-200 rounded px-2 bg-gray-50">
-                  <span className="text-gray-400 text-xs pl-1">₪</span>
-                  <input
-                    type="number"
-                    placeholder="שכר מובטח"
-                    className="w-16 bg-transparent text-xs py-1 text-center font-bold text-blue-600 focus:outline-none"
-                    value={salaries[a.id] !== undefined ? salaries[a.id] : (a.promised_salary || '')}
-                    onChange={(e) => setSalaries({ ...salaries, [a.id]: e.target.value })}
-                    onBlur={(e) => handleSalaryBlur(a, e.target.value)}
-                  />
+                <div className="flex items-center gap-1">
+                  <div className="flex items-center border border-gray-200 rounded px-2 bg-gray-50">
+                    <span className="text-gray-400 text-xs pl-1">₪</span>
+                    <input
+                      type="number"
+                      placeholder="שכר"
+                      className="w-14 bg-transparent text-xs py-1 text-center font-bold text-blue-600 focus:outline-none"
+                      value={salaries[a.id] !== undefined ? salaries[a.id] : (a.promised_salary || '')}
+                      onChange={(e) => setSalaries({ ...salaries, [a.id]: e.target.value })}
+                    />
+                  </div>
+                  {salaries[a.id] !== undefined && salaries[a.id] !== (a.promised_salary?.toString() || '') && (
+                    <button
+                      onClick={() => handleSaveSalary(a)}
+                      disabled={savingId === a.id}
+                      className="bg-green-100 text-green-700 hover:bg-green-200 px-2 py-1 rounded text-xs font-bold transition-colors border border-green-200"
+                    >
+                      {savingId === a.id ? '...' : 'שמור'}
+                    </button>
+                  )}
                 </div>
                 
                 <span className="text-gray-500 font-medium text-xs bg-gray-100 px-2 py-0.5 rounded">{a.role || 'כללי'}</span>

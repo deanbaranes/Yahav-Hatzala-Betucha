@@ -225,13 +225,16 @@ def admin_assign_trip(trip_id: str, request: AdminAssignRequest, db: Session = D
         existing.status = request.status
         existing.is_confirmed = request.is_confirmed
         existing.role = request.role
+        if request.promised_salary is not None:
+            existing.promised_salary = request.promised_salary
     else:
         new_assignment = TripAssignment(
             trip_id=trip_id,
             user_id=request.user_id,
             status=request.status,
             role=request.role,
-            is_confirmed=request.is_confirmed
+            is_confirmed=request.is_confirmed,
+            promised_salary=request.promised_salary
         )
         db.add(new_assignment)
         db.flush()  # flush to get new_assignment.id

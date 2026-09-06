@@ -132,6 +132,7 @@ class AdminAssignRequest(BaseModel):
     status: str = "assigned"
     is_confirmed: bool = True
     send_sms: bool = True
+    promised_salary: Optional[float] = None
 
 class IcalImportRequest(BaseModel):
     ical_url: str
