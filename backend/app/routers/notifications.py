@@ -9,9 +9,19 @@ router = APIRouter(prefix="/notifications", tags=["Employee Notifications"])
 
 @router.get("/")
 def get_notifications(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    return db.query(Notification).filter(
+    notifs = db.query(Notification).filter(
         Notification.user_id == current_user.id
     ).order_by(Notification.created_at.desc()).limit(50).all()
+    
+    return [
+        {
+            "id": str(n.id),
+            "title": n.title,
+            "message": n.message,
+            "is_read": n.is_read,
+            "created_at": n.created_at.isoformat() + "Z" if n.created_at else None
+        } for n in notifs
+    ]
 
 @router.put("/{notification_id}/read")
 def mark_read(notification_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):

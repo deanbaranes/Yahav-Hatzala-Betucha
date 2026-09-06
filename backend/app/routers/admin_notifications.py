@@ -19,7 +19,16 @@ def get_admin_notifications(db: Session = Depends(get_db), admin_user: User = De
     if not billing_phone or billing_phone != admin_clean:
         query = query.filter(Notification.title != "התראת חוב")
         
-    return query.order_by(Notification.created_at.desc()).limit(50).all()
+    notifs = query.order_by(Notification.created_at.desc()).limit(50).all()
+    return [
+        {
+            "id": str(n.id),
+            "title": n.title,
+            "message": n.message,
+            "is_read": n.is_read,
+            "created_at": n.created_at.isoformat() + "Z" if n.created_at else None
+        } for n in notifs
+    ]
 
 @router.put("/{notification_id}/read")
 def mark_admin_read(notification_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
