@@ -170,7 +170,7 @@ def join_trip(trip_id: str, request: JoinTripRequest, db: Session = Depends(get_
         TripAssignment.status == "assigned"
     ).count()
 
-    status = "waitlisted" if (assigned_count_for_role >= max_capacity or total_assigned >= trip.capacity) else "assigned"
+    status = "waitlisted" # All joining employees wait for manual admin approval
 
     new_assignment = TripAssignment(
         trip_id=trip.id,
