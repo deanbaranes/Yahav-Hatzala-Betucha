@@ -21,7 +21,8 @@ export default function TripTeamList({ trip, setReportingAssignment, removeAssig
       setSavingId(vars.assignmentId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['trips'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
       alert('השכר המובטח נשמר בהצלחה.');
     },
     onSettled: () => {
