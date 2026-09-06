@@ -63,6 +63,12 @@ def confirm_assignment(assignment_id: str, db: Session = Depends(get_db), admin_
         NotificationService.create_in_app_notification(msg, db, user_id=user.id)
         if user.phone and user.role != 'admin':
             NotificationService.send_sms(user.phone, msg)
+            
+        try:
+            from app.services.push_service import send_push_notification
+            send_push_notification(db, user.id, "שיבוצך אושר! ✅", msg, url="/employee/schedule")
+        except Exception as e:
+            print(f"Failed to send push notification: {e}")
 
     return {"message": "Assignment confirmed"}
 
