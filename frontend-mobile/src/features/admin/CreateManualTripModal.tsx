@@ -23,6 +23,7 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
   const [createTripShowDropdown, setCreateTripShowDropdown] = useState(false);
   const [createTripSendSms, setCreateTripSendSms] = useState(true);
   const [createTripPromisedSalary, setCreateTripPromisedSalary] = useState('');
+  const [createTripAssignToAllRecurring, setCreateTripAssignToAllRecurring] = useState(true);
 
   const { data: employees = [] } = useQuery<any[]>({
     queryKey: ['employees'],
@@ -114,6 +115,7 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
       payload.assigned_role = createTripEmployeeRole;
       payload.assigned_send_sms = (createTripEmployeeName === 'יהב כלפון' || createTripEmployeeName === 'דין ברנס') ? false : createTripSendSms;
       payload.assigned_promised_salary = createTripPromisedSalary ? parseFloat(createTripPromisedSalary) : null;
+      payload.assign_to_all_recurring = createTripAssignToAllRecurring;
       
       // Post the main trip
       await axiosClient.post('/trips/', payload);
@@ -337,9 +339,24 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
               </div>
             </div>
             {createTripEmployeeName && isRecurring && (
-              <p className="text-xs text-green-700 mt-2 font-medium bg-green-100/50 p-1.5 rounded">
-                שים לב: העובד ישובץ אוטומטית לכל הטיולים בסדרה שתיווצר.
-              </p>
+              <div className="mt-2 bg-green-100/50 p-2 rounded border border-green-200">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 text-green-600 rounded border-gray-300 focus:ring-green-500"
+                    checked={createTripAssignToAllRecurring}
+                    onChange={(e) => setCreateTripAssignToAllRecurring(e.target.checked)}
+                  />
+                  <span className="text-xs font-bold text-green-800">
+                    שבץ עובד זה אוטומטית לכל הטיולים בסדרה שתיווצר
+                  </span>
+                </label>
+                {!createTripAssignToAllRecurring && (
+                  <p className="text-xs text-gray-600 mt-1 mr-6">
+                    העובד ישובץ אך ורק למפגש הראשון בסדרה, ושאר הטיולים ייווצרו ללא שיבוץ.
+                  </p>
+                )}
+              </div>
             )}
           </div>
           

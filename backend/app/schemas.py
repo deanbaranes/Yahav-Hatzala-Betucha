@@ -97,6 +97,7 @@ class TripCreate(BaseModel):
     assigned_new_user_name: Optional[str] = None
     assigned_send_sms: bool = True
     assigned_promised_salary: Optional[float] = None
+    assign_to_all_recurring: bool = True
     has_accommodation: bool = True
 
 class TripOut(BaseModel):

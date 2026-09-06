@@ -368,7 +368,9 @@ class TripService:
             db.add(new_trip)
             db.flush()
             
-            if trip_data.assigned_user_id:
+            should_assign = trip_data.assigned_user_id and (trip_data.assign_to_all_recurring or created_count == 0)
+            
+            if should_assign:
                 new_assignment = TripAssignment(
                     trip_id=new_trip.id,
                     user_id=trip_data.assigned_user_id,
