@@ -11,6 +11,120 @@ interface CreateManualTripModalProps {
   onClose: () => void;
 }
 
+const AssignmentSlot = ({ 
+  role, 
+  index, 
+  assignment, 
+  updateAssignment, 
+  employees 
+}: { 
+  role: string, 
+  index: number, 
+  assignment: any, 
+  updateAssignment: (updates: any) => void,
+  employees: any[] 
+}) => {
+    const [isFocused, setIsFocused] = useState(false);
+    const [searchTerm, setSearchTerm] = useState(assignment.full_name || assignment.new_user_name || '');
+    
+    useEffect(() => {
+        setSearchTerm(assignment.full_name || assignment.new_user_name || '');
+    }, [assignment.full_name, assignment.new_user_name]);
+
+    const filtered = employees.filter((e: any) => e.full_name.includes(searchTerm));
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+          setIsFocused(false);
+        }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const isAssigned = !!(assignment.user_id || assignment.new_user_name);
+
+    return (
+      <div className={`p-3 rounded-lg border ${isAssigned ? 'border-green-400 bg-green-50' : 'border-gray-200 bg-gray-50'} mt-2 text-right shadow-sm relative`} ref={containerRef}>
+        {isAssigned && (
+            <div className="absolute top-2 left-2 text-green-600 font-bold" title="העובד נבחר ושובץ בהצלחה. הלחיצה על יצירת הטיול תשמור אותו.">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+        )}
+        <div className="font-bold text-blue-800 text-sm mb-2 flex items-center justify-between">
+            <span>שיבוץ ל{role} {index + 1 > 1 ? `(${index + 1})` : ''} <span className="text-gray-400 font-normal text-xs">(אופציונלי)</span></span>
+        </div>
+        
+        <div className="relative">
+          <input 
+            type="text" 
+            placeholder="חפש עובד לשיבוץ..." 
+            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+            value={searchTerm}
+            onChange={e => {
+                setSearchTerm(e.target.value);
+                updateAssignment({ new_user_name: e.target.value, full_name: e.target.value, user_id: null });
+            }}
+            onFocus={() => setIsFocused(true)}
+          />
+          {isFocused && searchTerm && (
+            <div className="absolute z-[60] w-full mt-1 bg-white border border-gray-200 rounded shadow-lg max-h-40 overflow-y-auto">
+              {filtered.map((emp: any) => (
+                <div 
+                  key={emp.id} 
+                  className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
+                  onMouseDown={() => {
+                    setSearchTerm(emp.full_name);
+                    updateAssignment({ user_id: emp.id, full_name: emp.full_name, new_user_name: '' });
+                    setIsFocused(false);
+                  }}
+                >
+                  {emp.full_name}
+                </div>
+              ))}
+              {filtered.length === 0 && (
+                <div 
+                    className="p-2 text-gray-500 text-sm italic cursor-pointer hover:bg-gray-50"
+                    onMouseDown={() => {
+                        updateAssignment({ user_id: null, full_name: searchTerm, new_user_name: searchTerm });
+                        setIsFocused(false);
+                    }}
+                >
+                    ייוצר עובד זמני בשם: "{searchTerm}"
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        
+        <div className="flex gap-2 mt-3 flex-wrap sm:flex-nowrap">
+            <div className="flex-1">
+                <input 
+                    type="number" 
+                    placeholder="שכר מובטח (₪) למשמרת..." 
+                    className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 bg-white"
+                    value={assignment.promised_salary || ''}
+                    onChange={e => updateAssignment({ promised_salary: e.target.value })}
+                />
+            </div>
+            <div className="flex items-center">
+                <label className="flex items-center gap-1.5 cursor-pointer select-none text-sm text-gray-700 bg-white border border-gray-300 rounded px-2 py-1">
+                    <input 
+                        type="checkbox" 
+                        checked={assignment.send_sms}
+                        onChange={e => updateAssignment({ send_sms: e.target.checked })}
+                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
+                    />
+                    <span>שלח SMS?</span>
+                </label>
+            </div>
+        </div>
+      </div>
+    );
+};
+
 export default function CreateManualTripModal({ initialDate, onClose }: CreateManualTripModalProps) {
   const queryClient = useQueryClient();
   const [additionalDates, setAdditionalDates] = useState<string[]>([]);
@@ -120,128 +234,19 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
     }
   });
 
-  // Reusable slot component for assignments
-  const AssignmentSlot = ({ role, index }: { role: string, index: number }) => {
-    // Find the assignment in our array that matches this role and index (by relative index inside that role)
-    // To do this reliably, we can just assign an id to it or find by index
-    // Let's find the assignment matching this role + index
-    const allForRole = assignments.filter(a => a.role === role);
-    let assignment = allForRole[index];
-    
-    // If it doesn't exist, we just render an empty state and we'll create it on change
-    if (!assignment) {
-      assignment = { full_name: '', user_id: null, new_user_name: '', promised_salary: '', send_sms: true, role: role };
-    }
-
-    const [isFocused, setIsFocused] = useState(false);
-    const [searchTerm, setSearchTerm] = useState(assignment.full_name || assignment.new_user_name || '');
-    
-    // Update local searchTerm when assignment changes externally
-    useEffect(() => {
-        setSearchTerm(assignment.full_name || assignment.new_user_name || '');
-    }, [assignment.full_name, assignment.new_user_name]);
-
-    const filtered = employees.filter(e => e.full_name.includes(searchTerm));
-    const containerRef = useRef<HTMLDivElement>(null);
-
-    // Close dropdown on outside click
-    useEffect(() => {
-      const handleClickOutside = (event: MouseEvent) => {
-        if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-          setIsFocused(false);
-        }
-      };
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    const updateAssignment = (updates: any) => {
-      setAssignments(prev => {
-        const newArr = [...prev];
-        const roleItems = newArr.filter(a => a.role === role);
-        const otherRoles = newArr.filter(a => a.role !== role);
-        
-        while (roleItems.length <= index) {
-            roleItems.push({ role, full_name: '', user_id: null, new_user_name: '', promised_salary: '', send_sms: true });
-        }
-        
-        roleItems[index] = { ...roleItems[index], ...updates };
-        return [...otherRoles, ...roleItems];
-      });
-    };
-
-    return (
-      <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 mt-2 text-right shadow-sm" ref={containerRef}>
-        <div className="font-bold text-blue-800 text-sm mb-2 flex items-center justify-between">
-            <span>שיבוץ ל{role} {index + 1 > 1 ? `(${index + 1})` : ''} <span className="text-gray-400 font-normal text-xs">(אופציונלי)</span></span>
-        </div>
-        
-        <div className="relative">
-          <input 
-            type="text" 
-            placeholder="חפש עובד לשיבוץ..." 
-            className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm bg-white"
-            value={searchTerm}
-            onChange={e => {
-                setSearchTerm(e.target.value);
-                updateAssignment({ new_user_name: e.target.value, full_name: e.target.value, user_id: null });
-            }}
-            onFocus={() => setIsFocused(true)}
-          />
-          {isFocused && searchTerm && (
-            <div className="absolute z-[60] w-full mt-1 bg-white border border-gray-200 rounded shadow-lg max-h-40 overflow-y-auto">
-              {filtered.map(emp => (
-                <div 
-                  key={emp.id} 
-                  className="p-2 hover:bg-gray-100 cursor-pointer text-sm"
-                  onMouseDown={() => {
-                    setSearchTerm(emp.full_name);
-                    updateAssignment({ user_id: emp.id, full_name: emp.full_name, new_user_name: '' });
-                    setIsFocused(false);
-                  }}
-                >
-                  {emp.full_name}
-                </div>
-              ))}
-              {filtered.length === 0 && (
-                <div 
-                    className="p-2 text-gray-500 text-sm italic cursor-pointer hover:bg-gray-50"
-                    onMouseDown={() => {
-                        updateAssignment({ user_id: null, full_name: searchTerm, new_user_name: searchTerm });
-                        setIsFocused(false);
-                    }}
-                >
-                    ייוצר עובד זמני בשם: "{searchTerm}"
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        
-        <div className="flex gap-2 mt-3 flex-wrap sm:flex-nowrap">
-            <div className="flex-1">
-                <input 
-                    type="number" 
-                    placeholder="שכר מובטח (₪) למשמרת..." 
-                    className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                    value={assignment.promised_salary || ''}
-                    onChange={e => updateAssignment({ promised_salary: e.target.value })}
-                />
-            </div>
-            <div className="flex items-center">
-                <label className="flex items-center gap-1.5 cursor-pointer select-none text-sm text-gray-700 bg-white border border-gray-300 rounded px-2 py-1">
-                    <input 
-                        type="checkbox" 
-                        checked={assignment.send_sms}
-                        onChange={e => updateAssignment({ send_sms: e.target.checked })}
-                        className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 cursor-pointer"
-                    />
-                    <span>שלח SMS?</span>
-                </label>
-            </div>
-        </div>
-      </div>
-    );
+  const handleAssignmentUpdate = (role: string, index: number, updates: any) => {
+    setAssignments(prev => {
+      const newArr = [...prev];
+      const roleItems = newArr.filter(a => a.role === role);
+      const otherRoles = newArr.filter(a => a.role !== role);
+      
+      while (roleItems.length <= index) {
+          roleItems.push({ role, full_name: '', user_id: null, new_user_name: '', promised_salary: '', send_sms: true });
+      }
+      
+      roleItems[index] = { ...roleItems[index], ...updates };
+      return [...otherRoles, ...roleItems];
+    });
   };
 
   return createPortal(
@@ -364,9 +369,21 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
                 {AVAILABLE_ROLES.map(role => {
                     const reqCount = newTripForm.roles_requirements[role] || 0;
                     if (reqCount === 0) return null;
-                    return Array.from({ length: reqCount }).map((_, index) => (
-                        <AssignmentSlot key={`${role}-${index}`} role={role} index={index} />
-                    ));
+                      return Array.from({ length: reqCount }).map((_, index) => {
+                        const allForRole = assignments.filter(a => a.role === role);
+                        const assignment = allForRole[index] || { full_name: '', user_id: null, new_user_name: '', promised_salary: '', send_sms: true, role: role };
+                        
+                        return (
+                            <AssignmentSlot 
+                                key={`${role}-${index}`} 
+                                role={role} 
+                                index={index} 
+                                assignment={assignment}
+                                employees={employees}
+                                updateAssignment={(updates: any) => handleAssignmentUpdate(role, index, updates)}
+                            />
+                        );
+                      });
                 })}
             </div>
           </div>
