@@ -344,6 +344,28 @@ class TripService:
         current_end = trip_data.end_date
         end_date_limit = trip_data.recurring_end_date or trip_data.start_date
         
+        # Strip tzinfo to avoid "can't compare offset-naive and offset-aware datetimes"
+        if current_start and current_start.tzinfo:
+            current_start = current_start.replace(tzinfo=None)
+        if current_end and current_end.tzinfo:
+            current_end = current_end.replace(tzinfo=None)
+        if end_date_limit and end_date_limit.tzinfo:
+            end_date_limit = end_date_limit.replace(tzinfo=None)
+            
+        # Pre-create temporary users if needed
+        if trip_data.assigned_users:
+            from app.models.user import User
+            for assignment_req in trip_data.assigned_users:
+                if not assignment_req.user_id and assignment_req.new_user_name:
+                    temp_user = User(
+                        full_name=assignment_req.new_user_name,
+                        role="temp_worker",
+                        is_active=True
+                    )
+                    db.add(temp_user)
+                    db.flush()
+                    assignment_req.user_id = str(temp_user.id)
+        
         max_trips = 104
         created_count = 0
         first_trip = None
