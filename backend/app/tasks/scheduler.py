@@ -346,9 +346,12 @@ def check_upcoming_trips_for_confirmation():
                 if assignment.status == "assigned" and assignment.is_confirmed:
                     user = assignment.user
                     if user and user.phone:
-                        # Construct a generic link to their schedule page where they can see the trip
-                        schedule_link = f"{frontend_url}/employee/schedule"
-                        msg = f"תזכורת שיבוץ: מחר יש לך טיול ב-{trip.location}. אנא היכנס/י לקישור הבא כדי לאשר הגעה סופית: {schedule_link}"
+                        if user.role == 'admin':
+                            msg = f"תזכורת שיבוץ: מחר יש לך טיול ב-{trip.location}."
+                        else:
+                            # Construct a generic link to their schedule page where they can see the trip
+                            schedule_link = f"{frontend_url}/employee/schedule"
+                            msg = f"תזכורת שיבוץ: מחר יש לך טיול ב-{trip.location}. אנא היכנס/י לקישור הבא כדי לאשר הגעה סופית: {schedule_link}"
                         
                         # Prevent duplicate SMS on the same day for the same assignment
                         existing_notif = db.query(Notification).filter(
@@ -391,7 +394,7 @@ def notify_admin_unconfirmed_arrivals():
             for assignment in trip.assignments:
                 if assignment.is_confirmed and assignment.status == "assigned" and not assignment.employee_confirmed_arrival:
                     user = assignment.user
-                    if user:
+                    if user and user.role != 'admin':
                         msg = f"התראת אישור הגעה: העובד/ת {user.full_name} טרם אישר/ה הגעה לטיול מחר ב-{trip.location}!"
                         
                         # Prevent spam
