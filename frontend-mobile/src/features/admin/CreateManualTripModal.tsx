@@ -146,16 +146,7 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">מיקום / שם היעד (אופציונלי)</label>
-            <input 
-              type="text" 
-              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
-              value={newTripForm.location}
-              onChange={e => setNewTripForm({...newTripForm, location: e.target.value})}
-              placeholder="כתובת יעד או תיאור הטיול"
-            />
-          </div>
+
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -431,7 +422,7 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
               createManualTripMutation.mutate({
                 client_name: newTripForm.client_name,
                 trip_name: newTripForm.trip_name || null,
-                location: newTripForm.location,
+                location: newTripForm.trip_name || 'ללא מיקום',
                 start_date: newTripForm.start_date,
                 end_date: newTripForm.end_date || null,
                 capacity: newTripTotalCapacity,

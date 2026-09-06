@@ -72,6 +72,7 @@ export default function TripManagementBoard() {
       const payload = { ...data, capacity: totalCapacity };
       if (!payload.global_salary || payload.global_salary === '') payload.global_salary = null;
       if (!payload.end_date || payload.end_date === '') payload.end_date = payload.start_date;
+      payload.location = payload.trip_name || 'ללא מיקום';
       return axiosClient.post('/trips/', payload);
     },
     onSuccess: () => {
@@ -92,6 +93,7 @@ export default function TripManagementBoard() {
       const payload = { ...data, capacity: totalCapacity };
       if (!payload.global_salary || payload.global_salary === '') payload.global_salary = null;
       if (!payload.end_date || payload.end_date === '') payload.end_date = payload.start_date;
+      payload.location = payload.trip_name || 'ללא מיקום';
       return axiosClient.put(`/trips/${editingTripId}`, payload);
     },
     onSuccess: () => {
@@ -212,11 +214,7 @@ export default function TripManagementBoard() {
             value={formData.trip_name} onChange={e => setFormData({...formData, trip_name: e.target.value})} />
         </div>
         
-        <div className="mb-4">
-          <label className="block text-gray-700 font-bold mb-2">מיקום (אופציונלי)</label>
-          <input type="text" placeholder="כתובת יעד" className="w-full p-2 border border-gray-300 rounded" 
-            value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
-        </div>
+
           
         <div className="mb-4">
           <label className="block text-gray-700 font-bold mb-2">שעת התחלה</label>
