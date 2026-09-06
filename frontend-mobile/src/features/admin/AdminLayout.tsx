@@ -34,22 +34,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, []);
 
   const { data: notifications = [] } = useQuery<any[]>({
-    queryKey: ['notifications'],
+    queryKey: ['notifications', 'admin'],
     queryFn: async () => {
-      const res = await axiosClient.get('/notifications/');
+      const res = await axiosClient.get('/notifications/admin/');
       return res.data;
     },
     refetchInterval: 60000 // Refetch every minute
   });
 
   const markReadMutation = useMutation({
-    mutationFn: (id: string) => axiosClient.put(`/notifications/${id}/read`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] })
+    mutationFn: (id: string) => axiosClient.put(`/notifications/admin/${id}/read`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications', 'admin'] })
   });
 
   const markAllReadMutation = useMutation({
-    mutationFn: () => axiosClient.put('/notifications/read-all'),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] })
+    mutationFn: () => axiosClient.put('/notifications/admin/read-all'),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications', 'admin'] })
   });
 
   const unreadCount = notifications.filter(n => !n.is_read).length;

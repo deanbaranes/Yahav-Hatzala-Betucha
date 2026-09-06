@@ -27,7 +27,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   }, []);
 
   const { data: notifications = [] } = useQuery<any[]>({
-    queryKey: ['notifications'],
+    queryKey: ['notifications', 'employee'],
     queryFn: async () => {
       const res = await axiosClient.get('/notifications/');
       return res.data;
@@ -37,12 +37,12 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
 
   const markReadMutation = useMutation({
     mutationFn: (id: string) => axiosClient.put(`/notifications/${id}/read`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications', 'employee'] })
   });
 
   const markAllReadMutation = useMutation({
     mutationFn: () => axiosClient.put('/notifications/read-all'),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] })
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications', 'employee'] })
   });
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
