@@ -453,6 +453,7 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
