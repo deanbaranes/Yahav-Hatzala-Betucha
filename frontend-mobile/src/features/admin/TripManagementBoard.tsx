@@ -114,7 +114,9 @@ export default function TripManagementBoard() {
     queryFn: async () => {
       const res = await axiosClient.get('/trips/');
       return res.data;
-    }
+    },
+    refetchInterval: 60000,
+    refetchOnWindowFocus: true
   });
 
   const deleteTrip = useMutation({
