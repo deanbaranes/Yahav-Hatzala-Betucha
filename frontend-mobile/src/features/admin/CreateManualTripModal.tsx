@@ -50,7 +50,6 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
     return { 
       client_name: '', 
       trip_name: '',
-      location: '', 
       start_date: sd, 
       end_date: ed, 
       roles_requirements: {} as Record<string, number>,
@@ -69,6 +68,8 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
     mutationFn: async () => {
       const payload: any = {
         ...newTripForm,
+        location: newTripForm.trip_name || 'ללא מיקום',
+        trip_name: newTripForm.trip_name || null,
         capacity: totalCapacity,
         has_accommodation: newTripForm.has_accommodation
       };
@@ -266,17 +267,15 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">שם הטיול (אופציונלי - יוצג לעובדים)</label>
-              <input type="text" className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
-                value={newTripForm.trip_name} onChange={e => setNewTripForm({...newTripForm, trip_name: e.target.value})} />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">מיקום / שם ביה״ס (יוצג למנהלים בלבד)</label>
-              <input type="text" className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
-                value={newTripForm.location} onChange={e => setNewTripForm({...newTripForm, location: e.target.value})} />
-            </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">פרטי הטיול (יוצג לעובדים)</label>
+            <input 
+              type="text" 
+              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+              value={newTripForm.trip_name}
+              onChange={e => setNewTripForm({...newTripForm, trip_name: e.target.value})}
+              placeholder="למשל: ביה״ס הריאלי"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
