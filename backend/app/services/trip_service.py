@@ -368,18 +368,20 @@ class TripService:
             db.add(new_trip)
             db.flush()
             
-            should_assign = trip_data.assigned_user_id and (trip_data.assign_to_all_recurring or created_count == 0)
-            
-            if should_assign:
-                new_assignment = TripAssignment(
-                    trip_id=new_trip.id,
-                    user_id=trip_data.assigned_user_id,
-                    role=trip_data.assigned_role or "כללי",
-                    status="assigned",
-                    is_confirmed=True,
-                    promised_salary=trip_data.assigned_promised_salary
-                )
-                db.add(new_assignment)
+            if trip_data.assigned_users:
+                should_assign = (trip_data.assign_to_all_recurring or created_count == 0)
+                if should_assign:
+                    for assignment_req in trip_data.assigned_users:
+                        if assignment_req.user_id:
+                            new_assignment = TripAssignment(
+                                trip_id=new_trip.id,
+                                user_id=assignment_req.user_id,
+                                role=assignment_req.role or "כללי",
+                                status="assigned",
+                                is_confirmed=True,
+                                promised_salary=assignment_req.promised_salary
+                            )
+                            db.add(new_assignment)
             
             if not first_trip:
                 first_trip = new_trip
@@ -395,7 +397,8 @@ class TripService:
         db.commit()
 
         # Only broadcast if the trip is NOT fully assigned at creation
-        is_fully_assigned = (trip_data.capacity == 1 and trip_data.assigned_user_id is not None)
+        valid_assignments_count = len([a for a in (trip_data.assigned_users or []) if a.user_id])
+        is_fully_assigned = (trip_data.capacity == valid_assignments_count) if trip_data.capacity > 0 else False
         if first_trip and trip_data.capacity > 0 and not is_fully_assigned:
             try:
                 from app.services.push_service import broadcast_push_notification
@@ -413,18 +416,20 @@ class TripService:
             except Exception as e:
                 print("Failed to broadcast push notification:", e)
         
-        if trip_data.assigned_user_id and created_count > 0:
-            assigned_user = db.query(User).filter(User.id == trip_data.assigned_user_id).first()
-            if assigned_user:
-                if created_count > 1:
-                    msg = f"שובצת לסדרת אירועים (סך הכל {created_count} מפגשים) במיקום {trip_data.location} בתפקיד {trip_data.assigned_role or 'כללי'}."
-                else:
-                    date_str = first_trip.start_date.strftime("%d/%m/%Y %H:%M") if first_trip.start_date else ""
-                    msg = f"שובצת לטיול ב-{first_trip.location} בתאריך {date_str} בתפקיד {trip_data.assigned_role or 'כללי'}."
-                
-                NotificationService.create_in_app_notification(msg, db, user_id=assigned_user.id)
-                if assigned_user.phone and assigned_user.role != 'admin' and trip_data.assigned_send_sms:
-                    NotificationService.send_sms(assigned_user.phone, msg)
+        if trip_data.assigned_users and created_count > 0:
+            for assignment_req in trip_data.assigned_users:
+                if assignment_req.user_id:
+                    assigned_user = db.query(User).filter(User.id == assignment_req.user_id).first()
+                    if assigned_user:
+                        if created_count > 1:
+                            msg = f"שובצת לסדרת אירועים (סך הכל {created_count} מפגשים) במיקום {trip_data.location} בתפקיד {assignment_req.role or 'כללי'}."
+                        else:
+                            date_str = first_trip.start_date.strftime("%d/%m/%Y %H:%M") if first_trip.start_date else ""
+                            msg = f"שובצת לטיול ב-{first_trip.location} בתאריך {date_str} בתפקיד {assignment_req.role or 'כללי'}."
+                        
+                        NotificationService.create_in_app_notification(msg, db, user_id=assigned_user.id)
+                        if assigned_user.phone and assigned_user.role != 'admin' and assignment_req.send_sms:
+                            NotificationService.send_sms(assigned_user.phone, msg)
 
         db.refresh(first_trip)
         return first_trip

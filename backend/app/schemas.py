@@ -74,6 +74,13 @@ class ClientUpdate(BaseModel):
 
 # ── Trip Schemas ──────────────────────────────────────────────────────────────
 
+class TripAssignmentCreateItem(BaseModel):
+    user_id: Optional[str] = None
+    role: str
+    new_user_name: Optional[str] = None
+    send_sms: bool = True
+    promised_salary: Optional[float] = None
+
 class TripCreate(BaseModel):
     client_name: str
     client_contact_person: Optional[str] = None
@@ -92,11 +99,7 @@ class TripCreate(BaseModel):
     trip_name: Optional[str] = None
     recurring_type: Optional[str] = None
     recurring_end_date: Optional[datetime] = None
-    assigned_user_id: Optional[str] = None
-    assigned_role: Optional[str] = None
-    assigned_new_user_name: Optional[str] = None
-    assigned_send_sms: bool = True
-    assigned_promised_salary: Optional[float] = None
+    assigned_users: Optional[List[TripAssignmentCreateItem]] = []
     assign_to_all_recurring: bool = True
     has_accommodation: bool = True
 
