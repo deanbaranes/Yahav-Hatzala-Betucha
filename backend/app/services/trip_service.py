@@ -583,6 +583,25 @@ class TripService:
         if not trip:
             raise HTTPException(status_code=404, detail="טיול לא נמצא")
 
+        from app.services.notification_service import NotificationService
+        from app.models.trip_assignment import TripAssignment
+        
+        assignments = db.query(TripAssignment).filter(
+            TripAssignment.trip_id == trip.id, 
+            TripAssignment.status == "assigned"
+        ).all()
+        
+        trip_title = trip.trip_name or trip.location
+        date_str = trip.start_date.strftime("%d/%m/%Y") if trip.start_date else ""
+        msg = f"הודעת מערכת: הטיול ל{trip_title} בתאריך {date_str} אליו שובצת - בוטל."
+        
+        for assignment in assignments:
+            user = assignment.user
+            if user:
+                NotificationService.create_in_app_notification(msg, db, user_id=user.id, title="ביטול טיול")
+                if user.phone:
+                    NotificationService.send_sms(user.phone, msg)
+
         db.delete(trip)
         db.commit()
         return {"message": "Trip deleted successfully"}
