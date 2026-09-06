@@ -407,12 +407,10 @@ class TripService:
                 push_title = "טיול חדש עלה ללוח! 🚌"
                 
                 # 1. Device Push Notification
-                # TEMPORARILY DISABLED
-                # broadcast_push_notification(db, push_title, msg)
+                broadcast_push_notification(db, push_title, msg)
                 
                 # 2. In-App Bell Notification (user_id=None means broadcast to all)
-                # TEMPORARILY DISABLED
-                # NotificationService.create_in_app_notification(message=msg, db=db, user_id=None, title=push_title)
+                NotificationService.create_in_app_notification(message=msg, db=db, user_id=None, title=push_title)
             except Exception as e:
                 print("Failed to broadcast push notification:", e)
         
