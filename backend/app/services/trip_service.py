@@ -50,6 +50,7 @@ class TripService:
                         "user_id": str(a.user_id),
                         "status": a.status,
                         "role": a.role,
+                        "promised_salary": float(a.promised_salary) if a.promised_salary is not None else None,
                         "employee_confirmed_arrival": getattr(a, 'employee_confirmed_arrival', False),
                         "user": {
                             "full_name": a.user.full_name

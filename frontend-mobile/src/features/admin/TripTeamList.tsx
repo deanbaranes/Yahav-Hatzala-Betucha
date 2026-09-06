@@ -1,5 +1,9 @@
 import { CheckCircle2 } from 'lucide-react';
 
+import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import axiosClient from '../../api/axiosClient';
+
 interface TripTeamListProps {
   trip: any;
   setReportingAssignment: (assignment: any) => void;
@@ -7,6 +11,27 @@ interface TripTeamListProps {
 }
 
 export default function TripTeamList({ trip, setReportingAssignment, removeAssignmentMutation }: TripTeamListProps) {
+  const queryClient = useQueryClient();
+  const [salaries, setSalaries] = useState<Record<string, string>>({});
+
+  const updateSalaryMutation = useMutation({
+    mutationFn: ({ assignmentId, salary }: { assignmentId: string, salary: number | null }) => 
+      axiosClient.patch(`/trips/assignments/${assignmentId}/promised-salary`, { promised_salary: salary }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trips'] });
+    }
+  });
+
+  const handleSalaryBlur = (assignment: any, value: string) => {
+    const numValue = value === '' ? null : parseFloat(value);
+    const existingVal = assignment.promised_salary ?? null;
+    
+    // Only fire mutation if value changed
+    if (numValue !== existingVal) {
+       updateSalaryMutation.mutate({ assignmentId: assignment.id, salary: numValue });
+    }
+  };
+
   return (
     <>
       <div className="text-sm text-gray-500 font-bold mb-2">
@@ -26,7 +51,7 @@ export default function TripTeamList({ trip, setReportingAssignment, removeAssig
           <div className="text-sm text-red-500 font-medium">עדיין לא שובצו עובדים!</div>
         ) : (
           trip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned').map((a:any) => (
-            <div key={a.id} className="flex justify-between items-center text-sm bg-white p-2 border border-gray-100 rounded shadow-sm">
+            <div key={a.id} className="flex justify-between items-center text-sm bg-white p-2 border border-gray-100 rounded shadow-sm flex-wrap gap-2">
               <span className="font-bold text-gray-800 flex items-center gap-1.5">
                 {a.employee_confirmed_arrival ? (
                   <span title="אישר הגעה סופית" className="flex items-center"><CheckCircle2 size={14} className="text-green-500" /></span>
@@ -35,7 +60,20 @@ export default function TripTeamList({ trip, setReportingAssignment, removeAssig
                 )}
                 {a.user?.full_name}
               </span>
+              
               <div className="flex items-center gap-2">
+                <div className="flex items-center border border-gray-200 rounded px-2 bg-gray-50">
+                  <span className="text-gray-400 text-xs pl-1">₪</span>
+                  <input
+                    type="number"
+                    placeholder="שכר מובטח"
+                    className="w-16 bg-transparent text-xs py-1 text-center font-bold text-blue-600 focus:outline-none"
+                    value={salaries[a.id] !== undefined ? salaries[a.id] : (a.promised_salary || '')}
+                    onChange={(e) => setSalaries({ ...salaries, [a.id]: e.target.value })}
+                    onBlur={(e) => handleSalaryBlur(a, e.target.value)}
+                  />
+                </div>
+                
                 <span className="text-gray-500 font-medium text-xs bg-gray-100 px-2 py-0.5 rounded">{a.role || 'כללי'}</span>
                 <button
                   onClick={() => setReportingAssignment(a)}

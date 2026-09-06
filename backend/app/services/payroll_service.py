@@ -79,7 +79,9 @@ class PayrollService:
         trip_global_bonus = Decimal(0)
 
         for r in reports:
-            if r.assignment.trip.global_salary:
+            # Personal promised salary takes precedence over trip global salary
+            promised_amount = r.assignment.promised_salary or r.assignment.trip.global_salary
+            if promised_amount:
                 # Calculate regular pay components for this specific trip
                 report_days_set = set()
                 if r.daily_shifts and len(r.daily_shifts) > 0:
@@ -95,7 +97,7 @@ class PayrollService:
                 report_travel = report_days * EMPLOYEE_TRAVEL_PAY_PER_DAY
                 report_regular_pay = report_base + report_recovery + report_travel
                 
-                promised = Decimal(str(r.assignment.trip.global_salary))
+                promised = Decimal(str(promised_amount))
                 if promised > report_regular_pay:
                     trip_global_bonus += (promised - report_regular_pay)
 

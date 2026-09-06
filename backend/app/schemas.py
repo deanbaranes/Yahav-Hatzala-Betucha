@@ -137,6 +137,10 @@ class IcalImportRequest(BaseModel):
     ical_url: str
     default_client_name: str = "לקוח מיומן גוגל"
 
+class PromisedSalaryUpdate(BaseModel):
+    promised_salary: Optional[float] = None
+
+
 
 # ── Report Schemas ────────────────────────────────────────────────────────────
 

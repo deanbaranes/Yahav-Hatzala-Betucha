@@ -1,7 +1,7 @@
 import enum
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, Boolean, DateTime, Enum, ForeignKey, String
+from sqlalchemy import Column, Boolean, DateTime, Enum, ForeignKey, String, Numeric
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -21,6 +21,7 @@ class TripAssignment(Base):
     is_confirmed = Column(Boolean, default=False, nullable=False)
     role = Column(String, nullable=True)
     employee_confirmed_arrival = Column(Boolean, default=False, nullable=False)
+    promised_salary = Column(Numeric(10, 2), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     trip = relationship("Trip", back_populates="assignments")

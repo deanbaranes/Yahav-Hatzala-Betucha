@@ -6,7 +6,7 @@ from app.models.trip import Trip
 from app.models.client import Client
 from app.models.user import User
 from app.models.trip_assignment import TripAssignment
-from app.schemas import JoinTripRequest, AdminAssignRequest
+from app.schemas import JoinTripRequest, AdminAssignRequest, PromisedSalaryUpdate
 from app.dependencies import get_admin_user, get_current_user
 from app.services.notification_service import NotificationService
 import os
@@ -88,6 +88,17 @@ def confirm_arrival(assignment_id: str, db: Session = Depends(get_db), current_u
         NotificationService.send_sms(admin_phone, msg)
         
     return {"message": "Arrival confirmed successfully"}
+
+@router.patch("/assignments/{assignment_id}/promised-salary")
+def update_promised_salary(assignment_id: str, request: PromisedSalaryUpdate, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
+    assignment = db.query(TripAssignment).filter(TripAssignment.id == assignment_id).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="שיבוץ לא נמצא")
+    
+    assignment.promised_salary = request.promised_salary
+    db.commit()
+    return {"message": "Promised salary updated successfully", "promised_salary": assignment.promised_salary}
+
 
 @router.delete("/assignments/{assignment_id}")
 def delete_assignment(assignment_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
