@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
@@ -18,8 +18,11 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
   const [recurringType, setRecurringType] = useState('weekly');
   const [recurringEndDate, setRecurringEndDate] = useState('');
   
-  const [assignedUserId, setAssignedUserId] = useState<string>('');
-  const [assignedRole, setAssignedRole] = useState<string>('כללי');
+  const [createTripEmployeeName, setCreateTripEmployeeName] = useState('');
+  const [createTripEmployeeRole, setCreateTripEmployeeRole] = useState('כללי');
+  const [createTripShowDropdown, setCreateTripShowDropdown] = useState(false);
+  const [createTripSendSms, setCreateTripSendSms] = useState(true);
+  const [createTripPromisedSalary, setCreateTripPromisedSalary] = useState('');
 
   const { data: employees = [] } = useQuery<any[]>({
     queryKey: ['employees'],
@@ -28,6 +31,11 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
       return res.data;
     }
   });
+
+  const createFilteredEmployees = useMemo(() => {
+    if (!employees) return [];
+    return employees.filter(e => e.full_name.includes(createTripEmployeeName) && e.status === 'active');
+  }, [employees, createTripEmployeeName]);
 
   // Prevent background scrolling when modal is open
   useEffect(() => {
@@ -79,9 +87,33 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
 
   const createManualTripMutation = useMutation({
     mutationFn: async (data: any) => {
+      let finalUserId = null;
+      let finalNewUserName = null;
+      
+      if (createTripEmployeeName) {
+         const existing = employees?.find(e => e.full_name === createTripEmployeeName);
+         if (existing) {
+             finalUserId = existing.id;
+         } else {
+             const res = await axiosClient.post('/payroll/employees', {
+               full_name: createTripEmployeeName,
+               phone: `050${Math.floor(1000000 + Math.random() * 9000000)}`,
+               password: '123',
+               notes: 'יש לעדכן לעובד שכר שעתי'
+             });
+             finalUserId = res.data.id;
+             alert(`שים לב: הלקוח/עובד ${createTripEmployeeName} לא היה קיים, לכן נוצר עובד חדש. יש לעדכן לו שכר שעתי!`);
+         }
+      }
+      
       const payload = { ...data };
       if (!payload.global_salary || payload.global_salary === '') payload.global_salary = null;
       if (!payload.end_date || payload.end_date === '') payload.end_date = payload.start_date;
+      
+      payload.assigned_user_id = finalUserId;
+      payload.assigned_role = createTripEmployeeRole;
+      payload.assigned_send_sms = (createTripEmployeeName === 'יהב כלפון' || createTripEmployeeName === 'דין ברנס') ? false : createTripSendSms;
+      payload.assigned_promised_salary = createTripPromisedSalary ? parseFloat(createTripPromisedSalary) : null;
       
       // Post the main trip
       await axiosClient.post('/trips/', payload);
@@ -222,43 +254,89 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
           </div>
           
           <div className="bg-green-50/50 p-3 rounded-lg border border-green-100">
-            <h4 className="text-sm font-bold text-green-900 mb-2">שיבוץ עובד אוטומטי (אופציונלי)</h4>
-            <div className="grid grid-cols-2 gap-3">
+            <h4 className="text-sm font-bold text-green-900 mb-2">➕ הוסף עובד לטיול זה</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+              <div className="relative">
+                <label className="block text-xs font-bold text-gray-700 mb-1">חפש שם עובד</label>
+                <input 
+                  type="text" 
+                  placeholder="התחל להקליד..."
+                  className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                  value={createTripEmployeeName}
+                  onChange={(e) => {
+                    setCreateTripEmployeeName(e.target.value);
+                    setCreateTripShowDropdown(true);
+                  }}
+                  onFocus={() => setCreateTripShowDropdown(true)}
+                />
+                {createTripShowDropdown && createTripEmployeeName && (
+                  <div className="absolute z-10 w-full bg-white border border-gray-200 mt-1 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                    {createFilteredEmployees.map(emp => (
+                      <div 
+                        key={emp.id} 
+                        className="p-2 text-sm hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
+                        onClick={() => {
+                          setCreateTripEmployeeName(emp.full_name);
+                          setCreateTripShowDropdown(false);
+                        }}
+                      >
+                        {emp.full_name}
+                      </div>
+                    ))}
+                    {createFilteredEmployees.length === 0 && (
+                      <div className="p-2 text-sm text-gray-500 italic">
+                        לחיצה על שמירה תיצור עובד חדש.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">בחר עובד</label>
-                <select 
-                  className="w-full p-2 border border-gray-300 rounded text-sm bg-white"
-                  value={assignedUserId}
-                  onChange={(e) => setAssignedUserId(e.target.value)}
+                <label className="block text-xs font-bold text-gray-700 mb-1">תפקיד לשיבוץ</label>
+                <select
+                  className="w-full p-2 text-sm border border-gray-300 rounded bg-white focus:ring-2 focus:ring-blue-500"
+                  value={createTripEmployeeRole}
+                  onChange={e => setCreateTripEmployeeRole(e.target.value)}
                 >
-                  <option value="">ללא שיבוץ מראש</option>
-                  {employees.map(emp => (
-                    <option key={emp.id} value={emp.id}>{emp.full_name}</option>
-                  ))}
+                  <option value="כללי">כללי</option>
+                  <option value="חובש">חובש</option>
+                  <option value='מע"ר'>מע"ר</option>
+                  <option value='מע"ר חמוש'>מע"ר חמוש</option>
+                  <option value="פראמדיק">פראמדיק</option>
+                  <option value="רופא">רופא</option>
+                  <option value="מלווה נשק">מלווה נשק</option>
+                  <option value="שומר לילה">שומר לילה</option>
+                  <option value="נהג">נהג</option>
+                  <option value="מדריך">מדריך</option>
                 </select>
               </div>
-              {assignedUserId && (
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">תפקיד לשיבוץ</label>
-                  <select 
-                    className="w-full p-2 border border-gray-300 rounded text-sm bg-white"
-                    value={assignedRole}
-                    onChange={(e) => setAssignedRole(e.target.value)}
-                  >
-                    <option value="כללי">כללי</option>
-                    <option value="חובש">חובש</option>
-                    <option value='מע"ר'>מע"ר</option>
-                    <option value='מע"ר חמוש'>מע"ר חמוש</option>
-                    <option value="פראמדיק">פראמדיק</option>
-                    <option value="רופא">רופא</option>
-                    <option value="מלווה נשק">מלווה נשק</option>
-                    <option value="שומר לילה">שומר לילה</option>
-                    <option value="נהג">נהג</option>
-                  </select>
-                </div>
-              )}
+              
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">שכר מובטח לטיול זה (₪)</label>
+                <input 
+                  type="number"
+                  placeholder="אופציונלי (ידרוס שכר שעתי)"
+                  className="w-full p-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                  value={createTripPromisedSalary}
+                  onChange={e => setCreateTripPromisedSalary(e.target.value)}
+                />
+              </div>
+
+              <div className="flex items-center h-full pb-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                    checked={createTripSendSms}
+                    onChange={(e) => setCreateTripSendSms(e.target.checked)}
+                    disabled={createTripEmployeeName === 'יהב כלפון' || createTripEmployeeName === 'דין ברנס'}
+                  />
+                  <span className="text-sm text-gray-700 font-medium">שלח SMS לעובד</span>
+                </label>
+              </div>
             </div>
-            {assignedUserId && isRecurring && (
+            {createTripEmployeeName && isRecurring && (
               <p className="text-xs text-green-700 mt-2 font-medium bg-green-100/50 p-1.5 rounded">
                 שים לב: העובד ישובץ אוטומטית לכל הטיולים בסדרה שתיווצר.
               </p>
@@ -436,8 +514,6 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
                 notes: newTripForm.notes || null,
                 recurring_type: isRecurring ? recurringType : null,
                 recurring_end_date: (isRecurring && recurringEndDate) ? `${recurringEndDate}T00:00:00Z` : null,
-                assigned_user_id: assignedUserId || null,
-                assigned_role: assignedRole || null,
                 has_accommodation: newTripForm.has_accommodation
               });
             }}
