@@ -95,19 +95,8 @@ def delete_assignment(assignment_id: str, db: Session = Depends(get_db), admin_u
     if not assignment:
         raise HTTPException(status_code=404, detail="שיבוץ לא נמצא")
 
-    trip_id = assignment.trip_id
     db.delete(assignment)
     db.commit()
-
-    # Try to promote waitlisted user — with_for_update() prevents race condition
-    next_in_line = db.query(TripAssignment).filter(
-        TripAssignment.trip_id == trip_id,
-        TripAssignment.status == "waitlisted"
-    ).with_for_update().order_by(TripAssignment.created_at.asc()).first()
-
-    if next_in_line:
-        next_in_line.status = "assigned"
-        db.commit()
 
     return {"message": "Assignment deleted"}
 
@@ -208,28 +197,7 @@ def cancel_trip(trip_id: str, db: Session = Depends(get_db), current_user: User 
     if ADMIN_PHONE:
         NotificationService.send_sms(ADMIN_PHONE, admin_msg)
 
-    # If the user was assigned, promote the oldest waitlisted user
-    promoted_user = None
-    if was_assigned:
-        # with_for_update() prevents race condition on concurrent cancellations
-        next_in_line = db.query(TripAssignment).filter(
-            TripAssignment.trip_id == trip_id,
-            TripAssignment.status == "waitlisted"
-        ).with_for_update().order_by(TripAssignment.created_at.asc()).first()
-
-        if next_in_line:
-            next_in_line.status = "assigned"
-            db.commit()
-            promoted_user = next_in_line.user_id
-
-            # Send notification to the newly promoted user
-            if next_in_line.user:
-                promoted_msg = f"הודעת מערכת: קודמת לרשימת המשובצים לטיול ב-{trip.location}. נא לוודא שאתה מגיע!"
-                NotificationService.create_in_app_notification(promoted_msg, db, user_id=next_in_line.user_id)
-                if next_in_line.user.phone and next_in_line.user.role != 'admin':
-                    NotificationService.send_sms(next_in_line.user.phone, promoted_msg)
-
-    return {"message": "Cancelled successfully", "promoted_user": str(promoted_user) if promoted_user else None}
+    return {"message": "Cancelled successfully"}
 
 @router.post("/{trip_id}/assign")
 def admin_assign_trip(trip_id: str, request: AdminAssignRequest, db: Session = Depends(get_db), current_user: User = Depends(get_admin_user)):
