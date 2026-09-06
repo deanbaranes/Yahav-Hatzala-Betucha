@@ -7,9 +7,11 @@ export default function TripCard({ trip }: { trip: any }) {
 
   const joinMutation = useMutation({
     mutationFn: (role: string) => axiosClient.post(`/trips/${trip.id}/join`, { role }),
-    onSuccess: () => {
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['available-trips'] });
       queryClient.invalidateQueries({ queryKey: ['nextTrip'] });
+      queryClient.invalidateQueries({ queryKey: ['my-trips'] }); // Ensure my trips is also updated
+      alert(res.data.status === 'waitlisted' ? 'נכנסת לרשימת ההמתנה בהצלחה!' : 'הבקשה לשיבוץ התקבלה בהצלחה! הטיול יופיע כעת תחת "הטיולים שלי".');
     },
     onError: (err: any) => {
       alert('שגיאה: ' + (err.response?.data?.detail || 'לא ניתן להשתבץ לטיול זה.'));
