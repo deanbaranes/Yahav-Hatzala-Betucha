@@ -79,9 +79,6 @@ class TripService:
             if total_reqs == 0:
                 continue
                 
-            has_yahav = any(a.user and a.user.full_name == "יהב כלפון" for a in t.assignments if a.status in ["assigned", "waitlisted"])
-            if has_yahav and current_user.full_name != "יהב כלפון":
-                continue
 
             assigned_count = sum(1 for a in t.assignments if a.status == "assigned")
 
