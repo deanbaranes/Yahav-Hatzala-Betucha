@@ -5,13 +5,21 @@ from app.models.notification import Notification
 from app.models.user import User
 from app.dependencies import get_admin_user
 
+import os
+
 router = APIRouter(prefix="/notifications/admin", tags=["Admin Notifications"])
 
 @router.get("/")
 def get_admin_notifications(db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
-    return db.query(Notification).filter(
-        Notification.user_id == None
-    ).order_by(Notification.created_at.desc()).limit(50).all()
+    query = db.query(Notification).filter(Notification.user_id == None)
+    
+    billing_phone = "".join(filter(str.isdigit, os.getenv("BILLING_ADMIN_PHONE", "")))
+    admin_clean = "".join(filter(str.isdigit, admin_user.phone or ""))
+    
+    if not billing_phone or billing_phone != admin_clean:
+        query = query.filter(Notification.title != "התראת חוב")
+        
+    return query.order_by(Notification.created_at.desc()).limit(50).all()
 
 @router.put("/{notification_id}/read")
 def mark_admin_read(notification_id: str, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
@@ -29,10 +37,18 @@ def mark_admin_read(notification_id: str, db: Session = Depends(get_db), admin_u
 
 @router.put("/read-all")
 def mark_all_admin_read(db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
-    db.query(Notification).filter(
+    query = db.query(Notification).filter(
         Notification.user_id == None,
         Notification.is_read == False
-    ).update({"is_read": True}, synchronize_session=False)
+    )
+    
+    billing_phone = "".join(filter(str.isdigit, os.getenv("BILLING_ADMIN_PHONE", "")))
+    admin_clean = "".join(filter(str.isdigit, admin_user.phone or ""))
+    
+    if not billing_phone or billing_phone != admin_clean:
+        query = query.filter(Notification.title != "התראת חוב")
+        
+    query.update({"is_read": True}, synchronize_session=False)
     
     db.commit()
     return {"status": "success"}

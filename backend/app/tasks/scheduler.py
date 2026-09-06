@@ -81,13 +81,6 @@ def check_client_debts():
                         from app.services.push_service import send_push_notification
                         send_push_notification(db, billing_admin.id, "התראת גבייה מלקוחות", msg, url="/admin/clients")
                         
-                # Send Push to Yahav (General Admin)
-                if admin_phone and admin_phone != billing_phone:
-                    admin_user = db.query(User).filter(User.phone.like(f"%{admin_phone}%")).first()
-                    if admin_user:
-                        from app.services.push_service import send_push_notification
-                        send_push_notification(db, admin_user.id, "התראת גבייה מלקוחות", msg, url="/admin/clients")
-    
 def check_unassigned_trips():
     """
     Check if there are any trips in the next 48 hours without any assigned employees.
