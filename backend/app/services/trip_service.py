@@ -26,6 +26,7 @@ class TripService:
         for t in trips:
             result.append({
                 "id": str(t.id),
+                "trip_name": t.trip_name,
                 "location": t.location,
                 "start_date": t.start_date.isoformat(),
                 "end_date": t.end_date.isoformat() if t.end_date else None,
@@ -97,6 +98,7 @@ class TripService:
 
             result.append({
                 "id": str(t.id),
+                "trip_name": t.trip_name,
                 "location": t.location,
                 "start_date": t.start_date.isoformat(),
                 "end_date": t.end_date.isoformat() if t.end_date else None,
@@ -163,6 +165,7 @@ class TripService:
             result.append({
                 "id": str(t.id),
                 "assignment_id": str(a.id),
+                "trip_name": t.trip_name,
                 "location": t.location,
                 "start_date": t.start_date.isoformat(),
                 "end_date": t.end_date.isoformat() if t.end_date else None,

@@ -207,7 +207,7 @@ export default function TripManagementBoard() {
         <SmartClientInput value={formData.client_name} onChange={(v) => setFormData({...formData, client_name: v})} />
         
         <div className="mb-4">
-          <label className="block text-gray-700 font-bold mb-2">שם הטיול (יוצג לעובדים)</label>
+          <label className="block text-gray-700 font-bold mb-2">פרטי הטיול (יוצג לעובדים)</label>
           <input type="text" placeholder="למשל: ביה״ס הריאלי" className="w-full p-2 border border-gray-300 rounded" 
             value={formData.trip_name} onChange={e => setFormData({...formData, trip_name: e.target.value})} />
         </div>

@@ -136,7 +136,7 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">שם הטיול (יוצג לעובדים)</label>
+            <label className="block text-sm font-bold text-gray-700 mb-1">פרטי הטיול (יוצג לעובדים)</label>
             <input 
               type="text" 
               className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
