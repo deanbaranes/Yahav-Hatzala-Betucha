@@ -83,6 +83,10 @@ class TripService:
 
             assigned_count = sum(1 for a in t.assignments if a.status == "assigned")
 
+            # If trip is fully staffed, hide it from the available board
+            if assigned_count >= total_reqs and total_reqs > 0:
+                continue
+
             role_counts = {}
             for a in t.assignments:
                 if a.status == "assigned" and a.role:
@@ -146,6 +150,15 @@ class TripService:
         result = []
         for a in assignments:
             t = a.trip
+            
+            # If the user is waitlisted, hide the trip if it is fully staffed
+            if a.status == "waitlisted":
+                reqs = t.roles_requirements or {}
+                total_reqs = sum(int(v) for v in reqs.values() if str(v).isdigit())
+                assigned_count = sum(1 for ta in t.assignments if ta.status == "assigned")
+                if assigned_count >= total_reqs and total_reqs > 0:
+                    continue
+
             result.append({
                 "id": str(t.id),
                 "assignment_id": str(a.id),
