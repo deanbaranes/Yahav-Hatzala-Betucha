@@ -43,12 +43,12 @@ export default function TripManagementBoard() {
 
   const filteredEmployees = useMemo(() => {
     if (!employees) return [];
-    return employees.filter(e => e.full_name.includes(assignEmployeeName) && e.status === 'active');
+    return employees.filter(e => e.full_name.includes(assignEmployeeName));
   }, [employees, assignEmployeeName]);
 
   const createFilteredEmployees = useMemo(() => {
     if (!employees) return [];
-    return employees.filter(e => e.full_name.includes(createTripEmployeeName) && e.status === 'active');
+    return employees.filter(e => e.full_name.includes(createTripEmployeeName));
   }, [employees, createTripEmployeeName]);
 
   const assignEmployeeMutation = useMutation({

@@ -35,7 +35,7 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
 
   const createFilteredEmployees = useMemo(() => {
     if (!employees) return [];
-    return employees.filter(e => e.full_name.includes(createTripEmployeeName) && e.status === 'active');
+    return employees.filter(e => e.full_name.includes(createTripEmployeeName));
   }, [employees, createTripEmployeeName]);
 
   // Prevent background scrolling when modal is open
