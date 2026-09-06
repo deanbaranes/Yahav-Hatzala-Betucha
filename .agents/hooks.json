@@ -1,12 +1,13 @@
 {
-  "strict-approval": {
+  "strict-approval-gate": {
+    "enabled": true,
     "PreToolUse": [
       {
-        "matcher": "run_command|replace_file_content|write_to_file|multi_replace_file_content",
+        "matcher": "run_command|replace_file_content|multi_replace_file_content|write_to_file",
         "hooks": [
           {
             "type": "command",
-            "command": "python ./scripts/strict_approval.py"
+            "command": "python -c \"import json; print(json.dumps({'decision': 'force_ask', 'reason': 'Strict User Approval Gate'}))\""
           }
         ]
       }
