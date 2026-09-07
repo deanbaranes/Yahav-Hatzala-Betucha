@@ -178,6 +178,20 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
 
   const totalCapacity = Object.values(newTripForm.roles_requirements).reduce((a, b) => a + b, 0);
 
+  useEffect(() => {
+    if (newTripForm.start_date && newTripForm.end_date) {
+      const s = new Date(newTripForm.start_date);
+      const e = new Date(newTripForm.end_date);
+      const isMultiDay = s.toDateString() !== e.toDateString();
+      setNewTripForm((prev: any) => {
+        if (prev.has_accommodation !== isMultiDay) {
+          return { ...prev, has_accommodation: isMultiDay };
+        }
+        return prev;
+      });
+    }
+  }, [newTripForm.start_date, newTripForm.end_date]);
+
   const createManualTripMutation = useMutation({
     mutationFn: async () => {
       const payload: any = {

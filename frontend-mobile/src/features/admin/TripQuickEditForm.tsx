@@ -1,4 +1,4 @@
-
+import { useEffect } from 'react';
 
 const AVAILABLE_ROLES = ["מע\"ר", "חובש", "פראמדיק", "שומר לילה", "מע\"ר חמוש", "חובש חמוש", "מאבטח", "מדריך"];
 
@@ -10,15 +10,25 @@ interface TripQuickEditFormProps {
 }
 
 export default function TripQuickEditForm({ quickEditForm, setQuickEditForm, setQuickEditMode, updateTripMutation }: TripQuickEditFormProps) {
+  useEffect(() => {
+    if (quickEditForm.start_date && quickEditForm.end_date) {
+      const s = new Date(quickEditForm.start_date);
+      const e = new Date(quickEditForm.end_date);
+      const isMultiDay = s.toDateString() !== e.toDateString();
+      setQuickEditForm((prev: any) => {
+        if (prev.has_accommodation !== isMultiDay) {
+          return { ...prev, has_accommodation: isMultiDay };
+        }
+        return prev;
+      });
+    }
+  }, [quickEditForm.start_date, quickEditForm.end_date, setQuickEditForm]);
+
   return (
     <div className="space-y-4 mb-6 p-4 bg-blue-50/30 rounded-lg border border-blue-100">
       <div>
         <label className="block text-xs font-bold text-gray-600 mb-1">הערה / טקסט חופשי (למשל: הדרכה)</label>
         <input type="text" placeholder="טקסט שיופיע ליד שם הלקוח" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.notes} onChange={e => setQuickEditForm({...quickEditForm, notes: e.target.value})} />
-      </div>
-      <div>
-        <label className="block text-xs font-bold text-gray-600 mb-1">מיקום (אופציונלי)</label>
-        <input type="text" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.location} onChange={e => setQuickEditForm({...quickEditForm, location: e.target.value})} />
       </div>
       <div>
         <label className="block text-xs font-bold text-gray-600 mb-1">שעת התחלה</label>

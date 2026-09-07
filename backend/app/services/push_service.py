@@ -3,15 +3,9 @@ import json
 from pywebpush import webpush, WebPushException
 from sqlalchemy.orm import Session
 from app.models.push_subscription import PushSubscription
-from app.models.user import User
 
 def send_push_notification(db: Session, user_id, title: str, body: str, url: str = "/employee/schedule"):
-    # --- TODO REVERT HACK: Only allow Admin to get pushes for 5 minutes ---
-    admin_phone = os.environ.get("BILLING_ADMIN_PHONE", "0504851269")
-    admin_usr = db.query(User).filter(User.phone == admin_phone).first()
-    if not admin_usr or user_id != admin_usr.id:
-        return # Blocking push sequence for everyone EXCEPT admin testing
-    # --- END REVERT HACK ---
+    return # זמני: הושבת לשם בדיקות
 
     vapid_private_key = os.environ.get("VAPID_PRIVATE_KEY")
     vapid_claims_email = os.environ.get("VAPID_CLAIMS_EMAIL", "mailto:deanbaranes1@gmail.com")
@@ -56,7 +50,7 @@ def send_push_notification(db: Session, user_id, title: str, body: str, url: str
                 print("Push Error:", ex)
 
 def broadcast_push_notification(db: Session, title: str, body: str, url: str = "/employee/schedule"):
-    # (return removed for admin broadcast testing)
+    return # זמני: הושבת לשם בדיקות
 
     print(f"DEBUG PUSH: Attempting to broadcast push notification. Title: {title}")
     vapid_private_key = os.environ.get("VAPID_PRIVATE_KEY")
@@ -66,14 +60,8 @@ def broadcast_push_notification(db: Session, title: str, body: str, url: str = "
         print("DEBUG PUSH Error: VAPID_PRIVATE_KEY is missing from environment variables!")
         return
 
-    # --- TODO REVERT HACK: Get ONLY admin's push subscriptions for 5 minutes ---
-    admin_phone = os.environ.get("BILLING_ADMIN_PHONE", "0504851269")
-    admin_usr = db.query(User).filter(User.phone == admin_phone).first()
-    if admin_usr:
-        subscriptions = db.query(PushSubscription).filter(PushSubscription.user_id == admin_usr.id).all()
-    else:
-        subscriptions = []
-    # --- END REVERT HACK ---
+    # Get all unique subscriptions
+    subscriptions = db.query(PushSubscription).all()
     print(f"DEBUG PUSH: Found {len(subscriptions)} push subscriptions in database.")
     
     if not subscriptions:

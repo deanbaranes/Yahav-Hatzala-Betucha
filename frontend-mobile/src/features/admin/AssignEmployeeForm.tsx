@@ -28,6 +28,8 @@ export default function AssignEmployeeForm({ tripId, employees, onAssignSuccess 
   const assignEmployeeMutation = useMutation({
     mutationFn: async (payload: { trip_id: string, user_id?: string, new_user_name?: string, role: string, send_sms: boolean, promised_salary?: string }) => {
       let finalUserId = payload.user_id;
+      let forcedSmsValue = payload.send_sms;
+      
       if (!finalUserId && payload.new_user_name) {
          const res = await axiosClient.post('/payroll/employees', {
            full_name: payload.new_user_name,
@@ -36,6 +38,7 @@ export default function AssignEmployeeForm({ tripId, employees, onAssignSuccess 
            notes: 'יש לעדכן לעובד שכר שעתי'
          });
          finalUserId = res.data.id;
+         forcedSmsValue = false; // Block fake numbers from receiving SMS!
          alert(`שים לב: הלקוח/עובד ${payload.new_user_name} לא היה קיים, לכן נוצר עובד חדש. יש לעדכן לו שכר שעתי!`);
       }
 
@@ -44,7 +47,7 @@ export default function AssignEmployeeForm({ tripId, employees, onAssignSuccess 
         role: payload.role,
         status: 'assigned',
         is_confirmed: true,
-        send_sms: payload.send_sms,
+        send_sms: forcedSmsValue,
         promised_salary: payload.promised_salary ? parseFloat(payload.promised_salary) : null
       });
     },
