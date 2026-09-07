@@ -161,7 +161,7 @@ export default function TripFeed() {
           ) : (
             <div className="space-y-4">
               {selectedTrips.map((trip: any) => (
-                <TripCard key={trip.id} trip={trip} />
+                <TripCard key={trip.id} trip={trip} viewingDate={selectedDate} />
               ))}
             </div>
           )}

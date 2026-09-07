@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 
-export default function TripCard({ trip }: { trip: any }) {
+export default function TripCard({ trip, viewingDate }: { trip: any; viewingDate?: Date }) {
   const queryClient = useQueryClient();
   const isFull = trip.assigned_count >= trip.capacity;
 
@@ -30,6 +30,31 @@ export default function TripCard({ trip }: { trip: any }) {
   const rolesReqs = trip.roles_requirements || {};
   const roleCounts = trip.role_counts || {};
   const hasRoles = Object.keys(rolesReqs).length > 0;
+
+  const tripStartObj = new Date(trip.start_date);
+  const tripEndObj = trip.end_date ? new Date(trip.end_date) : tripStartObj;
+  tripStartObj.setHours(0,0,0,0);
+  tripEndObj.setHours(0,0,0,0);
+  const durationDays = Math.round((tripEndObj.getTime() - tripStartObj.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  const isMultiDay = durationDays > 1;
+  
+  let isViewingSubsequentDay = false;
+  if (viewingDate && isMultiDay) {
+     const view = new Date(viewingDate);
+     view.setHours(0,0,0,0);
+     if (view > tripStartObj) isViewingSubsequentDay = true;
+  }
+
+  const handleJoinClick = (role: string) => {
+    if (isMultiDay) {
+      const dayWord = durationDays === 2 ? 'דו יומי' : `של ${durationDays} ימים`;
+      const sStr = new Date(trip.start_date).toLocaleDateString('he-IL');
+      const eStr = new Date(trip.end_date).toLocaleDateString('he-IL');
+      const confirmed = window.confirm(`שים לב ❗\nמדובר בטיול ${dayWord} שמתחיל ב-${sStr} ומסתיים ב-${eStr}.\n\nהאם קראת ומאשר שאתה נרשם לכל התאריכים?`);
+      if (!confirmed) return;
+    }
+    joinMutation.mutate(role);
+  };
 
   return (
     <div className={`bg-white rounded-xl shadow p-5 mb-4 text-right border-r-4 ${isFull ? 'border-orange-500 bg-orange-50/50' : 'border-blue-500'}`} dir="rtl">
@@ -66,7 +91,7 @@ export default function TripCard({ trip }: { trip: any }) {
             {cancelMutation.isPending ? 'מבטל...' : 'בטל רישום לטיול'}
           </button>
         </div>
-      ) : hasRoles ? (
+      ) : isViewingSubsequentDay ? null : hasRoles ? (
         <div className="space-y-3">
           <h4 className="font-bold text-gray-700 text-sm">בחר תפקיד להשתבץ:</h4>
           {Object.entries(rolesReqs).map(([role, maxCap]) => {
@@ -80,7 +105,7 @@ export default function TripCard({ trip }: { trip: any }) {
                   <span className="text-xs text-gray-500"><span dir="ltr" style={{ display: 'inline-block' }}>{currentCap} / {maxCap as number}</span> מאויש</span>
                 </div>
                 <button 
-                  onClick={() => joinMutation.mutate(role)}
+                  onClick={() => handleJoinClick(role)}
                   disabled={joinMutation.isPending}
                   className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${roleIsFull ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' : 'bg-green-600 hover:bg-green-700 text-white shadow-sm'}`}
                 >
@@ -96,7 +121,7 @@ export default function TripCard({ trip }: { trip: any }) {
         </div>
       ) : (
         <button 
-          onClick={() => joinMutation.mutate('general')}
+          onClick={() => handleJoinClick('general')}
           disabled={joinMutation.isPending}
           className={`w-full py-4 rounded-xl font-bold text-lg transition-colors ${isFull ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' : 'bg-green-600 hover:bg-green-700 text-white shadow-md'}`}
         >
