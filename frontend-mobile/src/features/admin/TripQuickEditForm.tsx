@@ -31,6 +31,10 @@ export default function TripQuickEditForm({ quickEditForm, setQuickEditForm, set
         <input type="text" placeholder="טקסט שיופיע ליד שם הלקוח" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.notes} onChange={e => setQuickEditForm({...quickEditForm, notes: e.target.value})} />
       </div>
       <div>
+        <label className="block text-xs font-bold text-gray-600 mb-1">פרטי הטיול (יוצג לעובדים)</label>
+        <input type="text" placeholder="למשל: ביה״ס הריאלי" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.location} onChange={e => setQuickEditForm({...quickEditForm, location: e.target.value, trip_name: e.target.value})} />
+      </div>
+      <div>
         <label className="block text-xs font-bold text-gray-600 mb-1">שעת התחלה</label>
         <input type="datetime-local" className="w-full p-2 text-sm border border-gray-300 rounded" value={quickEditForm.start_date} onChange={e => setQuickEditForm({...quickEditForm, start_date: e.target.value})} />
       </div>
