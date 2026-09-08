@@ -33,7 +33,7 @@ export default function ReceiptUploader({ onUploadComplete, onRemove }: { onUplo
 
   return (
     <div className="mb-5 text-right" dir="rtl">
-      <label className="block text-gray-700 font-bold mb-2 text-lg">קבלת הוצאות (תמונה / PDF)</label>
+      <label className="block text-gray-700 font-bold mb-2 text-lg">העלאת מסמכים (תמונה / PDF)</label>
       <input
         type="file"
         accept="image/*,application/pdf"
@@ -51,7 +51,7 @@ export default function ReceiptUploader({ onUploadComplete, onRemove }: { onUplo
       {uploadState === 'success' && (
         <div className="flex items-center justify-between mt-2 p-2 bg-green-50 rounded border border-green-200">
           <p className="flex items-center gap-2 text-green-700 font-bold text-sm">
-            <CheckCircle2 size={16} /> הקבלה הועלתה בהצלחה!
+            <CheckCircle2 size={16} /> המסמך הועלה בהצלחה!
           </p>
           <button 
             onClick={() => {
