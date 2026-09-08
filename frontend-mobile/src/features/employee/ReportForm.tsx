@@ -348,12 +348,6 @@ export default function ReportForm() {
               value={formData.sleeps} onChange={e => setFormData(prev => ({...prev, sleeps: parseInt(e.target.value) || 0}))} />
           </div>
             
-          <div className="mb-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
-            <label className="block text-gray-700 font-bold mb-2 text-lg">הוצאות חריגות (₪)</label>
-            <p className="text-sm text-gray-500 mb-2">פרטו במילים מספרים וסיבות (לדוגמה: דלק 50, אוכל 30)</p>
-            <textarea placeholder="כתבו כאן את כל ההוצאות החריגות..." className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white" rows={3}
-              value={formData.expenses_notes} onChange={e => setFormData(prev => ({...prev, expenses_notes: e.target.value}))}></textarea>
-          </div>
 
           <ReceiptUploader 
             onUploadComplete={(url) => setFormData(prev => ({...prev, receipt_url: url}))} 
