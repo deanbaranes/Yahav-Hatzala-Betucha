@@ -65,6 +65,17 @@ class TripService:
     @staticmethod
     def get_available_trips(db: Session, current_user: User):
         now = datetime.now()
+        
+        user_assigned_dates = set()
+        user_assignments = db.query(Trip.start_date).join(TripAssignment).filter(
+            TripAssignment.user_id == current_user.id,
+            TripAssignment.status == "assigned",
+            Trip.start_date >= now.replace(hour=0, minute=0, second=0, microsecond=0)
+        ).all()
+        for d in user_assignments:
+            if d[0]:
+                user_assigned_dates.add(d[0].date())
+
         trips = db.query(Trip).options(
             joinedload(Trip.client),
             joinedload(Trip.assignments).joinedload(TripAssignment.user)
@@ -80,6 +91,9 @@ class TripService:
             if total_reqs == 0:
                 continue
                 
+            is_assigned_to_this = any(a.user_id == current_user.id and a.status == "assigned" for a in t.assignments)
+            if not is_assigned_to_this and t.start_date and t.start_date.date() in user_assigned_dates:
+                continue
 
             assigned_count = sum(1 for a in t.assignments if a.status == "assigned")
 
