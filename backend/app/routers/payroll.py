@@ -310,6 +310,19 @@ async def upload_payslip(
         db.commit()
         db.refresh(payslip)
         
+        from app.services.push_service import send_push_notification
+        from app.services.notification_service import NotificationService
+        
+        title = "תלוש שכר חדש הועלה! 📄"
+        body = f"תלוש השכר שלך לחודש {month}/{year} זמין כעת לצפייה באזור האישי."
+        url = "/employee/payslips"
+        
+        try:
+            NotificationService.create_in_app_notification(message=body, db=db, user_id=user.id, title=title)
+            send_push_notification(db=db, user_id=user.id, title=title, body=body, url=url)
+        except Exception as notify_err:
+            logger.error(f"Failed to send payslip notification: {notify_err}")
+        
         return {"message": "Payslip uploaded successfully", "id": str(payslip.id)}
     except Exception as e:
         logger.error(f"Payslip upload error: {e}")

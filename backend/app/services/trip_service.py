@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import extract
 from datetime import datetime, timezone, time, timedelta
 from urllib.parse import urlparse
+from decimal import Decimal, ROUND_HALF_UP
 import requests as http_requests
 from icalendar import Calendar as ICalendar
 from fastapi import HTTPException
@@ -279,7 +280,13 @@ class TripService:
                     stats["roles_summary"][role] += 1
 
                 if a.report and a.report.manager_status == "approved":
-                    stats["total_overtime"] += float(a.report.overtime_decimal or 0)
+                    # Round each report's overtime to the nearest 0.5 for billing
+                    exact_ot = Decimal(str(a.report.overtime_decimal or 0))
+                    d_scaled = exact_ot * Decimal('2')
+                    d_rounded = d_scaled.quantize(Decimal('1'), rounding=ROUND_HALF_UP)
+                    rounded_ot = d_rounded / Decimal('2')
+                    
+                    stats["total_overtime"] += float(rounded_ot)
                     stats["total_expenses"] += float(a.report.expenses or 0)
                     
             if not has_confirmed_assignments:

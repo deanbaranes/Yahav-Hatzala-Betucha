@@ -251,7 +251,7 @@ export default function Clients() {
             <Search className="text-gray-400" />
             <input 
               type="text" 
-              placeholder="חיפוש לפי שם לקוח או איש קשר..."
+              placeholder="חיפוש לפי שם לקוח, איש קשר או סכום יתרה/חוב..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);

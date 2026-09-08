@@ -26,7 +26,8 @@ def get_clients(skip: int = 0, limit: int = 50, q: str = "", db: Session = Depen
     if q:
         filters.append(
             (Client.name.ilike(f"%{q}%")) | 
-            (Client.contact_person.ilike(f"%{q}%"))
+            (Client.contact_person.ilike(f"%{q}%")) |
+            (Client.balance.ilike(f"%{q}%"))
         )
         
     query = db.query(Client).filter(*filters) if filters else db.query(Client)
