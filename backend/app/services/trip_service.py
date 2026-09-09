@@ -305,7 +305,6 @@ class TripService:
                         if a.report.daily_shifts:
                             try:
                                 import json
-                                from datetime import datetime
                                 shifts = a.report.daily_shifts if isinstance(a.report.daily_shifts, list) else json.loads(a.report.daily_shifts)
                                 for shift in shifts:
                                     if not shift.get('is_absent'):
