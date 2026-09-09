@@ -196,7 +196,8 @@ class TripService:
     def get_billing_status(db: Session, year: int, month: int):
         trips = db.query(Trip).options(
             joinedload(Trip.client),
-            joinedload(Trip.assignments).joinedload(TripAssignment.report)
+            joinedload(Trip.assignments).joinedload(TripAssignment.report),
+            joinedload(Trip.assignments).joinedload(TripAssignment.user)
         ).filter(
             extract('year', Trip.start_date) == year,
             extract('month', Trip.start_date) == month
@@ -294,9 +295,36 @@ class TripService:
                     stats["roles_summary"][role] += 1
 
                 if a.report and a.report.manager_status == "approved":
-                    # Round each report's overtime to the nearest 0.5 for billing
                     exact_ot = Decimal(str(a.report.overtime_decimal or 0))
-                    d_scaled = exact_ot * Decimal('2')
+                    
+                    # Remove the 0.4 bonus per overtime-qualifying shift for client billing
+                    bonus_discount = Decimal('0')
+                    is_supplier = a.user and a.user.employment_type in ["עצמאי", "ספק"]
+                    
+                    if exact_ot > 0 and not is_supplier:
+                        if a.report.daily_shifts:
+                            try:
+                                import json
+                                from datetime import datetime
+                                shifts = a.report.daily_shifts if isinstance(a.report.daily_shifts, list) else json.loads(a.report.daily_shifts)
+                                for shift in shifts:
+                                    if not shift.get('is_absent'):
+                                        st_str = shift['start_time'].replace('Z', '+00:00')
+                                        et_str = shift['end_time'].replace('Z', '+00:00')
+                                        st = datetime.fromisoformat(st_str).replace(tzinfo=None)
+                                        et = datetime.fromisoformat(et_str).replace(tzinfo=None)
+                                        if (et - st).total_seconds() / 60.0 > 9 * 60:
+                                            bonus_discount += Decimal('0.4')
+                            except Exception:
+                                bonus_discount += Decimal('0.4')
+                        else:
+                            bonus_discount = Decimal('0.4')
+                            
+                    # Remove the bonus from the exact_ot for client calculation
+                    client_ot = max(Decimal('0'), exact_ot - bonus_discount)
+
+                    # Round each report's client overtime to the nearest 0.5 for billing
+                    d_scaled = client_ot * Decimal('2')
                     d_rounded = d_scaled.quantize(Decimal('1'), rounding=ROUND_HALF_UP)
                     rounded_ot = d_rounded / Decimal('2')
                     
