@@ -17,8 +17,7 @@ export default function PayrollManagement() {
   const [editingRates, setEditingRates] = useState(false);
   const [ratesForm, setRatesForm] = useState({ hourly_rate: 0, base_daily_hours: 8.6 });
 
-  // Add adjustment state
-  const [adjForm, setAdjForm] = useState({ type: 'מענק התמדה', amount: '', notes: '' });
+
 
   // Editable report state
   const [reportValues, setReportValues] = useState<any>(null);
@@ -63,14 +62,7 @@ export default function PayrollManagement() {
     }
   });
 
-  const { data: adjustments } = useQuery<any[]>({
-    queryKey: ['payroll-adjustments', selectedUser?.id, selectedMonth, selectedYear],
-    queryFn: async () => {
-      const res = await axiosClient.get(`/payroll/adjustments/${selectedUser.id}/${selectedMonth}/${selectedYear}`);
-      return res.data;
-    },
-    enabled: !!selectedUser
-  });
+
 
   const { data: reportData, isFetching: reportFetching, refetch: refetchReport } = useQuery<any>({
     queryKey: ['payroll-export', selectedUser?.id, selectedMonth, selectedYear],
@@ -208,26 +200,7 @@ export default function PayrollManagement() {
     }
   });
 
-  const addAdjustmentMutation = useMutation({
-    mutationFn: async (data: any) => {
-      await axiosClient.post('/payroll/adjustments', data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payroll-adjustments'] });
-      refetchReport();
-      setAdjForm({ type: 'מענק התמדה', amount: '', notes: '' });
-    }
-  });
 
-  const deleteAdjustmentMutation = useMutation({
-    mutationFn: async (id: string) => {
-      await axiosClient.delete(`/payroll/adjustments/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['payroll-adjustments'] });
-      refetchReport();
-    }
-  });
 
   const handleCopy = () => {
     const text = generateReportText();
@@ -499,59 +472,7 @@ export default function PayrollManagement() {
               </div>
             </div>
 
-            {/* Adjustments */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <h3 className="text-lg font-bold mb-4">תוספות והורדות - {selectedMonth}/{selectedYear}</h3>
-              
-              <div className="flex flex-col sm:flex-row gap-2 mb-6 p-4 bg-slate-50 rounded-xl border border-slate-100 sm:items-end">
-                <div className="flex-1">
-                  <label className="block text-xs font-bold text-gray-500 mb-1">סוג תוספת</label>
-                  <select value={adjForm.type} onChange={e => setAdjForm({...adjForm, type: e.target.value})} className="w-full p-2 border border-gray-300 rounded-lg font-bold text-gray-700">
-                    <option value="הבראה">הבראה</option>
-                    <option value="נסיעות">נסיעות</option>
-                    <option value="מענק התמדה">מענק התמדה</option>
-                    <option value="לינה">לינה (תעריף לילה: 100₪)</option>
-                    <option value="שעות נוספות">השלמת שעות נוספות</option>
-                    <option value="אחר">אחר</option>
-                  </select>
-                </div>
-                <div className="flex-1">
-                  <label className="block text-xs font-bold text-gray-500 mb-1">
-                    {adjForm.type === 'לינה' ? 'מספר לילות' : adjForm.type === 'שעות נוספות' ? 'כמות שעות' : 'סכום (₪)'}
-                  </label>
-                  <input type="number" step="0.1" value={adjForm.amount} onChange={e => setAdjForm({...adjForm, amount: e.target.value})} className="w-full p-2 border border-gray-300 rounded-lg" placeholder="לדוגמה 2" />
-                </div>
-                <div className="flex-1">
-                  <label className="block text-xs font-bold text-gray-500 mb-1">הערות</label>
-                  <input type="text" value={adjForm.notes} onChange={e => setAdjForm({...adjForm, notes: e.target.value})} className="w-full p-2 border border-gray-300 rounded-lg" placeholder="לא חובה" />
-                </div>
-                <button 
-                  onClick={() => addAdjustmentMutation.mutate({...adjForm, user_id: selectedUser.id, month: selectedMonth, year: selectedYear, amount: Number(adjForm.amount)})}
-                  disabled={!adjForm.amount}
-                  className="bg-slate-800 text-white w-full sm:w-auto px-4 py-2 rounded-lg font-bold hover:bg-slate-700 disabled:opacity-50 h-[42px]"
-                >
-                  <Plus size={18} className="mx-auto sm:mx-0" />
-                </button>
-              </div>
 
-              <div className="space-y-2">
-                {adjustments?.map(adj => (
-                  <div key={adj.id} className="flex justify-between items-center p-3 border-b border-gray-100 hover:bg-gray-50">
-                    <div>
-                      <span className="font-bold text-gray-800">{adj.type}</span>
-                      {adj.notes && <span className="text-gray-500 text-sm mr-2">- {adj.notes}</span>}
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <span className={`font-black ${adj.type === 'לינה' || adj.type === 'שעות נוספות' ? 'text-blue-700' : 'text-green-700'}`}>
-                        {adj.amount} {adj.type === 'לינה' ? 'לילות' : adj.type === 'שעות נוספות' ? 'שעות' : '₪'}
-                      </span>
-                      <button onClick={() => deleteAdjustmentMutation.mutate(adj.id)} className="text-red-400 hover:text-red-600"><Trash2 size={16} /></button>
-                    </div>
-                  </div>
-                ))}
-                {adjustments?.length === 0 && <p className="text-gray-400 text-sm">אין תוספות לחודש זה.</p>}
-              </div>
-            </div>
 
             {/* Generated Report */}
             <div className="bg-slate-900 rounded-2xl shadow-lg p-6 text-white relative">
