@@ -80,7 +80,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   return (
     <div className="min-h-screen bg-gray-50 flex" dir="rtl">
       {/* Sidebar - Desktop */}
-      <aside className={`hidden md:flex flex-col bg-slate-900 text-white shadow-xl z-10 transition-all duration-300 relative ${isMinimized ? 'w-20' : 'w-72'}`}>
+      <aside className={`hidden md:flex flex-col bg-slate-900 text-white shadow-xl z-40 transition-all duration-300 relative ${isMinimized ? 'w-20' : 'w-72'}`}>
         {/* Toggle Button */}
         <button 
           onClick={() => setIsMinimized(!isMinimized)}
