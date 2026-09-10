@@ -130,8 +130,7 @@ export default function AssignEmployeeForm({ tripId, employees, onAssignSuccess 
         <input
           type="checkbox"
           id="sendSmsCheckbox"
-          disabled={assignEmployeeName === 'יהב כלפון' || assignEmployeeName === 'דין ברנס'}
-          checked={(assignEmployeeName === 'יהב כלפון' || assignEmployeeName === 'דין ברנס') ? false : sendSms}
+          checked={sendSms}
           onChange={(e) => setSendSms(e.target.checked)}
           className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 disabled:opacity-50"
         />
@@ -148,7 +147,7 @@ export default function AssignEmployeeForm({ tripId, employees, onAssignSuccess 
             user_id: existing?.id,
             new_user_name: !existing ? assignEmployeeName : undefined,
             role: assignEmployeeRole,
-            send_sms: (assignEmployeeName === 'יהב כלפון' || assignEmployeeName === 'דין ברנס') ? false : sendSms,
+            send_sms: sendSms,
             promised_salary: promisedSalary
           });
         }}

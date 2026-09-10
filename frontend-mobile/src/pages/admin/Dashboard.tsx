@@ -22,8 +22,7 @@ export default function Dashboard() {
   }, [location]);
 
   const { user } = useAuth();
-  // זמנית: הוספנו גם את דין (0504851269) כדי שתוכל לראות את השינויים
-  const isYahav = user?.name?.includes('יהב') || (user as any)?.full_name?.includes('יהב') || (user as any)?.phone === '0533210777' || user?.name?.includes('דין') || (user as any)?.full_name?.includes('דין') || (user as any)?.phone === '0504851269';
+  const isYahav = user?.role === 'admin' || user?.name?.includes('יהב') || (user as any)?.full_name?.includes('יהב') || user?.name?.includes('דין') || (user as any)?.full_name?.includes('דין');
 
   const [viewMode, setViewMode] = React.useState<'calendar' | 'list'>('calendar');
   

@@ -12,6 +12,7 @@ from app.services.notification_service import NotificationService
 import os
 
 ADMIN_PHONE = os.getenv("ADMIN_PHONE", "")
+BILLING_ADMIN_PHONE = os.getenv("BILLING_ADMIN_PHONE", "")
 
 router = APIRouter(prefix="/trips", tags=["assignments"])
 
@@ -115,7 +116,7 @@ def delete_assignment(assignment_id: str, db: Session = Depends(get_db), admin_u
     user = assignment.user
     trip = assignment.trip
     
-    if assignment.status == "assigned" and user and trip and user.full_name not in ["יהב כלפון", "דין ברנס"]:
+    if assignment.status == "assigned" and user and trip and user.phone not in [ADMIN_PHONE, BILLING_ADMIN_PHONE]:
         from app.services.notification_service import NotificationService
         trip_title = trip.trip_name or trip.location
         date_str = trip.start_date.strftime("%d/%m/%Y") if trip.start_date else ""
@@ -273,7 +274,7 @@ def admin_assign_trip(trip_id: str, request: AdminAssignRequest, db: Session = D
         date_str = trip.start_date.strftime("%d/%m/%Y %H:%M") if trip.start_date else ""
         msg = f"שובצת לטיול ב-{trip.location} בתאריך {date_str} בתפקיד {request.role}. {contact_str}\nלפרטים ואישור: https://yahav-hatzala-betucha.vercel.app/employee"
         NotificationService.create_in_app_notification(msg, db, user_id=user.id)
-        if getattr(request, 'send_sms', True) and user.phone and user.role != 'admin' and user.full_name not in ["יהב כלפון", "דין ברנס"]:
+        if getattr(request, 'send_sms', True) and user.phone and user.role != 'admin' and user.phone not in [ADMIN_PHONE, BILLING_ADMIN_PHONE]:
             NotificationService.send_sms(user.phone, msg)
             
         # Send Push Notification

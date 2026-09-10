@@ -217,7 +217,7 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
         new_user_name: a.new_user_name,
         role: a.role,
         promised_salary: a.promised_salary ? parseFloat(a.promised_salary) : null,
-        send_sms: (a.full_name === 'יהב כלפון' || a.full_name === 'דין ברנס') ? false : a.send_sms
+        send_sms: a.send_sms
       }));
       
       payload.assign_to_all_recurring = createTripAssignToAllRecurring;

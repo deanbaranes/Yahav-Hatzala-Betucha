@@ -18,8 +18,7 @@ export default function TripManagementBoard() {
   const [isFormVisible, setIsFormVisible] = useState(false);
 
   const { user } = useAuth();
-  // זמנית: הוספנו גם את דין (0504851269) כדי שתוכל לראות את השינויים
-  const isYahav = user?.name?.includes('יהב') || (user as any)?.full_name?.includes('יהב') || (user as any)?.phone === '0533210777' || user?.name?.includes('דין') || (user as any)?.full_name?.includes('דין') || (user as any)?.phone === '0504851269';
+  const isYahav = user?.role === 'admin' || user?.name?.includes('יהב') || (user as any)?.full_name?.includes('יהב') || user?.name?.includes('דין') || (user as any)?.full_name?.includes('דין');
 
   const [assignEmployeeName, setAssignEmployeeName] = useState('');
   const [assignEmployeeRole, setAssignEmployeeRole] = useState('כללי');
@@ -106,7 +105,7 @@ export default function TripManagementBoard() {
 
       payload.assigned_user_id = finalUserId;
       payload.assigned_role = createTripEmployeeRole;
-      payload.assigned_send_sms = (createTripEmployeeName === 'יהב כלפון' || createTripEmployeeName === 'דין ברנס') ? false : createTripSendSms;
+      payload.assigned_send_sms = createTripSendSms;
       payload.assigned_promised_salary = createTripPromisedSalary ? parseFloat(createTripPromisedSalary) : null;
 
       return axiosClient.post('/trips/', payload);
@@ -445,8 +444,7 @@ export default function TripManagementBoard() {
                     <input
                       type="checkbox"
                       id="createSendSmsCheckbox"
-                      disabled={createTripEmployeeName === 'יהב כלפון' || createTripEmployeeName === 'דין ברנס'}
-                      checked={(createTripEmployeeName === 'יהב כלפון' || createTripEmployeeName === 'דין ברנס') ? false : createTripSendSms}
+                      checked={createTripSendSms}
                       onChange={(e) => setCreateTripSendSms(e.target.checked)}
                       className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 disabled:opacity-50"
                     />

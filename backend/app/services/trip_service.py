@@ -4,6 +4,7 @@ from datetime import datetime, timezone, time, timedelta
 from urllib.parse import urlparse
 from decimal import Decimal, ROUND_HALF_UP
 import requests as http_requests
+import os
 from icalendar import Calendar as ICalendar
 from fastapi import HTTPException
 
@@ -498,7 +499,7 @@ class TripService:
                             msg = f"שובצת לטיול ב-{first_trip.location} בתאריך {date_str} בתפקיד {assignment_req.role or 'כללי'}."
                         
                         NotificationService.create_in_app_notification(msg, db, user_id=assigned_user.id)
-                        if assigned_user.phone and assigned_user.role != 'admin' and assignment_req.send_sms:
+                        if assigned_user.phone and assigned_user.role != 'admin' and assignment_req.send_sms and assigned_user.phone not in [os.getenv("ADMIN_PHONE"), os.getenv("BILLING_ADMIN_PHONE")]:
                             NotificationService.send_sms(assigned_user.phone, msg)
 
         db.refresh(first_trip)
@@ -634,7 +635,7 @@ class TripService:
                 if user:
                     msg = f"שובצת לסדרת אירועים (סך הכל {created_count} מפגשים נוספים) במיקום {base_trip.location} בתפקיד {a.role}."
                     NotificationService.create_in_app_notification(msg, db, user_id=user.id)
-                    if user.phone and user.role != 'admin' and user.full_name not in ["יהב כלפון", "דין ברנס"]:
+                    if user.phone and user.role != 'admin' and user.phone not in [os.getenv("ADMIN_PHONE"), os.getenv("BILLING_ADMIN_PHONE")]:
                         NotificationService.send_sms(user.phone, msg)
 
         return {"message": f"Successfully created {created_count} recurring trips"}
@@ -669,7 +670,7 @@ class TripService:
         
         for assignment in assignments:
             user = assignment.user
-            if user and user.full_name not in ["יהב כלפון", "דין ברנס"]:
+            if user and user.phone not in [os.getenv("ADMIN_PHONE"), os.getenv("BILLING_ADMIN_PHONE")]:
                 NotificationService.create_in_app_notification(msg, db, user_id=user.id, title="ביטול טיול")
                 if user.phone:
                     NotificationService.send_sms(user.phone, msg)
