@@ -172,7 +172,8 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
       employee_contact_name: '',
       employee_contact_phone: '',
       notes: '',
-      has_accommodation: false
+      has_accommodation: false,
+      global_salary: ''
     };
   });
 
@@ -199,7 +200,8 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
         location: newTripForm.trip_name || 'ללא מיקום',
         trip_name: newTripForm.trip_name || null,
         capacity: totalCapacity,
-        has_accommodation: newTripForm.has_accommodation
+        has_accommodation: newTripForm.has_accommodation,
+        global_salary: newTripForm.global_salary ? parseFloat(newTripForm.global_salary) : null
       };
       
       if (isRecurring) {
@@ -342,6 +344,17 @@ export default function CreateManualTripModal({ initialDate, onClose }: CreateMa
                onChange={e => setNewTripForm({...newTripForm, has_accommodation: e.target.checked})}
              />
              <label htmlFor="has_accommodation" className="font-bold text-gray-700">כולל לינה?</label>
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">שכר בסיס ל-9 שעות</label>
+            <input 
+              type="number" 
+              min="0"
+              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-sm"
+              value={newTripForm.global_salary}
+              onChange={e => setNewTripForm({...newTripForm, global_salary: e.target.value})}
+            />
           </div>
 
           {/* DYNAMIC TEAM REQUIREMENTS & ASSIGNMENTS */}
