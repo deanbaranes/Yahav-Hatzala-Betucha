@@ -7,7 +7,8 @@ import './index.css'
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5,   // 5 minutes — reduces redundant API calls
+      staleTime: 1000 * 60,       // 1 minute
+      refetchInterval: 60000,     // Polling every 1 minute
       retry: 1,                    // retry once on failure before showing error
     },
   },
