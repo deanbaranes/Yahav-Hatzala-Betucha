@@ -99,11 +99,11 @@ def check_unassigned_trips():
         confirmed_assignments = [a for a in trip.assignments if a.is_confirmed and a.status == "assigned"]
         if trip.capacity > 0 and len(confirmed_assignments) < trip.capacity:
             missing = trip.capacity - len(confirmed_assignments)
-            msg = f"התראת שיבוץ: לטיול ב-{trip.location} ב-{trip.start_date.strftime('%d/%m/%Y %H:%M')} חסרים {missing} עובדים משובצים (נדרשים {trip.capacity})!"
+            msg = f"התראת שיבוץ: חסרים עובדים לפעילות {trip.location} (בתאריך {trip.start_date.strftime('%d/%m/%Y %H:%M')}). חסרים {missing} עובדים משובצים!"
             if ADMIN_PHONE:
                 NotificationService.send_sms(ADMIN_PHONE, msg, db=db)
         elif trip.capacity == 0 and len(confirmed_assignments) == 0:
-            msg = f"התראת שיבוץ: לטיול ב-{trip.location} ב-{trip.start_date.strftime('%d/%m/%Y %H:%M')} אין עובדים משובצים!"
+            msg = f"התראת שיבוץ: אין עובדים משובצים כלל באירוע {trip.location} ב-{trip.start_date.strftime('%d/%m/%Y %H:%M')}!"
             if ADMIN_PHONE:
                 NotificationService.send_sms(ADMIN_PHONE, msg, db=db)
             
@@ -283,7 +283,7 @@ def check_ended_trips_for_reports():
                 if assignment.is_confirmed and assignment.status == "assigned" and not assignment.report:
                     if assignment.user and assignment.user.phone:
                         msg = (
-                            f"היי {assignment.user.full_name}, הטיול ב-{trip.location} הסתיים. "
+                            f"היי {assignment.user.full_name}, המשמרת: {trip.location} הסתיימה. "
                             f"אנא היכנס לאזור האישי למלא דוח. "
                             f"שים לב: דיווח שלא ימולא עד מחר יחושב כשכר בסיס בלבד!"
                         )
@@ -347,7 +347,7 @@ def check_upcoming_trips_for_confirmation():
                     user = assignment.user
                     if user and user.phone:
                         if user.role == 'admin':
-                            msg = f"תזכורת שיבוץ: מחר יש לך טיול ב-{trip.location}."
+                            msg = f"תזכורת משמרת: מחר הגעה ל- {trip.location}."
                         else:
                             # Construct a generic link to their schedule page where they can see the trip
                             schedule_link = f"{frontend_url}/employee/schedule"
@@ -357,7 +357,7 @@ def check_upcoming_trips_for_confirmation():
                             if trip.employee_contact_phone:
                                 contact_parts.append(trip.employee_contact_phone)
                             contact_str = f" איש קשר: {' - '.join(contact_parts)}." if contact_parts else ""
-                            msg = f"תזכורת שיבוץ: מחר יש לך טיול ב-{trip.location}.{contact_str} אנא היכנס/י לקישור הבא כדי לאשר הגעה סופית: {schedule_link}"
+                            msg = f"תזכורת שיבוץ למחר: {trip.location}.{contact_str} אנא היכנס/י לקישור לאישור הגעה סופית: {schedule_link}"
                         
                         # Prevent duplicate SMS on the same day for the same assignment
                         existing_notif = db.query(Notification).filter(
@@ -401,7 +401,7 @@ def notify_admin_unconfirmed_arrivals():
                 if assignment.is_confirmed and assignment.status == "assigned" and not assignment.employee_confirmed_arrival:
                     user = assignment.user
                     if user and user.role != 'admin':
-                        msg = f"התראת אישור הגעה: העובד/ת {user.full_name} טרם אישר/ה הגעה לטיול מחר ב-{trip.location}!"
+                        msg = f"התראת אישור הגעה: העובד/ת {user.full_name} טרם אישר/ה הגעה למחר: {trip.location}!"
                         
                         # Prevent spam
                         existing_notif = db.query(Notification).filter(

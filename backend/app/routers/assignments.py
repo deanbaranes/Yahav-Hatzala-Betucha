@@ -60,7 +60,7 @@ def confirm_assignment(assignment_id: str, db: Session = Depends(get_db), admin_
             
         contact_str = f"פרטי איש קשר לטיול: {' - '.join(contact_parts)}" if contact_parts else ""
         date_str = trip.start_date.strftime("%d/%m/%Y %H:%M") if trip.start_date else ""
-        msg = f"הטיול אושר! שובצת סופית לטיול ב-{trip.location} בתאריך {date_str} בתפקיד {assignment.role}. {contact_str}\nלפרטים נוספים: https://yahav-hatzala-betucha.vercel.app"
+        msg = f"השיבוץ אושר! שובצת סופית ל: {trip.location} (בתאריך {date_str}) בתפקיד {assignment.role}. {contact_str}\nלפרטים נוספים: https://yahav-hatzala-betucha.vercel.app"
         NotificationService.create_in_app_notification(msg, db, user_id=user.id)
         if user.phone and user.role != 'admin':
             NotificationService.send_sms(user.phone, msg)
@@ -89,7 +89,7 @@ def confirm_arrival(assignment_id: str, db: Session = Depends(get_db), current_u
     # Notify Admin
     trip = assignment.trip
     admin_phone = os.getenv("ADMIN_PHONE")
-    msg = f"אישור הגעה: העובד/ת {current_user.full_name} אישר/ה הגעה לטיול ב-{trip.location} (בתאריך {trip.start_date.strftime('%d/%m/%Y')})."
+    msg = f"אישור הגעה: העובד/ת {current_user.full_name} אישר/ה הגעה ל: {trip.location} (בתאריך {trip.start_date.strftime('%d/%m/%Y')})."
     NotificationService.create_in_app_notification(msg, db)
     if admin_phone:
         NotificationService.send_sms(admin_phone, msg)
@@ -196,7 +196,7 @@ def join_trip(trip_id: str, request: JoinTripRequest, db: Session = Depends(get_
     db.commit()
     db.refresh(new_assignment)
 
-    admin_msg = f"הודעת מערכת: העובד {current_user.full_name} נרשם לטיול ב-{trip.location}. נא להיכנס לאפליקציה כדי לאשר את השיבוץ."
+    admin_msg = f"הודעת מערכת: העובד {current_user.full_name} נרשם ל: {trip.location}. נא להיכנס לאפליקציה כדי לאשר שיבוץ."
     NotificationService.create_in_app_notification(admin_msg, db)
     
     # Send SMS to Admin
@@ -221,7 +221,7 @@ def cancel_trip(trip_id: str, db: Session = Depends(get_db), current_user: User 
     assignment.status = "cancelled"
     db.commit()
 
-    admin_msg = f"הודעת מערכת: העובד {current_user.full_name} ביטל את הרישום שלו לטיול ב-{trip.location} ב-{trip.start_date.strftime('%d/%m/%Y')}."
+    admin_msg = f"הודעת מערכת: העובד {current_user.full_name} ביטל את הרישום שלו ל: {trip.location} ב-{trip.start_date.strftime('%d/%m/%Y')}."
     NotificationService.create_in_app_notification(admin_msg, db)
     
     # Send SMS to Admin
@@ -272,7 +272,7 @@ def admin_assign_trip(trip_id: str, request: AdminAssignRequest, db: Session = D
             
         contact_str = f"פרטי איש קשר לטיול: {' - '.join(contact_parts)}" if contact_parts else ""
         date_str = trip.start_date.strftime("%d/%m/%Y %H:%M") if trip.start_date else ""
-        msg = f"שובצת לטיול ב-{trip.location} בתאריך {date_str} בתפקיד {request.role}. {contact_str}\nלפרטים ואישור: https://yahav-hatzala-betucha.vercel.app/employee"
+        msg = f"שובצת ל: {trip.location} (בתאריך {date_str}) בתפקיד {request.role}. {contact_str}\nלפרטים ואישור: https://yahav-hatzala-betucha.vercel.app/employee"
         NotificationService.create_in_app_notification(msg, db, user_id=user.id)
         if getattr(request, 'send_sms', True) and user.phone and user.role != 'admin' and user.phone not in [ADMIN_PHONE, BILLING_ADMIN_PHONE]:
             NotificationService.send_sms(user.phone, msg)

@@ -476,7 +476,7 @@ class TripService:
                 
                 trip_title = trip_data.trip_name or trip_data.location
                 date_str = first_trip.start_date.strftime("%d/%m/%Y") if first_trip.start_date else ""
-                msg = f"טיול ל{trip_title} בתאריך {date_str} נוסף הרגע למערכת. היכנסו עכשיו לאפליקציה כדי להשתבץ."
+                msg = f"אירוע חדש: '{trip_title}' תאריך: {date_str} - נוסף הרגע למערכת. היכנסו לאפליקציה להשתבץ."
                 push_title = "טיול חדש עלה ללוח! 🚌"
                 
                 # 1. Device Push Notification
@@ -496,7 +496,7 @@ class TripService:
                             msg = f"שובצת לסדרת אירועים (סך הכל {created_count} מפגשים) במיקום {trip_data.location} בתפקיד {assignment_req.role or 'כללי'}."
                         else:
                             date_str = first_trip.start_date.strftime("%d/%m/%Y %H:%M") if first_trip.start_date else ""
-                            msg = f"שובצת לטיול ב-{first_trip.location} בתאריך {date_str} בתפקיד {assignment_req.role or 'כללי'}."
+                            msg = f"שובצת ל: {first_trip.location} (בתאריך {date_str}) בתפקיד {assignment_req.role or 'כללי'}."
                         
                         NotificationService.create_in_app_notification(msg, db, user_id=assigned_user.id)
                         if assigned_user.phone and assigned_user.role != 'admin' and assignment_req.send_sms and assigned_user.phone not in [os.getenv("ADMIN_PHONE"), os.getenv("BILLING_ADMIN_PHONE")]:
@@ -666,7 +666,7 @@ class TripService:
         
         trip_title = trip.trip_name or trip.location
         date_str = trip.start_date.strftime("%d/%m/%Y") if trip.start_date else ""
-        msg = f"הודעת מערכת: הטיול ל{trip_title} בתאריך {date_str} אליו שובצת - בוטל."
+        msg = f"הודעת מערכת: המשמרת / '{trip_title}' בתאריך {date_str} אליה שובצת - בוטלה."
         
         for assignment in assignments:
             user = assignment.user
