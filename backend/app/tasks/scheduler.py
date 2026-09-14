@@ -396,24 +396,30 @@ def notify_admin_unconfirmed_arrivals():
         
         admin_phone = os.getenv("ADMIN_PHONE")
         
+        unconfirmed_details = []
         for trip in upcoming_trips:
             for assignment in trip.assignments:
                 if assignment.is_confirmed and assignment.status == "assigned" and not assignment.employee_confirmed_arrival:
                     user = assignment.user
                     if user and user.role != 'admin':
-                        msg = f"התראת אישור הגעה: העובד/ת {user.full_name} טרם אישר/ה הגעה למחר ({trip.start_date.strftime('%d/%m')}): {trip.location}!"
-                        
-                        # Prevent spam by checking only if sent today
-                        today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-                        existing_notif = db.query(Notification).filter(
-                            Notification.message == msg,
-                            Notification.created_at >= today_start
-                        ).first()
-                        
-                        if not existing_notif:
-                            NotificationService.create_in_app_notification(msg, db)
-                            if admin_phone:
-                                NotificationService.send_sms(admin_phone, msg)
+                        base_trip_name = trip.location if trip.location else trip.trip_name
+                        unconfirmed_details.append(f"{user.full_name} ({base_trip_name})")
+
+        if unconfirmed_details:
+            count = len(unconfirmed_details)
+            details_str = ", ".join(unconfirmed_details)
+            msg = f"התראת משמרות מחר ({tomorrow.strftime('%d/%m')}): {count} עובדים טרם אישרו הגעה ({details_str}). נא להיכנס לאפליקציה לבדיקה!"
+            
+            today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            existing_notif = db.query(Notification).filter(
+                Notification.message == msg,
+                Notification.created_at >= today_start
+            ).first()
+            
+            if not existing_notif:
+                NotificationService.create_in_app_notification(msg, db)
+                if admin_phone:
+                    NotificationService.send_sms(admin_phone, msg)
     finally:
         db.close()
 
