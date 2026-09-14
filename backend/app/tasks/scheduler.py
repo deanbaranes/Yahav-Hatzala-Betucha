@@ -402,8 +402,7 @@ def notify_admin_unconfirmed_arrivals():
                 if assignment.is_confirmed and assignment.status == "assigned" and not assignment.employee_confirmed_arrival:
                     user = assignment.user
                     if user and user.role != 'admin':
-                        base_trip_name = trip.location if trip.location else trip.trip_name
-                        unconfirmed_details.append(f"{user.full_name} ({base_trip_name})")
+                        unconfirmed_details.append(f"{user.full_name}")
 
         if unconfirmed_details:
             count = len(unconfirmed_details)
