@@ -401,11 +401,13 @@ def notify_admin_unconfirmed_arrivals():
                 if assignment.is_confirmed and assignment.status == "assigned" and not assignment.employee_confirmed_arrival:
                     user = assignment.user
                     if user and user.role != 'admin':
-                        msg = f"התראת אישור הגעה: העובד/ת {user.full_name} טרם אישר/ה הגעה למחר: {trip.location}!"
+                        msg = f"התראת אישור הגעה: העובד/ת {user.full_name} טרם אישר/ה הגעה למחר ({trip.start_date.strftime('%d/%m')}): {trip.location}!"
                         
-                        # Prevent spam
+                        # Prevent spam by checking only if sent today
+                        today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
                         existing_notif = db.query(Notification).filter(
-                            Notification.message == msg
+                            Notification.message == msg,
+                            Notification.created_at >= today_start
                         ).first()
                         
                         if not existing_notif:
