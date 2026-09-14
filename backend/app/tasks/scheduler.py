@@ -351,7 +351,13 @@ def check_upcoming_trips_for_confirmation():
                         else:
                             # Construct a generic link to their schedule page where they can see the trip
                             schedule_link = f"{frontend_url}/employee/schedule"
-                            msg = f"תזכורת שיבוץ: מחר יש לך טיול ב-{trip.location}. אנא היכנס/י לקישור הבא כדי לאשר הגעה סופית: {schedule_link}"
+                            contact_parts = []
+                            if trip.employee_contact_name:
+                                contact_parts.append(trip.employee_contact_name)
+                            if trip.employee_contact_phone:
+                                contact_parts.append(trip.employee_contact_phone)
+                            contact_str = f" איש קשר: {' - '.join(contact_parts)}." if contact_parts else ""
+                            msg = f"תזכורת שיבוץ: מחר יש לך טיול ב-{trip.location}.{contact_str} אנא היכנס/י לקישור הבא כדי לאשר הגעה סופית: {schedule_link}"
                         
                         # Prevent duplicate SMS on the same day for the same assignment
                         existing_notif = db.query(Notification).filter(
