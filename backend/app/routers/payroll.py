@@ -232,9 +232,11 @@ def export_payroll(employee_id: str, month: int, year: int, db: Session = Depend
         raise HTTPException(status_code=404, detail="משתמש לא נמצא")
 
     payroll_service = PayrollService(db)
-    report_result = payroll_service.generate_employee_report(user, month, year)
-
-    return {"report": report_result["text"], "data": report_result["data"]}
+    try:
+        report_result = payroll_service.generate_employee_report(user, month, year)
+        return {"report": report_result["text"], "data": report_result["data"]}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/export-all/{month}/{year}")
 def export_all_payroll(month: int, year: int, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
@@ -274,8 +276,12 @@ def export_all_payroll(month: int, year: int, db: Session = Depends(get_db), adm
 @router.get("/my_payroll/{month}/{year}")
 def get_my_payroll(month: int, year: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     payroll_service = PayrollService(db)
-    report_result = payroll_service.generate_employee_report(current_user, month, year)
-    return {"report": report_result["text"], "data": report_result["data"]}
+    try:
+        report_result = payroll_service.generate_employee_report(current_user, month, year)
+        return {"report": report_result["text"], "data": report_result["data"]}
+    except ValueError as e:
+        # Handled gracefully by frontend, but we return 400 to prevent 500 error log spam
+        raise HTTPException(status_code=400, detail="אין נתונים לחודש זה")
 
 @router.post("/payslips")
 async def upload_payslip(
