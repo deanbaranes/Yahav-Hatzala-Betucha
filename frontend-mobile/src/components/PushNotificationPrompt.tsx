@@ -3,7 +3,7 @@ import axiosClient from '../api/axiosClient';
 import { Bell, BellRing } from 'lucide-react';
 
 export default function PushNotificationPrompt() {
-  const [permission, setPermission] = useState(Notification.permission);
+  const [permission, setPermission] = useState('Notification' in window ? Notification.permission : 'default');
   const [loading, setLoading] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(true);
 
@@ -38,6 +38,11 @@ export default function PushNotificationPrompt() {
   const subscribeToPush = async () => {
     setLoading(true);
     try {
+      if (!('Notification' in window)) {
+        alert('הדפדפן שלך אינו תומך בהתראות.');
+        setLoading(false);
+        return;
+      }
       const perm = await Notification.requestPermission();
       setPermission(perm);
       if (perm !== 'granted') {
@@ -94,7 +99,12 @@ export default function PushNotificationPrompt() {
     setLoading(false);
   };
 
-  if (isSubscribed || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+  if (
+    isSubscribed || 
+    !('serviceWorker' in navigator) || 
+    !('PushManager' in window) || 
+    !('Notification' in window)
+  ) {
     return null;
   }
 
