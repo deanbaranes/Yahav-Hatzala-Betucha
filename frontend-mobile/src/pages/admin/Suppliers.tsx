@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import { Plus, Search, Trash2, Edit2, Check, X, Truck, Download, Upload } from 'lucide-react';
 import { exportToCSV } from '../../utils/csvExport';
+import { formatLocalDate, getLocalTodayISOString, getSafeMonthYear } from '../../utils/dateUtils';
 
 interface Supplier {
   id: string;
@@ -24,8 +25,8 @@ export default function Suppliers() {
 
   const [formData, setFormData] = useState({
     name: '',
-    debt_date: new Date().toISOString().split('T')[0],
-    debt_end_date: new Date().toISOString().split('T')[0],
+    debt_date: getLocalTodayISOString(),
+    debt_end_date: getLocalTodayISOString(),
     amount: 0,
     details: '',
     includes_vat: false,
@@ -84,7 +85,7 @@ export default function Suppliers() {
       const newStatus = !supplier.is_invoiced;
       return axiosClient.put(`/suppliers/${supplier.id}`, {
         is_invoiced: newStatus,
-        invoice_date: newStatus ? new Date().toISOString().split('T')[0] : null
+        invoice_date: newStatus ? getLocalTodayISOString() : null
       });
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['suppliers'] })
@@ -107,7 +108,7 @@ export default function Suppliers() {
   });
 
   const resetForm = () => {
-    setFormData({ name: '', debt_date: new Date().toISOString().split('T')[0], debt_end_date: new Date().toISOString().split('T')[0], amount: 0, details: '', includes_vat: false });
+    setFormData({ name: '', debt_date: getLocalTodayISOString(), debt_end_date: getLocalTodayISOString(), amount: 0, details: '', includes_vat: false });
     setEditingId(null);
   };
 
@@ -152,22 +153,20 @@ export default function Suppliers() {
     const headers = ['שם ספק', 'תאריך התחלה', 'תאריך סיום', 'פירוט', 'סכום (₪)', 'חשבונית יצאה?', 'תאריך חשבונית'];
     const rows = filteredSuppliers.map((s: Supplier) => [
       s.name,
-      new Date(s.debt_date).toLocaleDateString('he-IL'),
-      s.debt_end_date ? new Date(s.debt_end_date).toLocaleDateString('he-IL') : '',
+      formatLocalDate(s.debt_date),
+      s.debt_end_date ? formatLocalDate(s.debt_end_date) : '',
       s.details || '',
       s.includes_vat ? s.amount : `${s.amount} (+ מע"מ)`,
       s.is_invoiced ? 'כן' : 'לא',
-      s.invoice_date ? new Date(s.invoice_date).toLocaleDateString('he-IL') : ''
+      s.invoice_date ? formatLocalDate(s.invoice_date) : ''
     ]);
-    exportToCSV(`ספקים_וחובות_${new Date().toISOString().split('T')[0]}`, headers, rows);
+    exportToCSV(`ספקים_וחובות_${getLocalTodayISOString()}`, headers, rows);
   };
 
   if (isLoading) return <div className="p-8 text-center text-gray-500 font-bold">טוען נתונים...</div>;
 
   const groupedByMonth = filteredSuppliers.reduce((acc: Record<string, Record<string, Supplier[]>>, supplier) => {
-    const d = new Date(supplier.debt_date);
-    const sortKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    const displayMonth = d.toLocaleString('he-IL', { month: 'long', year: 'numeric' });
+    const { sortKey, displayMonth } = getSafeMonthYear(supplier.debt_date);
     const monthKey = `${sortKey}|${displayMonth}`;
 
     if (!acc[monthKey]) acc[monthKey] = {};
@@ -275,10 +274,10 @@ export default function Suppliers() {
                           <tr key={supplier.id} className="hover:bg-gray-50/50 transition-colors bg-white">
                             <td className="p-2 sm:p-4 font-bold text-gray-300 text-sm pr-2 sm:pr-8">↳</td>
                             <td className="p-2 sm:p-4 text-gray-600 text-[11px] sm:text-sm">
-                              {new Date(supplier.debt_date).toLocaleDateString('he-IL')}
+                              {formatLocalDate(supplier.debt_date)}
                               {supplier.debt_end_date && <br className="sm:hidden" />}
                               {supplier.debt_end_date && <span className="hidden sm:inline"> - </span>}
-                              {supplier.debt_end_date && new Date(supplier.debt_end_date).toLocaleDateString('he-IL')}
+                              {supplier.debt_end_date && formatLocalDate(supplier.debt_end_date)}
                             </td>
                             <td className="p-2 sm:p-4 text-gray-600 text-xs sm:text-sm whitespace-pre-wrap min-w-[120px] sm:min-w-[200px]" title={supplier.details}>
                               {supplier.details || '-'}
@@ -308,7 +307,7 @@ export default function Suppliers() {
                               </button>
                               {supplier.is_invoiced && supplier.invoice_date && (
                                 <div className="text-[10px] text-gray-400 mt-1">
-                                  {new Date(supplier.invoice_date).toLocaleDateString('he-IL')}
+                                  {formatLocalDate(supplier.invoice_date)}
                                 </div>
                               )}
                             </td>
