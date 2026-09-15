@@ -75,7 +75,6 @@ class NotificationService:
                     if not any(keyword in message for keyword in employee_keywords):
                         logger.info(f"[SMS-to-Push] Keyword Matched. Triggering send_push_notification via target_user={target_user.id}")
                         send_push_notification(db, target_user.id, push_title, message, url="/admin/trips")
-                        return True  # Successfully converted to Push, prevent SMS dispatch to admin
             except Exception as e:
                 logger.error(f"[SMS-to-Push] Failed to send push to admin: {e}")
 
