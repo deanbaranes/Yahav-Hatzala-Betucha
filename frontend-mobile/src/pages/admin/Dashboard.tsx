@@ -8,6 +8,7 @@ import { Calendar as CalendarIcon, CheckCircle2, Clock, List, Map, Pencil, Plus 
 import { useAuth } from '../../hooks/useAuth';
 import TripDetailsModal from '../../features/admin/TripDetailsModal';
 import CreateManualTripModal from '../../features/admin/CreateManualTripModal';
+import PushNotificationPrompt from '../../components/PushNotificationPrompt';
 
 export default function Dashboard() {
   const location = useLocation();
@@ -176,6 +177,8 @@ export default function Dashboard() {
           </div>
         </header>
       )}
+
+      <PushNotificationPrompt />
 
       {!isYahav && readyToBill.length > 0 && <GreenBillingBar />}
 
