@@ -71,7 +71,7 @@ class NotificationService:
                         push_title = "התראה להפקת חשבוניות"
                         
                     # Skip pushing if it's one of the ignored employee keywords
-                    employee_keywords = ["תזכורת שיבוץ", "שובצת לטיול", "לאשר הגעה סופית", "למלא דוח", "הסתיים"]
+                    employee_keywords = ["תזכורת שיבוץ", "שובצת לטיול", "לאשר הגעה סופית", "למלא דוח", "הסתיים", "בוטלה"]
                     if not any(keyword in message for keyword in employee_keywords):
                         logger.info(f"[SMS-to-Push] Keyword Matched. Triggering send_push_notification via target_user={target_user.id}")
                         send_push_notification(db, target_user.id, push_title, message, url="/admin/trips")
@@ -88,7 +88,7 @@ class NotificationService:
 
         # Exclude admin from receiving employee-targeted SMS (assignments, confirmations, report reminders)
         if admin_phone_env and clean_phone == admin_phone_env:
-            employee_keywords = ["תזכורת שיבוץ", "שובצת לטיול", "לאשר הגעה סופית", "למלא דוח", "הסתיים"]
+            employee_keywords = ["תזכורת שיבוץ", "שובצת לטיול", "לאשר הגעה סופית", "למלא דוח", "הסתיים", "בוטלה"]
             if any(keyword in message for keyword in employee_keywords):
                 logger.info(f"[SMS] Skipped sending employee SMS to admin ({admin_phone_env}) based on user preference.")
                 return True
