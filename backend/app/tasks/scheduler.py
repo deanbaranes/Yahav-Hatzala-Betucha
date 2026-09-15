@@ -305,6 +305,17 @@ def check_ended_trips_for_reports():
                                 db=db,
                                 user_id=assignment.user_id
                             )
+                            try:
+                                from app.services.push_service import send_push_notification
+                                send_push_notification(
+                                    db=db,
+                                    user_id=assignment.user_id,
+                                    title="תזכורת בדיווח שעות",
+                                    body=msg,
+                                    url="/employee/schedule"
+                                )
+                            except Exception as e:
+                                logger.error(f"Failed to send push notification for report reminder to {assignment.user_id}: {e}")
     except Exception as e:
         logger.error(f"check_ended_trips_for_reports failed: {e}")
         db.rollback()
