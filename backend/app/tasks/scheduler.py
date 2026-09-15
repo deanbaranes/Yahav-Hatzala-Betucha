@@ -418,7 +418,7 @@ def notify_admin_unconfirmed_arrivals():
             if not existing_notif:
                 NotificationService.create_in_app_notification(msg, db)
                 if admin_phone:
-                    NotificationService.send_sms(admin_phone, msg)
+                    NotificationService.send_sms(admin_phone, msg, db=db)
     finally:
         db.close()
 
