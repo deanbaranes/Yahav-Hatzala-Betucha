@@ -8,6 +8,7 @@ import calendar
 from app.models.user import User
 from app.models.trip_report import TripReport
 from app.models.trip_assignment import TripAssignment
+from app.models.trip import Trip
 from app.models.payroll_adjustment import PayrollAdjustment
 from app.constants import (
     EMPLOYEE_ACCOMMODATION_PAY,
@@ -42,6 +43,19 @@ class PayrollService:
             TripReport.start_time <= end_date_bound
         ).all()
 
+        fallback_assignments = self.db.query(TripAssignment).options(
+            joinedload(TripAssignment.trip)
+        ).join(Trip).outerjoin(
+            TripReport, TripReport.assignment_id == TripAssignment.id
+        ).filter(
+            TripAssignment.user_id == user.id,
+            TripAssignment.status == "assigned",
+            TripAssignment.is_confirmed == True,
+            Trip.start_date >= start_date_bound,
+            Trip.start_date <= min(end_date_bound, now),
+            TripReport.id == None
+        ).all()
+
         days_worked_set = set()
         for r in reports:
             if r.daily_shifts and len(r.daily_shifts) > 0:
@@ -51,6 +65,12 @@ class PayrollService:
                         days_worked_set.add(shift_date)
             elif r.start_time:
                 days_worked_set.add(r.start_time.date())
+        
+        # Add fallback days
+        for a in fallback_assignments:
+            if a.trip and a.trip.start_date:
+                days_worked_set.add(a.trip.start_date.date())
+
         days_worked = len(days_worked_set)
         
         ot_hours = Decimal(0)
@@ -92,6 +112,20 @@ class PayrollService:
                     report_days_set.add(r.start_time.date())
                 
                 report_days = Decimal(len(report_days_set))
+                report_base = report_days * base_daily * hourly_rate
+                report_recovery = report_days * EMPLOYEE_RECOVERY_PAY_PER_DAY
+                report_travel = report_days * EMPLOYEE_TRAVEL_PAY_PER_DAY
+                report_regular_pay = report_base + report_recovery + report_travel
+                
+                promised = Decimal(str(promised_amount))
+                if promised > report_regular_pay:
+                    trip_global_bonus += (promised - report_regular_pay)
+
+        # Apply global bonus rules for fallback assignments too
+        for a in fallback_assignments:
+            promised_amount = a.promised_salary or (a.trip.global_salary if a.trip else None)
+            if promised_amount:
+                report_days = Decimal('1')
                 report_base = report_days * base_daily * hourly_rate
                 report_recovery = report_days * EMPLOYEE_RECOVERY_PAY_PER_DAY
                 report_travel = report_days * EMPLOYEE_TRAVEL_PAY_PER_DAY

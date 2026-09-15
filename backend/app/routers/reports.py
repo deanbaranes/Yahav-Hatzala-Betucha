@@ -318,9 +318,21 @@ def get_reports_matrix(year: int, month: int, db: Session = Depends(get_db), cur
     for a in assignments:
         report = reports_map.get(a.id)
         if not report:
-            continue  # Only show approved reports in the matrix
+            now = datetime.now()
+            start = a.trip.start_date.replace(tzinfo=None)
+            if a.is_confirmed and start <= now:
+                u = a.user
+                date_str = a.trip.start_date.date().isoformat()
+                if str(u.id) not in users_dict:
+                    users_dict[str(u.id)] = {"id": str(u.id), "name": u.full_name, "shifts": {}}
+                    
+                users_dict[str(u.id)]["shifts"][date_str] = {
+                    "role": a.role,
+                    "overtime": 0.0,
+                    "report_id": "auto-fallback-base"
+                }
+            continue
             
-        u = a.user
         date_str = a.trip.start_date.date().isoformat()
         
         if str(u.id) not in users_dict:
