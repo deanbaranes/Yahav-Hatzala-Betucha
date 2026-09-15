@@ -12,6 +12,7 @@ interface TripTeamListProps {
 export default function TripTeamList({ trip, setReportingAssignment, removeAssignmentMutation }: TripTeamListProps) {
   const queryClient = useQueryClient();
   const [salaries, setSalaries] = useState<Record<string, string>>({});
+  const [localRoles, setLocalRoles] = useState<Record<string, string>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
 
   const updateRoleMutation = useMutation({
@@ -102,8 +103,12 @@ export default function TripTeamList({ trip, setReportingAssignment, removeAssig
                 </div>
                 
                 <select
-                  value={a.role || 'כללי'}
-                  onChange={(e) => updateRoleMutation.mutate({ assignmentId: a.id, role: e.target.value })}
+                  value={localRoles[a.id] !== undefined ? localRoles[a.id] : (a.role || 'כללי')}
+                  onChange={(e) => {
+                    const newRole = e.target.value;
+                    setLocalRoles({ ...localRoles, [a.id]: newRole });
+                    updateRoleMutation.mutate({ assignmentId: a.id, role: newRole });
+                  }}
                   className="text-gray-500 font-bold text-xs bg-gray-100 px-2 py-0.5 rounded focus:outline-none cursor-pointer border border-transparent hover:border-gray-300 appearance-none"
                   style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
                   title="לחץ לשינוי תפקיד"
