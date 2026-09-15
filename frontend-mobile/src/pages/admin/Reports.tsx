@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import { Edit2, Save, X, Trash2, CheckCircle, XCircle, FileText, Plus } from 'lucide-react';
 import AdminReportModal from '../../features/admin/AdminReportModal';
+import { extractDateFromISO, extractTimeFromISO } from '../../utils/dateUtils';
 
 interface DailyShift {
   start_time: string;
@@ -117,9 +118,7 @@ export default function Reports() {
     const pad = (n: number) => String(n).padStart(2, '0');
     const fmt = (dateStr: string) => {
       if (!dateStr) return '';
-      const d = new Date(dateStr.endsWith('Z') || dateStr.includes('+') ? dateStr : dateStr + 'Z');
-      if (isNaN(d.getTime())) return '';
-      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      return dateStr.substring(0, 16);
     };
     
     setEditForm({
@@ -225,7 +224,7 @@ export default function Reports() {
                       </span>
                       {/* Mobile extra info */}
                       <div className="md:hidden mt-1.5 text-[10px] text-blue-600 font-bold border-t pt-1 leading-tight">
-                        {report?.trip?.client_name || 'לקוח'} • {report?.trip?.start_date ? new Date(report.trip.start_date).toLocaleDateString('he-IL') : ''}
+                        {report?.trip?.client_name || 'לקוח'} • {report?.trip?.start_date ? extractDateFromISO(report.trip.start_date) : ''}
                       </div>
                       <div className="lg:hidden mt-1 text-[10px] font-bold leading-tight flex justify-between bg-gray-50 p-1 rounded border border-gray-100">
                         <span className="text-gray-600">שעות נוספות:</span>
@@ -237,7 +236,7 @@ export default function Reports() {
                     <td className="hidden md:table-cell p-2 md:p-3 align-top">
                       <div className="font-bold text-blue-700 text-xs md:text-sm leading-tight max-w-[120px] lg:max-w-xs">{report?.trip?.client_name || 'לקוח כללי'}</div>
                       <div className="text-[10px] md:text-xs text-gray-600 mt-0.5">{report?.trip?.location || 'ללא מיקום'}</div>
-                      <div className="text-[9px] md:text-[10px] text-gray-400">{report?.trip?.start_date ? new Date(report.trip.start_date).toLocaleDateString('he-IL') : ''}</div>
+                      <div className="text-[9px] md:text-[10px] text-gray-400">{report?.trip?.start_date ? extractDateFromISO(report.trip.start_date) : ''}</div>
                     </td>
                     <td className="p-2 md:p-3 break-words align-top">
                       {editingReport?.id === report.id ? (
@@ -316,18 +315,18 @@ export default function Reports() {
                             <div className="space-y-1">
                               {report.daily_shifts.map((shift: any, idx: number) => (
                                 <div key={idx} className="text-[10px] bg-indigo-50/50 p-1 rounded border border-indigo-100 text-indigo-900 shadow-sm flex flex-col mb-1">
-                                  <span className="font-bold border-b border-indigo-100 mb-0.5 leading-none pb-0.5">יום {idx + 1} ({new Date(shift.start_time).toLocaleDateString('he-IL')})</span>
-                                  <span className="leading-none pt-0.5">{new Date(shift.start_time).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})} - {new Date(shift.end_time).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})}</span>
+                                  <span className="font-bold border-b border-indigo-100 mb-0.5 leading-none pb-0.5">יום {idx + 1} ({extractDateFromISO(shift.start_time)})</span>
+                                  <span className="leading-none pt-0.5">{extractTimeFromISO(shift.start_time)} - {extractTimeFromISO(shift.end_time)}</span>
                                 </div>
                               ))}
                             </div>
                           ) : (
                             <>
                               <div className="text-sm">
-                                <span className="font-semibold">התחלה:</span> {new Date(report.start_time).toLocaleDateString('he-IL')} {new Date(report.start_time).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})}
+                                <span className="font-semibold">התחלה:</span> {extractDateFromISO(report.start_time)} {extractTimeFromISO(report.start_time)}
                               </div>
                               <div className="text-sm">
-                                <span className="font-semibold">סיום:</span> {new Date(report.end_time).toLocaleDateString('he-IL')} {new Date(report.end_time).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})}
+                                <span className="font-semibold">סיום:</span> {extractDateFromISO(report.end_time)} {extractTimeFromISO(report.end_time)}
                               </div>
                             </>
                           )}

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import ReportForm from '../../features/employee/ReportForm';
 import { History, CheckCircle, Clock, XCircle, MapPin } from 'lucide-react';
+import { extractDateFromISO } from '../../utils/dateUtils';
 
 export default function Report() {
   const { data: myReports } = useQuery<any[]>({
@@ -42,7 +43,7 @@ export default function Report() {
                     <h4 className="font-bold text-gray-800">{report.location}</h4>
                     <div className="text-sm text-gray-500 flex items-center gap-2 mt-1">
                       <Clock size={14} /> 
-                      {new Date(report.start_date).toLocaleDateString('he-IL')}
+                      {extractDateFromISO(report.start_date)}
                     </div>
                   </div>
                   
