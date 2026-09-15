@@ -1,8 +1,11 @@
 import os
 import json
+import logging
 from pywebpush import webpush, WebPushException
 from sqlalchemy.orm import Session
 from app.models.push_subscription import PushSubscription
+
+logger = logging.getLogger(__name__)
 
 def send_push_notification(db: Session, user_id, title: str, body: str, url: str = "/employee/schedule"):
 
@@ -14,6 +17,7 @@ def send_push_notification(db: Session, user_id, title: str, body: str, url: str
 
     subscriptions = db.query(PushSubscription).filter(PushSubscription.user_id == user_id).all()
     if not subscriptions:
+        logger.info(f"DEBUG PUSH: No active subscriptions found for user {user_id}")
         return
 
     payload = json.dumps({
@@ -40,6 +44,7 @@ def send_push_notification(db: Session, user_id, title: str, body: str, url: str
                 ttl=86400,
                 headers={"Urgency": "high"}
             )
+            logger.info(f"DEBUG PUSH: Successfully sent push '{title}' to user {user_id}")
         except WebPushException as ex:
             # If subscription is gone/unsubscribed, remove it from DB
             if ex.response and ex.response.status_code in [404, 410]:

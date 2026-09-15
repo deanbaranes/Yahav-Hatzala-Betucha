@@ -42,6 +42,7 @@ class NotificationService:
         admin_phone_env = "".join(filter(str.isdigit, os.getenv("ADMIN_PHONE", "")))
 
         if admin_phone_env and clean_phone == admin_phone_env and db:
+            logger.info(f"[SMS-to-Push] Admin SMS Intercepted, evaluating for Push. Message: {message[:30]}...")
             try:
                 from app.services.push_service import send_push_notification
                 from app.models.user import User
@@ -72,6 +73,7 @@ class NotificationService:
                     # Skip pushing if it's one of the ignored employee keywords
                     employee_keywords = ["תזכורת שיבוץ", "שובצת לטיול", "לאשר הגעה סופית", "למלא דוח", "הסתיים"]
                     if not any(keyword in message for keyword in employee_keywords):
+                        logger.info(f"[SMS-to-Push] Keyword Matched. Triggering send_push_notification via target_user={target_user.id}")
                         send_push_notification(db, target_user.id, push_title, message, url="/admin/trips")
             except Exception as e:
                 logger.error(f"[SMS-to-Push] Failed to send push to admin: {e}")
