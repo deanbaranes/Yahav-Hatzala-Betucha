@@ -339,7 +339,7 @@ def check_upcoming_trips_for_confirmation():
             Trip.start_date <= tomorrow_end
         ).all()
         
-        frontend_url = os.getenv("FRONTEND_URL", "https://yahav-hatzala.co.il")
+        frontend_url = os.getenv("FRONTEND_URL", "https://yahav-hatzala-betucha.vercel.app")
         
         for trip in upcoming_trips:
             for assignment in trip.assignments:
@@ -394,8 +394,6 @@ def notify_admin_unconfirmed_arrivals():
             Trip.start_date <= tomorrow_end
         ).all()
         
-        admin_phone = os.getenv("ADMIN_PHONE")
-        
         unconfirmed_details = []
         for trip in upcoming_trips:
             for assignment in trip.assignments:
@@ -416,9 +414,10 @@ def notify_admin_unconfirmed_arrivals():
             ).first()
             
             if not existing_notif:
-                NotificationService.create_in_app_notification(msg, db)
-                if admin_phone:
-                    NotificationService.send_sms(admin_phone, msg, db=db)
+                if ADMIN_PHONE:
+                    NotificationService.send_sms(ADMIN_PHONE, msg, db=db)
+                else:
+                    NotificationService.create_in_app_notification(msg, db)
     finally:
         db.close()
 
@@ -450,7 +449,7 @@ def check_unpaid_suppliers():
         db.close()
 
 def start_scheduler():
-    scheduler = BackgroundScheduler()
+    scheduler = BackgroundScheduler(timezone='Asia/Jerusalem')
     
     # Schedule checks
     scheduler.add_job(check_client_debts, 'cron', hour=9, minute=0)
