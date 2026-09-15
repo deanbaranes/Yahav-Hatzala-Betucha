@@ -200,9 +200,10 @@ export default function EmployeeMatrix() {
                     <div className="p-4 bg-gray-50 border-t border-gray-100 max-h-64 overflow-y-auto space-y-2">
                       {shiftsDates.map(dateStr => {
                         const shift = user.shifts[dateStr];
-                        const dateObj = new Date(dateStr);
+                        const [sYear, sMonth, sDay] = dateStr.split('-');
+                        const dateObj = new Date(Number(sYear), Number(sMonth) - 1, Number(sDay));
                         const dayOfWeek = dateObj.toLocaleDateString('he-IL', { weekday: 'short' });
-                        const dateFormatted = dateObj.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' });
+                        const dateFormatted = `${sDay}.${sMonth}`;
 
                         return (
                           <div key={dateStr} className="flex justify-between items-center bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
