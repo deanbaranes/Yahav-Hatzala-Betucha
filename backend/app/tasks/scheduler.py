@@ -280,8 +280,15 @@ def check_ended_trips_for_reports():
 
             # Long trip: send SMS reminder to fill in the report
             for assignment in trip.assignments:
-                if assignment.is_confirmed and assignment.status == "assigned" and not assignment.report:
+                if assignment.status == "assigned" and not assignment.report:
                     if assignment.user and assignment.user.phone:
+                        # Prevent SMS in the middle of the night (22:00 to 07:59 Israel Time)
+                        import pytz
+                        il_tz = pytz.timezone('Asia/Jerusalem')
+                        il_hour = datetime.now(il_tz).hour
+                        if 22 <= il_hour or il_hour < 8:
+                            continue
+                            
                         msg = (
                             f"היי {assignment.user.full_name}, המשמרת: {trip.location} הסתיימה. "
                             f"אנא היכנס לאזור האישי למלא דוח. "
