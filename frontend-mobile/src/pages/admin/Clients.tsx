@@ -20,8 +20,11 @@ export default function Clients() {
   const PAYMENT_TERMS_OPTIONS = [
     { value: '', label: 'ללא תנאים מיוחדים' },
     { value: 'שוטף + 30', label: 'שוטף + 30' },
+    { value: 'שוטף + 45', label: 'שוטף + 45' },
     { value: 'שוטף + 60', label: 'שוטף + 60' },
     { value: 'שוטף + 75', label: 'שוטף + 75' },
+    { value: 'שוטף + 90', label: 'שוטף + 90' },
+    { value: 'מזומן', label: 'מזומן' },
   ];
 
   const copyEmail = (email: string) => {
@@ -425,7 +428,9 @@ export default function Clients() {
                       >
                         <option value="">בחר...</option>
                         <option value="שוטף + 30">שוטף + 30</option>
+                        <option value="שוטף + 45">שוטף + 45</option>
                         <option value="שוטף + 60">שוטף + 60</option>
+                        <option value="שוטף + 75">שוטף + 75</option>
                         <option value="שוטף + 90">שוטף + 90</option>
                         <option value="מזומן">מזומן</option>
                       </select>
