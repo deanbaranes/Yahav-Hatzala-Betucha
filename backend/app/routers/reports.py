@@ -316,12 +316,13 @@ def get_reports_matrix(year: int, month: int, db: Session = Depends(get_db), cur
     
     users_dict = {}
     for a in assignments:
+        u = a.user
         report = reports_map.get(a.id)
+        
         if not report:
             now = datetime.now()
             start = a.trip.start_date.replace(tzinfo=None)
             if a.is_confirmed and start <= now:
-                u = a.user
                 local_start = a.trip.start_date + timedelta(hours=3)
                 date_str = local_start.date().isoformat()
                 if str(u.id) not in users_dict:
