@@ -60,6 +60,8 @@ class NotificationService:
                         push_title = "התראת שיבוצים"
                     elif "נרשם לטיול" in message or "ביטל את הרישום" in message:
                         push_title = "עדכון רישום עובדים"
+                    elif "הגיש/ה דיווח" in message:
+                        push_title = "דוח משמרת חדש הוגש"
                     elif "ספקים" in message:
                         push_title = "תזכורת ספקים"
                     elif "התראת חוב" in message:

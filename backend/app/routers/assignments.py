@@ -92,7 +92,7 @@ def confirm_arrival(assignment_id: str, db: Session = Depends(get_db), current_u
     msg = f"אישור הגעה: העובד/ת {current_user.full_name} אישר/ה הגעה ל: {trip.location} (בתאריך {trip.start_date.strftime('%d/%m/%Y')})."
     NotificationService.create_in_app_notification(msg, db)
     if admin_phone:
-        NotificationService.send_sms(admin_phone, msg)
+        NotificationService.send_sms(admin_phone, msg, db=db)
         
     return {"message": "Arrival confirmed successfully"}
 
@@ -212,7 +212,7 @@ def join_trip(trip_id: str, request: JoinTripRequest, db: Session = Depends(get_
     
     # Send SMS to Admin
     if ADMIN_PHONE:
-        NotificationService.send_sms(ADMIN_PHONE, admin_msg)
+        NotificationService.send_sms(ADMIN_PHONE, admin_msg, db=db)
 
     return {"message": f"Successfully joined. Status: {status}", "status": status}
 
@@ -237,7 +237,7 @@ def cancel_trip(trip_id: str, db: Session = Depends(get_db), current_user: User 
     
     # Send SMS to Admin
     if ADMIN_PHONE:
-        NotificationService.send_sms(ADMIN_PHONE, admin_msg)
+        NotificationService.send_sms(ADMIN_PHONE, admin_msg, db=db)
 
     return {"message": "Cancelled successfully"}
 
