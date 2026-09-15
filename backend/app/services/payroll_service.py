@@ -2,7 +2,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from typing import List
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import extract
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import calendar
 
 from app.models.user import User
@@ -69,7 +69,8 @@ class PayrollService:
         # Add fallback days
         for a in fallback_assignments:
             if a.trip and a.trip.start_date:
-                days_worked_set.add(a.trip.start_date.date())
+                local_start = a.trip.start_date + timedelta(hours=3)
+                days_worked_set.add(local_start.date())
 
         days_worked = len(days_worked_set)
         

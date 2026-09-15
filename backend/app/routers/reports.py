@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
@@ -322,7 +322,8 @@ def get_reports_matrix(year: int, month: int, db: Session = Depends(get_db), cur
             start = a.trip.start_date.replace(tzinfo=None)
             if a.is_confirmed and start <= now:
                 u = a.user
-                date_str = a.trip.start_date.date().isoformat()
+                local_start = a.trip.start_date + timedelta(hours=3)
+                date_str = local_start.date().isoformat()
                 if str(u.id) not in users_dict:
                     users_dict[str(u.id)] = {"id": str(u.id), "name": u.full_name, "shifts": {}}
                     
