@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Map, FileText, LogOut, Menu, X, Users, ChevronRight, ChevronLeft, Calculator, CalendarDays, Receipt, Truck, Bell, CheckCircle2, FolderDown } from 'lucide-react';
+import { Home, FileText, LogOut, Menu, X, Users, ChevronRight, ChevronLeft, Calculator, CalendarDays, Receipt, Truck, Bell, CheckCircle2, FolderDown } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 
@@ -80,7 +80,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const navItems = [
     { to: '/admin', icon: Home, label: 'יומן שיבוצים' },
-    { to: '/admin/trips', icon: Map, label: 'ניהול טיולים' },
     { to: '/admin/clients', icon: Users, label: 'לקוחות ויתרות' },
     { to: '/admin/suppliers', icon: Truck, label: 'ספקים וחובות' },
     { to: '/admin/reports', icon: FileText, label: 'דיווחי עובדים' },

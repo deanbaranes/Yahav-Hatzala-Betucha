@@ -1,7 +1,7 @@
 import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
 import AdminLayout from './features/admin/AdminLayout';
 import Dashboard from './pages/admin/Dashboard';
-import Trips from './pages/admin/Trips';
+
 import Reports from './pages/admin/Reports';
 import EmployeeMatrix from './pages/admin/EmployeeMatrix';
 import Clients from './pages/admin/Clients';
@@ -63,7 +63,7 @@ const router = createBrowserRouter([
         element: <AdminLayout><Outlet /></AdminLayout>,
         children: [
           { index: true, element: <Dashboard /> },
-          { path: 'trips', element: <Trips /> },
+
           { path: 'clients', element: <Clients /> },
           { path: 'suppliers', element: <Suppliers /> },
           { path: 'matrix', element: <EmployeeMatrix /> },
