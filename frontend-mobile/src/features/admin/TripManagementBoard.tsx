@@ -428,6 +428,7 @@ export default function TripManagementBoard() {
                       <option value='מע"ר חמוש'>מע"ר חמוש</option>
                       <option value="פראמדיק">פראמדיק</option>
                       <option value="רופא">רופא</option>
+                      <option value="מדריך">מדריך</option>
                       <option value="מלווה נשק">מלווה נשק</option>
                       <option value="שומר לילה">שומר לילה</option>
                       <option value="נהג">נהג</option>

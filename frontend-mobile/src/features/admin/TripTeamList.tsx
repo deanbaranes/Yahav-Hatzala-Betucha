@@ -14,6 +14,18 @@ export default function TripTeamList({ trip, setReportingAssignment, removeAssig
   const [salaries, setSalaries] = useState<Record<string, string>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
 
+  const updateRoleMutation = useMutation({
+    mutationFn: ({ assignmentId, role }: { assignmentId: string, role: string }) =>
+      axiosClient.patch(`/trips/assignments/${assignmentId}/role`, { role }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-trips'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-trips'] });
+    },
+    onError: (err: any) => {
+      alert('שגיאה בעדכון התפקיד: ' + (err.response?.data?.detail || ''));
+    }
+  });
+
   const updateSalaryMutation = useMutation({
     mutationFn: ({ assignmentId, salary }: { assignmentId: string, salary: number | null }) => 
       axiosClient.patch(`/trips/assignments/${assignmentId}/promised-salary`, { promised_salary: salary }),
@@ -89,7 +101,17 @@ export default function TripTeamList({ trip, setReportingAssignment, removeAssig
                   )}
                 </div>
                 
-                <span className="text-gray-500 font-medium text-xs bg-gray-100 px-2 py-0.5 rounded">{a.role || 'כללי'}</span>
+                <select
+                  value={a.role || 'כללי'}
+                  onChange={(e) => updateRoleMutation.mutate({ assignmentId: a.id, role: e.target.value })}
+                  className="text-gray-500 font-bold text-xs bg-gray-100 px-2 py-0.5 rounded focus:outline-none cursor-pointer border border-transparent hover:border-gray-300 appearance-none"
+                  style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
+                  title="לחץ לשינוי תפקיד"
+                >
+                  {["כללי", "חובש", 'מע"ר', 'מע"ר חמוש', "פראמדיק", "רופא", "מדריך", "מלווה נשק", "שומר לילה", "נהג", "מאבטח", "חובש חמוש"].map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
                 <button
                   onClick={() => setReportingAssignment(a)}
                   className="bg-blue-50 text-blue-600 hover:bg-blue-100 px-2 py-1 rounded text-xs font-bold transition-colors"

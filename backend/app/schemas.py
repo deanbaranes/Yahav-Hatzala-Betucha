@@ -148,6 +148,9 @@ class IcalImportRequest(BaseModel):
 class PromisedSalaryUpdate(BaseModel):
     promised_salary: Optional[float] = None
 
+class AssignmentRoleUpdate(BaseModel):
+    role: str
+
 
 
 # ── Report Schemas ────────────────────────────────────────────────────────────
