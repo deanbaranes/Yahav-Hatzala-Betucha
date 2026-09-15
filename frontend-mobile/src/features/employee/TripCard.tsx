@@ -66,6 +66,11 @@ export default function TripCard({ trip, viewingDate }: { trip: any; viewingDate
           {trip.end_date ? ` - ${new Date(trip.end_date).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'})}` : ''}
         </div>
       </div>
+      {trip.global_salary ? (
+        <div className="text-green-700 font-bold mb-3 text-sm bg-green-50 p-2 rounded-lg inline-block border border-green-200">
+          💰 שכר בסיס ל-9 שעות: {Number(trip.global_salary).toFixed(0)} ₪
+        </div>
+      ) : null}
       {!hasRoles && (
         <p className="text-md text-gray-500 mb-4">תפוסה כוללת: <span className="font-semibold" dir="ltr" style={{ display: 'inline-block' }}>{trip.assigned_count} / {trip.capacity}</span></p>
       )}
