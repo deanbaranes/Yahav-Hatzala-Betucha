@@ -1,0 +1,11 @@
+[33mcommit 6b860577954c63ad4c248e7394abf067c5e1a713[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Dean Baranes <deanbaranes@example.com>
+Date:   Tue Sep 15 08:39:14 2026 -0400
+
+    feat(fullstack): allow editing assigned employee role dynamically
+
+[33mcommit ac85f711c18d803978051f623d6bba337bb3837a[m
+Author: Dean Baranes <deanbaranes@example.com>
+Date:   Tue Sep 15 08:11:14 2026 -0400
+
+    feat(frontend): show base_salary on trip cards for employees

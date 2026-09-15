@@ -731,7 +731,7 @@ export default function TripManagementBoard() {
 
       {viewingTrip && (
         <TripDetailsModal
-          selectedTrip={viewingTrip}
+          selectedTrip={trips?.find((t: any) => t.id === viewingTrip.id) || viewingTrip}
           employees={employees || []}
           onClose={() => setViewingTrip(null)}
         />
