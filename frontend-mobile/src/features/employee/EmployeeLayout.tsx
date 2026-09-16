@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Map, FileText, LogOut, Menu, X, ChevronRight, ChevronLeft, CalendarDays, Wallet, User as UserIcon, FileSignature, Settings, Bell, CheckCircle2 } from 'lucide-react';
+import { Home, Map, FileText, LogOut, Menu, X, ChevronRight, ChevronLeft, CalendarDays, User as UserIcon, FileSignature, Settings, Bell, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
@@ -72,7 +72,6 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     { to: '/employee', icon: Home, label: 'בית' },
     { to: '/employee/schedule', icon: CalendarDays, label: 'הסידור שלי' },
     { to: '/employee/trips', icon: Map, label: 'טיולים פתוחים' },
-    { to: '/employee/payroll', icon: Wallet, label: 'השכר שלי' },
     { to: '/employee/payslips', icon: FileSignature, label: 'התלושים שלי' },
     { to: '/employee/report', icon: FileText, label: 'הגשת דיווח' },
   ];
