@@ -272,7 +272,7 @@ def check_ended_trips_for_reports():
                             sleeps=0,
                             is_draft=False,
                             manager_status="approved",
-                            billing_status="not_billed"
+                            billing_status="unbilled"
                         )
                         db.add(new_report)
                 db.commit()
