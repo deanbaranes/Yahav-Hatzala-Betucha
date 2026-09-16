@@ -290,8 +290,8 @@ def check_ended_trips_for_reports():
                             continue
                             
                         msg = (
-                            f"היי {assignment.user.full_name}, המשמרת: {trip.location} הסתיימה. "
-                            f"אנא היכנס לאזור האישי למלא דוח. "
+                            f"היי {assignment.user.full_name}, משמרתך הסתיימה. "
+                            f"אנא היכנס/י לאזור האישי למלא דוח. "
                             f"שים לב: דיווח שלא ימולא עד מחר יחושב כשכר בסיס בלבד!"
                         )
                         existing_notif = db.query(Notification).filter(
