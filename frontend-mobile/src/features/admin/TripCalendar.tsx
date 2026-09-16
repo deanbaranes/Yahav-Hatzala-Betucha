@@ -133,9 +133,12 @@ export default function TripCalendar({ trips }: { trips: any[] }) {
     
     let tooltip = `לקוח: ${trip.client?.name === 'לקוח כללי' ? 'מיובא מיומן גוגל' : (trip.client?.name || 'לא ידוע')}\n`;
     if (trip.notes) tooltip += `הערות: ${trip.notes}\n`;
-    tooltip += `מיקום/שם הטיול: ${trip.location}\nשעות: ${start} - ${end}\nסה"כ אנשי צוות דרושים: ${trip.capacity}\n\nצוות ששובץ ומאושר:\n`;
     
     const confirmed = trip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned') || [];
+    const effectiveCapacity = trip.capacity > 0 ? trip.capacity : (confirmed.length > 0 ? confirmed.length : 0);
+    
+    tooltip += `מיקום/שם הטיול: ${trip.location}\nשעות: ${start} - ${end}\nסה"כ אנשי צוות דרושים: ${effectiveCapacity}\n\nצוות ששובץ ומאושר:\n`;
+    
     if (confirmed.length === 0) {
       tooltip += "אין עובדים ששובצו עדיין.\n";
     } else {
