@@ -141,7 +141,7 @@ export default function Suppliers() {
   const filteredSuppliers = suppliers.filter(s => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     (s.details && s.details.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  ).sort((a, b) => new Date(a.debt_date).getTime() - new Date(b.debt_date).getTime());
 
   const totalDebt = filteredSuppliers.reduce((sum, s) => sum + (!s.is_invoiced ? s.amount : 0), 0);
 

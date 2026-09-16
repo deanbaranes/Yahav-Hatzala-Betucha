@@ -124,7 +124,14 @@ export default function TripDetailsModal({ selectedTrip, employees, onClose, ini
 
 
   return createPortal(
-        <div className="fixed inset-0 z-50 p-2 sm:p-4 bg-gray-900/60 backdrop-blur-sm overflow-y-auto" onClick={onClose}>
+        <div 
+          className="fixed inset-0 z-50 p-2 sm:p-4 bg-gray-900/60 backdrop-blur-sm overflow-y-auto" 
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) {
+              onClose();
+            }
+          }}
+        >
           <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-2xl max-w-md w-full mx-auto animate-fade-in text-right my-4 sm:my-10" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-4 gap-2">
               <div className="flex flex-col gap-1 w-full max-w-[65%]">

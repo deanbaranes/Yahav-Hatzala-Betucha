@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
-import { X, Plus } from 'lucide-react';
+import { X } from 'lucide-react';
 import ReceiptUploader from '../employee/ReceiptUploader';
 
 interface AdminReportModalProps {
@@ -74,7 +74,15 @@ export default function AdminReportModal({ isOpen, onClose }: AdminReportModalPr
   if (!isOpen) return null;
 
   return createPortal(
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto" dir="rtl">
+    <div
+      className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 overflow-y-auto"
+      dir="rtl"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
       <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative shadow-2xl animate-scale-up my-auto">
         <div className="sticky top-0 bg-white/90 backdrop-blur-md p-6 border-b border-gray-100 flex justify-between items-center z-10">
           <div>
@@ -96,10 +104,10 @@ export default function AdminReportModal({ isOpen, onClose }: AdminReportModalPr
                 אין טיולים הממתינים לדיווח במערכת. כולם דווחו!
               </div>
             ) : (
-              <select 
-                className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 text-sm font-bold shadow-sm focus:ring-2 focus:ring-blue-500" 
-                value={formData.assignment_id} 
-                onChange={e => setFormData({...formData, assignment_id: e.target.value})}
+              <select
+                className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 text-sm font-bold shadow-sm focus:ring-2 focus:ring-blue-500"
+                value={formData.assignment_id}
+                onChange={e => setFormData({ ...formData, assignment_id: e.target.value })}
               >
                 <option value="" disabled>-- לחץ כאן לבחירה --</option>
                 {pendingAssignments?.map(a => (
@@ -115,13 +123,13 @@ export default function AdminReportModal({ isOpen, onClose }: AdminReportModalPr
             <div className="animate-fade-in space-y-6">
               <div className="mb-4">
                 <label className="block text-gray-700 font-bold mb-2 text-sm">מספר ימי עבודה</label>
-                <select 
+                <select
                   className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 text-sm font-bold"
                   value={daysCount}
                   onChange={e => {
                     const count = parseInt(e.target.value) || 1;
                     setDaysCount(count);
-                    setFormData(prev => ({...prev, sleeps: Math.max(0, count - 1)}));
+                    setFormData(prev => ({ ...prev, sleeps: Math.max(0, count - 1) }));
                     const newShifts = [...dailyShifts];
                     const firstDayStart = newShifts[0]?.start_time ? new Date(newShifts[0].start_time) : new Date();
                     if (count > newShifts.length) {
@@ -129,14 +137,14 @@ export default function AdminReportModal({ isOpen, onClose }: AdminReportModalPr
                         const nextDay = new Date(firstDayStart);
                         nextDay.setDate(nextDay.getDate() + i);
                         nextDay.setHours(8, 0, 0, 0);
-                        
+
                         const nextEnd = new Date(nextDay);
                         nextEnd.setHours(17, 0, 0, 0);
 
                         const toLocalISO = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-                        
-                        newShifts.push({ 
-                          start_time: toLocalISO(nextDay), 
+
+                        newShifts.push({
+                          start_time: toLocalISO(nextDay),
                           end_time: toLocalISO(nextEnd)
                         });
                       }
@@ -159,8 +167,8 @@ export default function AdminReportModal({ isOpen, onClose }: AdminReportModalPr
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-gray-600 font-bold mb-1 text-xs">התחלה</label>
-                        <input type="datetime-local" className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-white" 
-                          value={shift.start_time} 
+                        <input type="datetime-local" className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-white"
+                          value={shift.start_time}
                           onChange={e => {
                             const newShifts = [...dailyShifts];
                             newShifts[idx].start_time = e.target.value;
@@ -169,8 +177,8 @@ export default function AdminReportModal({ isOpen, onClose }: AdminReportModalPr
                       </div>
                       <div>
                         <label className="block text-gray-600 font-bold mb-1 text-xs">סיום</label>
-                        <input type="datetime-local" className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-white" 
-                          value={shift.end_time} 
+                        <input type="datetime-local" className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-white"
+                          value={shift.end_time}
                           onChange={e => {
                             const newShifts = [...dailyShifts];
                             newShifts[idx].end_time = e.target.value;
@@ -181,31 +189,31 @@ export default function AdminReportModal({ isOpen, onClose }: AdminReportModalPr
                   </div>
                 ))}
               </div>
-                
+
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-gray-700 font-bold mb-2 text-sm">מספר לינות (₪80)</label>
-                  <input type="number" min="0" className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 font-bold" 
-                    value={formData.sleeps} onChange={e => setFormData(prev => ({...prev, sleeps: parseInt(e.target.value) || 0}))} />
+                  <input type="number" min="0" className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 font-bold"
+                    value={formData.sleeps} onChange={e => setFormData(prev => ({ ...prev, sleeps: parseInt(e.target.value) || 0 }))} />
                 </div>
                 <div>
                   <label className="block text-gray-700 font-bold mb-2 text-sm">הוצאות (₪)</label>
-                  <input type="number" min="0" className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 font-bold" 
-                    value={formData.expenses} onChange={e => setFormData(prev => ({...prev, expenses: parseInt(e.target.value) || 0}))} />
+                  <input type="number" min="0" className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 font-bold"
+                    value={formData.expenses} onChange={e => setFormData(prev => ({ ...prev, expenses: parseInt(e.target.value) || 0 }))} />
                 </div>
               </div>
-                
+
               <div className="mb-4">
                 <label className="block text-gray-700 font-bold mb-2 text-sm">פירוט הוצאות</label>
                 <textarea placeholder="לדוגמה: דלק 50" className="w-full p-3 border border-gray-300 rounded-lg text-sm bg-white" rows={2}
-                  value={formData.expenses_notes} onChange={e => setFormData(prev => ({...prev, expenses_notes: e.target.value}))}></textarea>
+                  value={formData.expenses_notes} onChange={e => setFormData(prev => ({ ...prev, expenses_notes: e.target.value }))}></textarea>
               </div>
 
               <div className="mb-4">
                 <label className="block text-gray-700 font-bold mb-2 text-sm">קבלה</label>
-                <ReceiptUploader 
-                  onUploadComplete={(url) => setFormData(prev => ({...prev, receipt_url: url}))} 
-                  onRemove={() => setFormData(prev => ({...prev, receipt_url: ''}))}
+                <ReceiptUploader
+                  onUploadComplete={(url) => setFormData(prev => ({ ...prev, receipt_url: url }))}
+                  onRemove={() => setFormData(prev => ({ ...prev, receipt_url: '' }))}
                 />
               </div>
 
@@ -215,7 +223,7 @@ export default function AdminReportModal({ isOpen, onClose }: AdminReportModalPr
                 </div>
               )}
 
-              <button 
+              <button
                 onClick={() => {
                   for (let i = 0; i < dailyShifts.length; i++) {
                     const start = new Date(dailyShifts[i].start_time);
@@ -225,7 +233,7 @@ export default function AdminReportModal({ isOpen, onClose }: AdminReportModalPr
                       return;
                     }
                   }
-                  
+
                   const payload = {
                     assignment_id: formData.assignment_id,
                     expenses: formData.expenses,
