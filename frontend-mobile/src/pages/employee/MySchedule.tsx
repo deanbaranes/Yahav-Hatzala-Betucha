@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
-import { Calendar, Clock, MapPin, CheckCircle, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 export default function MySchedule() {
@@ -78,6 +78,15 @@ export default function MySchedule() {
                 <div className="space-y-2 text-sm text-gray-600 font-medium relative z-10">
                   <div className="flex items-center gap-2"><Clock size={16} className="text-blue-500" /> {new Date(trip.start_date).toLocaleString('he-IL', { weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit' })}</div>
                   <div className="flex items-center gap-2"><span className="text-blue-500 text-lg leading-none">👤</span> תפקיד: {trip.role || 'כללי'}</div>
+                  {(trip.promised_salary || trip.global_salary) && (
+                    <div className="flex items-center gap-1 text-green-700 bg-green-50 px-2 py-1 rounded-lg border border-green-200 mt-1 max-w-fit shadow-sm">
+                      <span className="text-sm shadow-sm opacity-90 drop-shadow-sm">💰</span>
+                      <span className="font-bold text-xs">
+                        {trip.promised_salary ? 'שכר מובטח: ' : 'שכר בסיס לטיול: '}
+                        ₪{trip.promised_salary || trip.global_salary}
+                      </span>
+                    </div>
+                  )}
                   {trip.is_confirmed && (trip.employee_contact_name || trip.employee_contact_phone) && (
                     <div className="flex items-start gap-2 pt-2 border-t border-gray-100/50 mt-1">
                       <span className="text-blue-500 text-lg leading-none mt-0.5">📞</span>
@@ -133,6 +142,15 @@ export default function MySchedule() {
                   </div>
                   <div className="space-y-1 text-xs text-gray-500 font-medium">
                     <div className="flex items-center gap-2"><Clock size={14} /> {new Date(trip.start_date).toLocaleString('he-IL', { weekday: 'long', day: '2-digit', month: '2-digit' })}</div>
+                    {(trip.promised_salary || trip.global_salary) && (
+                      <div className="flex items-center gap-1 text-green-700 bg-green-50 px-2 py-0.5 rounded border border-green-100 mt-1 max-w-fit shadow-sm">
+                        <span className="text-xs">💰</span> 
+                        <span className="font-black">
+                          {trip.promised_salary ? 'שכר מובטח: ' : 'שכר בסיס לטיול: '}
+                          ₪{trip.promised_salary || trip.global_salary}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

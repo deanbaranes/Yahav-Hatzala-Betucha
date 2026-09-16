@@ -188,6 +188,7 @@ class TripService:
                 "status": a.status,
                 "role": a.role,
                 "is_confirmed": a.is_confirmed,
+                "promised_salary": float(a.promised_salary) if a.promised_salary is not None else None,
                 "employee_confirmed_arrival": getattr(a, 'employee_confirmed_arrival', False),
                 "employee_contact_name": t.employee_contact_name if a.is_confirmed else None,
                 "employee_contact_phone": t.employee_contact_phone if a.is_confirmed else None,
