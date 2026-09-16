@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import SmartClientInput from './SmartClientInput';
 
-const AVAILABLE_ROLES = ["מע\"ר", "חובש", "פראמדיק", "שומר לילה", "מע\"ר חמוש", "חובש חמוש", "מאבטח", "מדריך", "מלווה נשק"];
+const AVAILABLE_ROLES = ["מע\"ר", "חובש", "חובש חמוש", "פראמדיק", "רופא", "שומר לילה", "מע\"ר חמוש", "מאבטח", "מאבטח חמוש", "מדריך", "מלווה נשק", "נהג", "כללי"];
 
 interface CreateManualTripModalProps {
   initialDate: Date;

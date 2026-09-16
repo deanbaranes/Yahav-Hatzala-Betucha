@@ -110,6 +110,7 @@ export default function AssignEmployeeForm({ tripId, employees, onAssignSuccess 
         >
           <option value="כללי">כללי</option>
           <option value="חובש">חובש</option>
+          <option value="חובש חמוש">חובש חמוש</option>
           <option value='מע"ר'>מע"ר</option>
           <option value='מע"ר חמוש'>מע"ר חמוש</option>
           <option value="פראמדיק">פראמדיק</option>
@@ -118,6 +119,8 @@ export default function AssignEmployeeForm({ tripId, employees, onAssignSuccess 
           <option value="מלווה נשק">מלווה נשק</option>
           <option value="שומר לילה">שומר לילה</option>
           <option value="נהג">נהג</option>
+          <option value="מאבטח">מאבטח</option>
+          <option value="מאבטח חמוש">מאבטח חמוש</option>
         </select>
         <input 
           type="number"

@@ -116,7 +116,7 @@ export default function TripTeamList({ trip, setReportingAssignment, removeAssig
                   style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
                   title="לחץ לשינוי תפקיד"
                 >
-                  {["כללי", "חובש", 'מע"ר', 'מע"ר חמוש', "פראמדיק", "רופא", "מדריך", "מלווה נשק", "שומר לילה", "נהג", "מאבטח", "חובש חמוש"].map(r => (
+                  {["כללי", "חובש", "חובש חמוש", 'מע"ר', 'מע"ר חמוש', "פראמדיק", "רופא", "מדריך", "מלווה נשק", "שומר לילה", "נהג", "מאבטח", "מאבטח חמוש"].map(r => (
                     <option key={r} value={r}>{r}</option>
                   ))}
                 </select>
