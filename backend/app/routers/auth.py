@@ -45,7 +45,8 @@ def _build_tokens_and_set_cookie(user: User, db: Session, response: Response) ->
         "sub": str(user.id),
         "role": user.role,
         "status": user.status,
-        "name": user.full_name
+        "name": user.full_name,
+        "employment_type": user.employment_type or "שכיר"
     })
 
     # --- Refresh Token (Dynamic, DB-backed) ---
@@ -201,7 +202,8 @@ def refresh_token(
         "sub": str(user.id),
         "role": user.role,
         "status": user.status,
-        "name": user.full_name
+        "name": user.full_name,
+        "employment_type": user.employment_type or "שכיר"
     })
 
     max_age_seconds = int((db_token.expires_at - datetime.utcnow()).total_seconds())

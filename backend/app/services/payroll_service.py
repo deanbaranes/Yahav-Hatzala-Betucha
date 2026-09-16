@@ -22,7 +22,7 @@ class PayrollService:
     def __init__(self, db: Session):
         self.db = db
 
-    def generate_employee_report(self, user: User, month: int, year: int) -> dict:
+    def generate_employee_report(self, user: User, month: int, year: int, is_employee_view: bool = False) -> dict:
         if user.status == "inactive":
             raise ValueError(f"Cannot generate payroll for inactive user {user.full_name}")
             
@@ -191,7 +191,7 @@ class PayrollService:
         report_text = self._format_report(
             user.full_name, days_worked, total_hours, base_salary, 
             ot_hours, hourly_rate, ot_total, recovery_pay, travel_pay, 
-            accom_nights, accom_pay, other_adjs, trip_global_bonus, gross_total
+            accom_nights, accom_pay, other_adjs, trip_global_bonus, gross_total, is_employee_view
         )
         
         return {
@@ -216,8 +216,15 @@ class PayrollService:
 
     def _format_report(self, full_name, days_worked, total_hours, base_salary, ot_hours, 
                        hourly_rate, ot_total, recovery_pay, travel_pay, accom_nights, 
-                       accom_pay, other_adjs, trip_global_bonus, gross_total) -> str:
+                       accom_pay, other_adjs, trip_global_bonus, gross_total, is_employee_view=False) -> str:
         
+        if is_employee_view:
+            report_text = f"שם: {full_name}\n"
+            report_text += f"ימי פעילות בחודש זה: {days_worked}\n\n"
+            report_text += f"-----------------------------\n"
+            report_text += f"סה\"כ לתשלום (שכר מובטח / ברוטו): {gross_total.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)} ₪\n"
+            return report_text
+            
         report_text = f"שם עובד: {full_name}\n"
         report_text += f"ימי עבודה: {days_worked}\n"
         report_text += f"שעות עבודה בחודש: {total_hours.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)}\n"

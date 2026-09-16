@@ -277,7 +277,7 @@ def export_all_payroll(month: int, year: int, db: Session = Depends(get_db), adm
 def get_my_payroll(month: int, year: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     payroll_service = PayrollService(db)
     try:
-        report_result = payroll_service.generate_employee_report(current_user, month, year)
+        report_result = payroll_service.generate_employee_report(current_user, month, year, is_employee_view=True)
         return {"report": report_result["text"], "data": report_result["data"]}
     except ValueError as e:
         # Handled gracefully by frontend, but we return 400 to prevent 500 error log spam

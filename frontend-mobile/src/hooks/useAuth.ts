@@ -9,6 +9,7 @@ export interface User {
   role: UserRole;
   status: UserStatus;
   name: string;
+  employment_type?: string;
 }
 
 import axiosClient from '../api/axiosClient';
@@ -49,7 +50,8 @@ export function useAuth() {
               id: decoded.sub,
               role: decoded.role || 'employee',
               status: decoded.status || 'active',
-              name: decoded.name || 'משתמש'
+              name: decoded.name || 'משתמש',
+              employment_type: decoded.employment_type
             });
           } else {
             setUser(null);
