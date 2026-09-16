@@ -50,19 +50,22 @@ export default function TripTeamList({ trip, setReportingAssignment, removeAssig
     updateSalaryMutation.mutate({ assignmentId: assignment.id, salary: numValue });
   };
 
+  const assignedCount = trip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned').length || 0;
+  const effectiveCapacity = trip.capacity > 0 ? trip.capacity : (assignedCount > 0 ? assignedCount : 0);
+
   return (
     <>
       <div className="text-sm text-gray-500 font-bold mb-2">
-        צוות מאושר בטיול ({trip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned').length || 0} מתוך {trip.capacity})
+        צוות מאושר בטיול ({assignedCount} מתוך {effectiveCapacity})
         {trip.roles_requirements && Object.keys(trip.roles_requirements).length > 0 ? (
           <span className="block text-xs text-blue-600 mt-1.5 font-medium bg-blue-50 p-1.5 rounded-md border border-blue-100 w-fit">
             סוגי עובדים נדרשים: {Object.entries(trip.roles_requirements).map(([role, count]) => `${count} ${role}`).join(', ')}
           </span>
-        ) : (
+        ) : trip.capacity > 0 ? (
           <span className="block text-xs text-blue-600 mt-1.5 font-medium bg-blue-50 p-1.5 rounded-md border border-blue-100 w-fit">
             סוגי עובדים נדרשים: {trip.capacity} כללי
           </span>
-        )}
+        ) : null}
       </div>
       <div className="space-y-2">
         {trip.assignments?.filter((a:any) => a.is_confirmed && a.status === 'assigned').length === 0 ? (
