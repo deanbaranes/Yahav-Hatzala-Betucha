@@ -97,15 +97,38 @@ def check_unassigned_trips():
     
     for trip in trips:
         confirmed_assignments = [a for a in trip.assignments if a.is_confirmed and a.status == "assigned"]
+        full_msg = ""
+        short_msg = ""
+        
+        loc = trip.location if len(trip.location) <= 15 else trip.location[:15] + "..."
+        
         if trip.capacity > 0 and len(confirmed_assignments) < trip.capacity:
             missing = trip.capacity - len(confirmed_assignments)
-            msg = f"התראת שיבוץ: חסרים עובדים לפעילות {trip.location} (בתאריך {trip.start_date.strftime('%d/%m/%Y %H:%M')}). חסרים {missing} עובדים משובצים!"
-            if ADMIN_PHONE:
-                NotificationService.send_sms(ADMIN_PHONE, msg, db=db)
+            full_msg = f"התראת שיבוץ: חסרים עובדים לפעילות {trip.location} (בתאריך {trip.start_date.strftime('%d/%m/%Y %H:%M')}). חסרים {missing} עובדים משובצים!"
+            short_msg = f"התראת שיבוץ: ל{loc} ב-{trip.start_date.strftime('%d/%m')} חסרים {missing} משובצים!"
         elif trip.capacity == 0 and len(confirmed_assignments) == 0:
-            msg = f"התראת שיבוץ: אין עובדים משובצים כלל באירוע {trip.location} ב-{trip.start_date.strftime('%d/%m/%Y %H:%M')}!"
+            full_msg = f"התראת שיבוץ: אין עובדים משובצים כלל באירוע {trip.location} ב-{trip.start_date.strftime('%d/%m/%Y %H:%M')}!"
+            short_msg = f"התראת שיבוץ: אין עובדים משובצים ל{loc} ב-{trip.start_date.strftime('%d/%m')}!"
+            
+        if full_msg:
+            # 1. Create In-App Notification (full message)
+            NotificationService.create_in_app_notification(full_msg, db)
+            
             if ADMIN_PHONE:
-                NotificationService.send_sms(ADMIN_PHONE, msg, db=db)
+                # 2. Push Notification (full message)
+                admin_phone_env = "".join(filter(str.isdigit, os.getenv("ADMIN_PHONE", "")))
+                if admin_phone_env:
+                    from app.models.user import User
+                    from app.services.push_service import send_push_notification
+                    admin_user = db.query(User).filter(User.phone.like(f"%{admin_phone_env}%")).first()
+                    if admin_user:
+                        try:
+                            send_push_notification(db, admin_user.id, "התראת שיבוצים", full_msg, url="/admin/trips")
+                        except Exception as e:
+                            logger.error(f"Failed to send push for unassigned trips: {e}")
+                
+                # 3. SMS (short message)
+                NotificationService.send_sms(ADMIN_PHONE, short_msg)
             
 def check_uninvoiced_trips():
     """
@@ -423,19 +446,37 @@ def notify_admin_unconfirmed_arrivals():
         if unconfirmed_details:
             count = len(unconfirmed_details)
             details_str = ", ".join(unconfirmed_details)
-            msg = f"התראת משמרות מחר ({tomorrow.strftime('%d/%m')}): {count} עובדים טרם אישרו הגעה ({details_str}). נא להיכנס לאפליקציה לבדיקה!"
+            
+            # Full message for in-app and push notification (shows all names)
+            full_msg = f"התראת משמרות מחר ({tomorrow.strftime('%d/%m')}): {count} עובדים טרם אישרו הגעה ({details_str}). נא להיכנס לאפליקציה לבדיקה!"
             
             today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
             existing_notif = db.query(Notification).filter(
-                Notification.message == msg,
+                Notification.message == full_msg,
                 Notification.created_at >= today_start
             ).first()
             
             if not existing_notif:
+                # 1. Create In-App Notification (full message)
+                NotificationService.create_in_app_notification(full_msg, db)
+                
                 if ADMIN_PHONE:
-                    NotificationService.send_sms(ADMIN_PHONE, msg, db=db)
-                else:
-                    NotificationService.create_in_app_notification(msg, db)
+                    # 2. Push Notification (full message)
+                    admin_phone_env = "".join(filter(str.isdigit, os.getenv("ADMIN_PHONE", "")))
+                    if admin_phone_env:
+                        from app.models.user import User
+                        from app.services.push_service import send_push_notification
+                        admin_user = db.query(User).filter(User.phone.like(f"%{admin_phone_env}%")).first()
+                        if admin_user:
+                            try:
+                                send_push_notification(db, admin_user.id, "עדכון אישור הגעה", full_msg, url="/admin/trips")
+                            except Exception as e:
+                                logger.error(f"Failed to send push for unconfirmed arrivals: {e}")
+                    
+                    # 3. SMS (short message - maximize characters for names)
+                    short_details = details_str if len(details_str) <= 50 else details_str[:47] + "..."
+                    short_msg = f"שלום יהב! העובדים הבאים: {short_details} טרם אישרו הגעה למחר."
+                    NotificationService.send_sms(ADMIN_PHONE, short_msg)
     finally:
         db.close()
 
