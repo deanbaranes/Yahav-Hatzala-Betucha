@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import { Edit2, Save, X, Trash2, CheckCircle, XCircle, FileText, Plus } from 'lucide-react';
 import AdminReportModal from '../../features/admin/AdminReportModal';
-import { extractDateFromISO, extractTimeFromISO } from '../../utils/dateUtils';
+import { extractDateFromISO, extractTimeFromISO, toSafeBackendDateTime } from '../../utils/dateUtils';
 
 interface DailyShift {
   start_time: string;
@@ -405,11 +405,11 @@ export default function Reports() {
                                 }
 
                                 updateMutation.mutate({
-                                  start_time: new Date(editForm.start_time).toISOString(),
-                                  end_time: new Date(editForm.end_time).toISOString(),
+                                  start_time: toSafeBackendDateTime(editForm.start_time),
+                                  end_time: toSafeBackendDateTime(editForm.end_time),
                                   daily_shifts: editForm.daily_shifts?.length > 0 ? editForm.daily_shifts.map((s: any) => ({
-                                    start_time: new Date(s.start_time).toISOString(),
-                                    end_time: new Date(s.end_time).toISOString()
+                                    start_time: toSafeBackendDateTime(s.start_time),
+                                    end_time: toSafeBackendDateTime(s.end_time)
                                   })) : [],
                                   overtime_decimal: editForm.overtime_decimal,
                                   expenses: editForm.expenses,

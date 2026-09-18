@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
 import { X } from 'lucide-react';
 import ReceiptUploader from '../employee/ReceiptUploader';
+import { toSafeBackendDateTime } from '../../utils/dateUtils';
 
 interface AdminReportModalProps {
   isOpen: boolean;
@@ -241,8 +242,8 @@ export default function AdminReportModal({ isOpen, onClose }: AdminReportModalPr
                     sleeps: formData.sleeps,
                     receipt_url: formData.receipt_url,
                     daily_shifts: dailyShifts.map(s => ({
-                      start_time: new Date(s.start_time).toISOString(),
-                      end_time: new Date(s.end_time).toISOString()
+                      start_time: toSafeBackendDateTime(s.start_time),
+                      end_time: toSafeBackendDateTime(s.end_time)
                     }))
                   };
                   reportMutation.mutate(payload);

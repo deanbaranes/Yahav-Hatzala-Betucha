@@ -76,3 +76,16 @@ export const extractTimeFromISO = (dateStr: string | undefined | null): string =
   if (parts.length < 2) return '';
   return parts[1].substring(0, 5);
 };
+
+/**
+ * Safely converts a datetime-local string (YYYY-MM-DDTHH:mm) into a trailing-second format
+ * expected by the backend without passing it through Date parsing (which alters the time based on user timezone).
+ */
+export const toSafeBackendDateTime = (localStr: string): string => {
+  if (!localStr) return '';
+  if (localStr.includes('Z')) {
+      return localStr.split('Z')[0].substring(0, 19);
+  }
+  if (localStr.length === 16) return `${localStr}:00`;
+  return localStr.substring(0, 19);
+};

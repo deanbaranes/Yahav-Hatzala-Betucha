@@ -3,6 +3,7 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import axiosClient from '../../api/axiosClient';
 import ReceiptUploader from './ReceiptUploader';
+import { toSafeBackendDateTime } from '../../utils/dateUtils';
 
 export default function ReportForm() {
   const queryClient = useQueryClient();
@@ -64,8 +65,8 @@ export default function ReportForm() {
       receipt_url: formData.receipt_url,
       is_draft: true,
       daily_shifts: validShifts.map(s => ({
-        start_time: new Date(s.start_time).toISOString(),
-        end_time: new Date(s.is_absent ? s.start_time : s.end_time).toISOString(),
+        start_time: toSafeBackendDateTime(s.start_time),
+        end_time: toSafeBackendDateTime(s.is_absent ? s.start_time : s.end_time),
         is_absent: !!s.is_absent
       }))
     };
@@ -95,8 +96,8 @@ export default function ReportForm() {
       receipt_url: formData.receipt_url,
       is_draft: true,
       daily_shifts: validShifts.map(s => ({
-        start_time: new Date(s.start_time).toISOString(),
-        end_time: new Date(s.is_absent ? s.start_time : s.end_time).toISOString(),
+        start_time: toSafeBackendDateTime(s.start_time),
+        end_time: toSafeBackendDateTime(s.is_absent ? s.start_time : s.end_time),
         is_absent: !!s.is_absent
       }))
     };
@@ -406,8 +407,8 @@ export default function ReportForm() {
               receipt_url: formData.receipt_url,
               is_draft: false,
               daily_shifts: dailyShifts.map(s => ({
-                start_time: new Date(s.start_time).toISOString(),
-                end_time: new Date(s.is_absent ? s.start_time : s.end_time).toISOString(),
+                start_time: toSafeBackendDateTime(s.start_time),
+                end_time: toSafeBackendDateTime(s.is_absent ? s.start_time : s.end_time),
                 is_absent: !!s.is_absent
               }))
             };

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../../api/axiosClient';
+import { toSafeBackendDateTime } from '../../utils/dateUtils';
 
 interface TripAdminReportingFormProps {
   assignment: any;
@@ -115,8 +116,8 @@ export default function TripAdminReportingForm({ assignment, tripStartDate, trip
             onClick={() => submitReportMutation.mutate({
               assignment_id: assignment.id,
               daily_shifts: reportDailyShifts.map(s => ({
-                start_time: new Date(s.start_time).toISOString(),
-                end_time: new Date(s.end_time).toISOString()
+                start_time: toSafeBackendDateTime(s.start_time),
+                end_time: toSafeBackendDateTime(s.end_time)
               })),
               expenses: 0
             })}
