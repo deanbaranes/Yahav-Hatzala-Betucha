@@ -116,15 +116,21 @@ class NotificationService:
                 "SOAPAction": '"apiGlobalSms/sendSmsToRecipients"'
             }
             
+            print(f"DEBUG SMS: Sending SMS via GlobalSMS API to {clean_phone}...")
+            
             response = requests.post(url, data=xml_payload.encode('utf-8'), headers=headers, timeout=10)
             
             if response.status_code == 200 and "sendSmsToRecipientsResult" in response.text:
                 logger.info(f"[SMS] Successfully sent to {clean_phone}")
+                print(f"DEBUG SMS: SUCCESS - Successfully sent to {clean_phone}. Response: {response.text[:200]}")
                 return True
             else:
                 logger.error(f"[SMS] Failed to send. Status: {response.status_code}, Response: {response.text}")
+                print(f"DEBUG SMS ERROR: Failed to send to {clean_phone}. Status: {response.status_code}, Response: {response.text}")
                 return False
                 
         except Exception as e:
             logger.error(f"[SMS] Exception during SMS sending: {str(e)}")
+            print(f"DEBUG SMS EXCEPTION: Failed during SMS sending to {clean_phone} - {str(e)}")
             return False
+

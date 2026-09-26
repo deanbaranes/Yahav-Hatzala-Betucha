@@ -20,7 +20,7 @@ from app.models.user import User
 logger = logging.getLogger(__name__)
 
 # Admin phone number to send alerts to
-ADMIN_PHONE = os.environ.get("ADMIN_PHONE", "")
+# Moved to fetch at runtime to avoid missing it on early load
 
 def get_db():
     db = SessionLocal()
@@ -114,13 +114,14 @@ def check_unassigned_trips():
             # 1. Create In-App Notification (full message)
             NotificationService.create_in_app_notification(full_msg, db)
             
-            if ADMIN_PHONE:
+            admin_phone_env = os.getenv("ADMIN_PHONE", "")
+            if admin_phone_env:
                 # 2. Push Notification (full message)
-                admin_phone_env = "".join(filter(str.isdigit, os.getenv("ADMIN_PHONE", "")))
-                if admin_phone_env:
+                admin_phone_digits = "".join(filter(str.isdigit, admin_phone_env))
+                if admin_phone_digits:
                     from app.models.user import User
                     from app.services.push_service import send_push_notification
-                    admin_user = db.query(User).filter(User.phone.like(f"%{admin_phone_env}%")).first()
+                    admin_user = db.query(User).filter(User.phone.like(f"%{admin_phone_digits}%")).first()
                     if admin_user:
                         try:
                             send_push_notification(db, admin_user.id, "התראת שיבוצים", full_msg, url="/admin/trips")
@@ -128,7 +129,7 @@ def check_unassigned_trips():
                             logger.error(f"Failed to send push for unassigned trips: {e}")
                 
                 # 3. SMS (short message)
-                NotificationService.send_sms(ADMIN_PHONE, short_msg)
+                NotificationService.send_sms(admin_phone_env, short_msg)
             
 def check_uninvoiced_trips():
     """
@@ -460,23 +461,26 @@ def notify_admin_unconfirmed_arrivals():
                 # 1. Create In-App Notification (full message)
                 NotificationService.create_in_app_notification(full_msg, db)
                 
-                if ADMIN_PHONE:
+                admin_phone_env = os.getenv("ADMIN_PHONE", "")
+                if admin_phone_env:
                     # 2. Push Notification (full message)
-                    admin_phone_env = "".join(filter(str.isdigit, os.getenv("ADMIN_PHONE", "")))
-                    if admin_phone_env:
+                    admin_phone_digits = "".join(filter(str.isdigit, admin_phone_env))
+                    if admin_phone_digits:
                         from app.models.user import User
                         from app.services.push_service import send_push_notification
-                        admin_user = db.query(User).filter(User.phone.like(f"%{admin_phone_env}%")).first()
+                        admin_user = db.query(User).filter(User.phone.like(f"%{admin_phone_digits}%")).first()
                         if admin_user:
                             try:
                                 send_push_notification(db, admin_user.id, "עדכון אישור הגעה", full_msg, url="/admin/trips")
                             except Exception as e:
                                 logger.error(f"Failed to send push for unconfirmed arrivals: {e}")
+                                print(f"Push Error (unconfirmed_arrivals): {e}")
                     
                     # 3. SMS (short message - maximize characters for names)
                     short_details = details_str if len(details_str) <= 50 else details_str[:47] + "..."
                     short_msg = f"שלום יהב! העובדים הבאים: {short_details} טרם אישרו הגעה למחר."
-                    NotificationService.send_sms(ADMIN_PHONE, short_msg)
+                    print(f"DEBUG: Attempting to send unconfirmed arrivals SMS to {admin_phone_env}")
+                    NotificationService.send_sms(admin_phone_env, short_msg)
     finally:
         db.close()
 
