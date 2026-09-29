@@ -399,7 +399,7 @@ def check_upcoming_trips_for_confirmation():
                             if trip.employee_contact_phone:
                                 contact_parts.append(trip.employee_contact_phone)
                             contact_str = f" איש קשר: {' - '.join(contact_parts)}." if contact_parts else ""
-                            msg = f"תזכורת שיבוץ למחר: {trip.location}.{contact_str} אנא היכנס/י לקישור לאישור הגעה סופית: {schedule_link}"
+                            msg = f"תזכורת שיבוץ למחר.{contact_str} אנא היכנס/י לקישור לאישור הגעה סופית: {schedule_link}"
                         
                         # Prevent duplicate SMS on the same day for the same assignment
                         existing_notif = db.query(Notification).filter(
