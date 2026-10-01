@@ -259,14 +259,15 @@ def check_ended_trips_for_reports():
     db: Session = SessionLocal()
     try:
         now = datetime.now()
-        three_days_ago = now - timedelta(days=3)
+        fourteen_days_ago = now - timedelta(days=14)
 
         # Eagerly load assignments, their users and reports to avoid N+1 queries
         recent_trips = db.query(Trip).options(
             joinedload(Trip.assignments).joinedload(TripAssignment.user),
             joinedload(Trip.assignments).joinedload(TripAssignment.report)
-        ).filter(Trip.start_date >= three_days_ago).all()
+        ).filter(Trip.start_date >= fourteen_days_ago).all()
 
+        three_days_ago = now - timedelta(days=3)
         for trip in recent_trips:
             end_dt = trip.end_date or trip.start_date
             if end_dt and hasattr(end_dt, 'tzinfo') and end_dt.tzinfo is not None:
@@ -274,6 +275,10 @@ def check_ended_trips_for_reports():
 
             # Skip trips that haven't ended yet
             if not (end_dt and end_dt <= now):
+                continue
+                
+            # Skip trips that ended more than 3 days ago (prevent spamming for old history)
+            if end_dt < three_days_ago:
                 continue
 
             start_dt = trip.start_date

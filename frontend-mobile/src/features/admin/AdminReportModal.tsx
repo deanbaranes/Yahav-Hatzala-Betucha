@@ -17,6 +17,7 @@ interface PendingAssignment {
   employee_name: string;
   location: string;
   start_date: string;
+  end_date?: string;
   role: string;
 }
 
@@ -108,7 +109,41 @@ export default function AdminReportModal({ isOpen, onClose }: AdminReportModalPr
               <select
                 className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 text-sm font-bold shadow-sm focus:ring-2 focus:ring-blue-500"
                 value={formData.assignment_id}
-                onChange={e => setFormData({ ...formData, assignment_id: e.target.value })}
+                onChange={e => {
+                  const assignmentId = e.target.value;
+                  setFormData({ ...formData, assignment_id: assignmentId });
+                  
+                  const selectedAssignment = pendingAssignments?.find(a => a.assignment_id === assignmentId);
+                  if (selectedAssignment?.start_date && selectedAssignment?.end_date) {
+                    const start = new Date(selectedAssignment.start_date);
+                    start.setHours(0,0,0,0);
+                    const end = new Date(selectedAssignment.end_date);
+                    end.setHours(0,0,0,0);
+                    const expectedDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+                    
+                    setDaysCount(expectedDays);
+                    setFormData(prev => ({ ...prev, assignment_id: assignmentId, sleeps: Math.max(0, expectedDays - 1) }));
+                    
+                    const newShifts = [];
+                    const firstDayStart = new Date(selectedAssignment.start_date);
+                    for (let i = 0; i < expectedDays; i++) {
+                      const nextDay = new Date(firstDayStart);
+                      nextDay.setDate(nextDay.getDate() + i);
+                      nextDay.setHours(8, 0, 0, 0);
+
+                      const nextEnd = new Date(nextDay);
+                      nextEnd.setHours(17, 0, 0, 0);
+
+                      const toLocalISO = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                      
+                      newShifts.push({
+                        start_time: toLocalISO(nextDay),
+                        end_time: toLocalISO(nextEnd)
+                      });
+                    }
+                    setDailyShifts(newShifts);
+                  }
+                }}
               >
                 <option value="" disabled>-- לחץ כאן לבחירה --</option>
                 {pendingAssignments?.map(a => (

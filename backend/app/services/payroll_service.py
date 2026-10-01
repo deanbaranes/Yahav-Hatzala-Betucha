@@ -58,19 +58,34 @@ class PayrollService:
 
         days_worked_set = set()
         for r in reports:
+            has_daily = False
             if r.daily_shifts and len(r.daily_shifts) > 0:
                 for shift in r.daily_shifts:
                     if "start_time" in shift:
                         shift_date = datetime.fromisoformat(shift["start_time"]).date()
                         days_worked_set.add(shift_date)
-            elif r.start_time:
+                        has_daily = True
+            
+            if not has_daily and r.start_time and getattr(r.assignment.trip, 'end_date', None):
+                curr = r.start_time.date()
+                end_d = r.assignment.trip.end_date.date()
+                while curr <= end_d:
+                    days_worked_set.add(curr)
+                    curr += timedelta(days=1)
+            elif not has_daily and r.start_time:
                 days_worked_set.add(r.start_time.date())
         
         # Add fallback days
         for a in fallback_assignments:
             if a.trip and a.trip.start_date:
                 local_start = a.trip.start_date + timedelta(hours=3)
-                days_worked_set.add(local_start.date())
+                end_date_ref = a.trip.end_date if a.trip.end_date else a.trip.start_date
+                local_end = end_date_ref + timedelta(hours=3)
+                curr = local_start.date()
+                end_d = local_end.date()
+                while curr <= end_d:
+                    days_worked_set.add(curr)
+                    curr += timedelta(days=1)
 
         days_worked = len(days_worked_set)
         
@@ -89,6 +104,17 @@ class PayrollService:
                 # Fallback to trip duration for backward compatibility
                 if trip_has_accom and r.assignment.trip.start_date and r.assignment.trip.end_date:
                     trip_nights = (r.assignment.trip.end_date.date() - r.assignment.trip.start_date.date()).days
+                    if trip_nights > 0:
+                        auto_accom_nights += Decimal(trip_nights)
+                        
+        # Accommodations for fallback assignments
+        for a in fallback_assignments:
+            if a.trip:
+                trip_has_accom = getattr(a.trip, 'has_accommodation', True)
+                if trip_has_accom and a.trip.start_date and a.trip.end_date:
+                    local_start = a.trip.start_date + timedelta(hours=3)
+                    local_end = a.trip.end_date + timedelta(hours=3)
+                    trip_nights = (local_end.date() - local_start.date()).days
                     if trip_nights > 0:
                         auto_accom_nights += Decimal(trip_nights)
 
