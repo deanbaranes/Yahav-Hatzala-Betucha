@@ -317,7 +317,8 @@ def check_ended_trips_for_reports():
                         il_hour = datetime.now(il_tz).hour if il_tz else datetime.now().hour
                         if 22 <= il_hour or il_hour < 8:
                             continue
-                            msg = (
+                            
+                        msg = (
                             f"היי {assignment.user.full_name}, משמרתך הסתיימה. "
                             f"אנא היכנס/י לאזור האישי למלא דוח. "
                             f"שים לב: דיווח שלא ימולא עד מחר יחושב כשכר בסיס בלבד!"
