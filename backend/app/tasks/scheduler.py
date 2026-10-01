@@ -317,15 +317,18 @@ def check_ended_trips_for_reports():
                         il_hour = datetime.now(il_tz).hour if il_tz else datetime.now().hour
                         if 22 <= il_hour or il_hour < 8:
                             continue
-                            
-                        msg = (
+                            msg = (
                             f"היי {assignment.user.full_name}, משמרתך הסתיימה. "
                             f"אנא היכנס/י לאזור האישי למלא דוח. "
                             f"שים לב: דיווח שלא ימולא עד מחר יחושב כשכר בסיס בלבד!"
                         )
+                        
+                        # Only look for duplicate messages sent since this specific trip started
+                        trip_start_date = start_dt.replace(hour=0, minute=0, second=0) if start_dt else now - timedelta(days=3)
                         existing_notif = db.query(Notification).filter(
                             Notification.user_id == assignment.user_id,
-                            Notification.message == msg
+                            Notification.message == msg,
+                            Notification.created_at >= trip_start_date
                         ).first()
                         if not existing_notif:
                             NotificationService.send_sms(
