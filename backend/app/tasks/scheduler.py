@@ -295,7 +295,7 @@ def check_ended_trips_for_reports():
                             expenses_notes="דיווח נוצר אוטומטית (יום קצר)",
                             sleeps=0,
                             is_draft=False,
-                            manager_status="approved",
+                            manager_status="pending",
                             billing_status="unbilled"
                         )
                         db.add(new_report)
