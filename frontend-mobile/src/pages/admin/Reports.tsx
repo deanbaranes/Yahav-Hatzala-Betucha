@@ -370,9 +370,16 @@ export default function Reports() {
                       )}
                     </td>
                     <td className="p-2 md:p-3 text-center align-top">
-                      {report.manager_status === 'pending' && <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-[10px] font-bold">ממתין</span>}
-                      {report.manager_status === 'approved' && <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-[10px] font-bold">אושר</span>}
-                      {report.manager_status === 'rejected' && <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded text-[10px] font-bold">נדחה</span>}
+                      <div className="flex flex-col items-center gap-1.5">
+                        {report.manager_status === 'pending' && <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-[10px] font-bold">ממתין</span>}
+                        {report.manager_status === 'approved' && <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded text-[10px] font-bold">אושר</span>}
+                        {report.manager_status === 'rejected' && <span className="bg-red-100 text-red-800 px-2 py-0.5 rounded text-[10px] font-bold">נדחה</span>}
+                        {report.expenses_notes?.includes('אוטומטי') && (
+                          <span title={report.expenses_notes} className="inline-block bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded text-[9px] font-bold whitespace-nowrap opacity-90 cursor-help">
+                            🤖 דיווח מערכת
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="p-2 md:p-3 text-center align-top">
                       {editingReport?.id === report.id ? (
