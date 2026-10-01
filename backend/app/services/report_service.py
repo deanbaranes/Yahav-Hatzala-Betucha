@@ -122,10 +122,13 @@ def process_and_save_report(
             worker_name = assignment.user.full_name if assignment.user else "עובד"
             location = trip.location if trip else "לא ידוע"
             msg = f"העובד/ת {worker_name} הגיש/ה דיווח עבור: {location} וממתין לאישור."
-            NotificationService.create_in_app_notification(msg, db)
+            
             admin_phone = os.getenv("ADMIN_PHONE")
             if admin_phone:
+                # send_sms will automatically create the in-app notification AND trigger push
                 NotificationService.send_sms(admin_phone, msg, db=db)
+            else:
+                NotificationService.create_in_app_notification(msg, db)
         except Exception as e:
             logger.error(f"Failed to send notification for report submission: {e}")
 
