@@ -321,7 +321,8 @@ def check_ended_trips_for_reports():
                         msg = (
                             f"היי {assignment.user.full_name}, משמרתך הסתיימה. "
                             f"אנא היכנס/י לאזור האישי למלא דוח. "
-                            f"שים לב: דיווח שלא ימולא עד מחר יחושב כשכר בסיס בלבד!"
+                            f"שים לב: דיווח שלא ימולא עד מחר יחושב כשכר בסיס בלבד! "
+                            f"לכניסה: https://yahav-hatzala-betucha.vercel.app"
                         )
                         
                         # Only look for duplicate messages sent since this specific trip started
