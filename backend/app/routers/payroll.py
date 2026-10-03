@@ -261,10 +261,12 @@ def export_all_payroll(month: int, year: int, db: Session = Depends(get_db), adm
     ).order_by(User.full_name.asc()).all()
     
     full_report = f"--- דוח שכר מרוכז: {month}/{year} ---\n\n"
+    counter = 1
     for emp in employees:
         try:
             report_result = payroll_service.generate_employee_report(emp, month, year)
-            full_report += report_result["text"] + "\n\n=============================\n\n"
+            full_report += f"עובד מספר {counter} :\n" + report_result["text"] + "\n\n=============================\n\n"
+            counter += 1
         except ValueError:
             pass 
             
